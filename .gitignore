@@ -1,0 +1,66 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+pubspec.lock
+coverage/
+
+# Android/Java/Kotlin
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+.gradle/
+.idea/
+*.iml
+local.properties
+captures/
+.externalNativeBuild
+.cxx/
+*.jks
+*.keystore
+android/build/
+android/.gradle/
+
+# iOS/macOS
+Pods/
+.symlinks/
+**/Flutter/Flutter.framework
+**/Flutter/Flutter.podspec
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+macos/Flutter/ephemeral/
+macos/Runner.xcodeproj/xcuserdata/
+macos/Runner.xcworkspace/xcuserdata/
+
+# Linux
+linux/build/
+linux/flutter/ephemeral/
+
+# Windows
+windows/flutter/ephemeral/
+windows/build/
+
+# Web
+lib/generated_plugin_registrant.dart
+web/generated_plugin_registrant.dart
+
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+*.log
+*.pyc
+*.swp
+.vscode/
+*.sublime-workspace
+.env
+.env.local
