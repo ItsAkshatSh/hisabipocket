@@ -229,7 +229,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () {
-            // Navigate to dashboard if coming from quick add, otherwise go back
             if (context.canPop()) {
               context.pop();
             } else {
@@ -248,7 +247,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
       ),
       body: Stack(
         children: [
-          // Animated background
           _AnimatedBackground(
             controller: _backgroundController,
             waveController: _waveController,
@@ -264,7 +262,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: 40),
-                        // Microphone button with enhanced animations
                         _MicrophoneButton(
                           isListening: _isListening,
                           isSaving: _isSaving,
@@ -278,7 +275,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                 },
                         ),
                         const SizedBox(height: 48),
-                        // Status text
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
                           child: _isListening
@@ -308,14 +304,12 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                     ),
                   ),
                 ),
-                // Bottom section with transcript and actions
                 Container(
                   margin: const EdgeInsets.only(bottom: 24),
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Transcript card
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         width: double.infinity,
@@ -432,7 +426,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                         ),
                       ],
                       const SizedBox(height: 20),
-                      // Action buttons
                       Row(
                         children: [
                           Expanded(
@@ -440,7 +433,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                               onPressed: _isSaving
                                   ? null
                                   : () {
-                                      // Navigate to dashboard or add page
                                       if (context.canPop()) {
                                         context.pop();
                                       } else {
@@ -517,7 +509,6 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
   }
 }
 
-// Animated background widget
 class _AnimatedBackground extends StatelessWidget {
   final AnimationController controller;
   final AnimationController waveController;
@@ -547,7 +538,6 @@ class _AnimatedBackground extends StatelessWidget {
   }
 }
 
-// Background painter for animations
 class _BackgroundPainter extends CustomPainter {
   final double animationValue;
   final double waveValue;
@@ -625,7 +615,6 @@ class _BackgroundPainter extends CustomPainter {
   }
 }
 
-// Enhanced microphone button
 class _MicrophoneButton extends StatelessWidget {
   final bool isListening;
   final bool isSaving;

@@ -10,12 +10,9 @@ class StorageService {
   static Future<void> init() async {
     try {
       await Hive.initFlutter();
-      
-      // Pre-open boxes to ensure they're ready
       await Hive.openBox(_receiptsBoxName);
       await Hive.openBox(_settingsBoxName);
       await Hive.openBox(_authBoxName);
-      
       print('Storage initialized successfully');
     } catch (e) {
       print('Error initializing storage: $e');
@@ -23,13 +20,11 @@ class StorageService {
     }
   }
 
-  // Receipts storage
   static Future<void> saveReceipts(List<ReceiptModel> receipts) async {
     try {
       final box = await Hive.openBox(_receiptsBoxName);
       final receiptsJson = receipts.map((r) => _receiptToJson(r)).toList();
       await box.put('receipts_list', receiptsJson);
-      // Force write to disk
       await box.flush();
       print('Saved ${receipts.length} receipts to storage');
     } catch (e) {
@@ -60,7 +55,6 @@ class StorageService {
       final loadedReceipts = receiptsList
           .map((item) {
             try {
-              // Ensure item is a Map
               if (item is Map) {
                 return _receiptFromJson(Map<String, dynamic>.from(item));
               }
@@ -89,7 +83,6 @@ class StorageService {
       receipts.add(receipt);
       await saveReceipts(receipts);
       
-      // Verify the receipt was saved
       final verifyReceipts = await loadReceipts();
       if (verifyReceipts.length != receipts.length) {
         throw Exception('Receipt was not saved correctly. Expected ${receipts.length}, got ${verifyReceipts.length}');
@@ -107,13 +100,12 @@ class StorageService {
     await saveReceipts(receipts);
   }
 
-  // Settings storage
   static Future<void> saveSettings(SettingsState settings) async {
     try {
       final box = await Hive.openBox(_settingsBoxName);
       await box.put('currency', settings.currency.name);
       await box.put('namingFormat', settings.namingFormat.name);
-      // Force write to disk
+      await box.put('themeMode', settings.themeMode.name);
       await box.flush();
     } catch (e) {
       print('Error saving settings: $e');
@@ -126,6 +118,7 @@ class StorageService {
       final box = await Hive.openBox(_settingsBoxName);
       final currencyName = box.get('currency') as String?;
       final namingFormatName = box.get('namingFormat') as String?;
+      final themeModeName = box.get('themeMode') as String?;
       
       final currency = currencyName != null
           ? Currency.values.firstWhere(
@@ -141,16 +134,23 @@ class StorageService {
             )
           : NamingFormat.storeDate;
       
+      final themeMode = themeModeName != null
+          ? AppThemeMode.values.firstWhere(
+              (t) => t.name == themeModeName,
+              orElse: () => AppThemeMode.dark,
+            )
+          : AppThemeMode.dark;
+      
       return SettingsState(
         currency: currency,
         namingFormat: namingFormat,
+        themeMode: themeMode,
       );
     } catch (e) {
       return SettingsState();
     }
   }
 
-  // Helper methods for receipt serialization
   static Map<String, dynamic> _receiptToJson(ReceiptModel receipt) {
     return {
       'id': receipt.id,
@@ -181,7 +181,6 @@ class StorageService {
     );
   }
 
-  // Auth storage
   static Future<void> saveAuthState(String email, String name, String? pictureUrl) async {
     final box = await Hive.openBox(_authBoxName);
     await box.put('email', email);
@@ -214,7 +213,6 @@ class StorageService {
     await box.clear();
   }
 
-  // Clear all data (useful for logout or reset)
   static Future<void> clearAll() async {
     await Hive.deleteBoxFromDisk(_receiptsBoxName);
     await Hive.deleteBoxFromDisk(_settingsBoxName);

@@ -7,23 +7,15 @@ import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 
 final receiptDetailsProvider = FutureProvider.autoDispose.family<ReceiptModel, String>((ref, receiptId) async {
-  // In a real app: 
-  // final data = await client.get('/api/receipts/$receiptId');
-  // return ReceiptModel.fromDetailJson(data);
-
-  // Mocked response
-  await Future.delayed(const Duration(milliseconds: 400));
-  return ReceiptModel(
-    id: receiptId,
-    name: 'Mocked Receipt',
-    date: DateTime.now(),
-    store: 'Mocked Store',
-    total: 123.45,
-    items: [
-      ReceiptItem(name: 'Item 1', quantity: 2, price: 10.0, total: 20.0),
-      ReceiptItem(name: 'Item 2', quantity: 1, price: 103.45, total: 103.45),
-    ]
-  );
+  final receiptsAsync = ref.read(receiptsStoreProvider);
+  final receipts = receiptsAsync.valueOrNull ?? [];
+  
+  try {
+    final receipt = receipts.firstWhere((r) => r.id == receiptId);
+    return receipt;
+  } catch (e) {
+    throw Exception('Receipt not found');
+  }
 });
 
 class ReceiptEntryState {
@@ -55,38 +47,19 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
 
   ReceiptEntryNotifier(this._apiClient, this._ref) : super(ReceiptEntryState());
 
-  // --- Core Logic ---
-
   Future<void> analyzeImage(File imageFile) async {
     state = state.copyWith(isAnalyzing: true, analysisError: null);
     
-    // Simulate API call for AI extraction
-    await Future.delayed(const Duration(seconds: 2));
-    
     try {
-      // For MVP, simulate a successful result with item data
-      // In a real app, this would use _apiClient.uploadMultipart to /api/upload
-      
-      final items = [
-        ReceiptItem(name: 'Milk', quantity: 1.0, price: 5.50, total: 5.50),
-        ReceiptItem(name: 'Bread', quantity: 2.0, price: 3.00, total: 6.00),
-        ReceiptItem(name: 'Apples (1kg)', quantity: 1.0, price: 12.00, total: 12.00),
-      ];
-      final total = items.fold(0.0, (sum, item) => sum + item.total);
-      
-      final resultReceipt = ReceiptModel(
-        id: '', // ID assigned on save
-        name: 'Scanned Receipt',
-        date: DateTime.now(),
-        store: 'Scanned Receipt',
-        items: items,
-        total: total,
+      state = state.copyWith(
+        isAnalyzing: false,
+        analysisError: 'Receipt image analysis is not yet implemented. Please use manual entry.',
       );
-      
-      state = state.copyWith(analyzedReceipt: resultReceipt, isAnalyzing: false);
-      
     } catch (e) {
-      state = state.copyWith(isAnalyzing: false, analysisError: 'AI Analysis failed. Try manual entry.');
+      state = state.copyWith(
+        isAnalyzing: false,
+        analysisError: 'AI Analysis failed. Try manual entry.',
+      );
     }
   }
 
@@ -95,10 +68,8 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
   }
 
   Future<bool> saveReceipt(String name, ReceiptModel receipt) async {
-    // Always add to the in-memory store so dashboard & saved receipts refresh immediately.
     _ref.read(receiptsStoreProvider.notifier).add(receipt);
 
-    // Try to sync to backend, but don't block local UX on network errors.
     try {
       await _apiClient.post('/api/save_receipt', {
         'name': name,
@@ -111,13 +82,8 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
       });
     } catch (_) {}
 
-    // Clear state after we stored it locally.
     state = ReceiptEntryState();
-
-    // Update the home widget summary using all receipts we have in this session.
     await _updateWidgetSummaryFromStore();
-
-    // Always report success for local/session save; log/handle apiOk as needed later.
     return true;
   }
 

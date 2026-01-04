@@ -4,6 +4,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/router/app_router.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,13 +34,11 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 
   void _listenToWidgetLaunches() {
-    // Initial launch from widget
     HomeWidget.initiallyLaunchedFromHomeWidget().then((uri) {
       if (!mounted || uri == null) return;
       _handleWidgetAction(uri.host);
     });
 
-    // Clicks while app is running
     HomeWidget.widgetClicked.listen((uri) {
       if (!mounted || uri == null) return;
       _handleWidgetAction(uri.host);
@@ -50,7 +49,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     if (action == null) return;
     final router = ref.read(goRouterProvider);
     if (action == 'quick_voice_add') {
-      router.go('/add-receipt'); // Route to your voice/receipt screen
+      router.go('/add-receipt');
     } else if (action == 'open_dashboard') {
       router.go('/dashboard');
     }
@@ -59,11 +58,20 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
+    final settingsAsync = ref.watch(settingsProvider);
+    
+    final appThemeMode = settingsAsync.valueOrNull?.themeMode ?? AppThemeMode.dark;
+    final materialThemeMode = appThemeMode == AppThemeMode.light
+        ? ThemeMode.light
+        : appThemeMode == AppThemeMode.dark
+            ? ThemeMode.dark
+            : ThemeMode.system;
 
     return MaterialApp.router(
       title: 'Hisabi',
-      theme: hisabiDarkTheme,
-      themeMode: ThemeMode.dark, 
+      theme: hisabiLightTheme,
+      darkTheme: hisabiDarkTheme,
+      themeMode: materialThemeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

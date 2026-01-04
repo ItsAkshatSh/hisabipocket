@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
+import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -30,21 +33,21 @@ class SettingsScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          const Text(
+          Text(
             'Settings',
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w700,
               letterSpacing: -1.0,
-              color: AppColors.onSurface,
+              color: context.onSurfaceColor,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Manage your app preferences and data',
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.onSurfaceMuted,
+              color: context.onSurfaceMutedColor,
               fontWeight: FontWeight.w400,
             ),
           ),
@@ -54,6 +57,8 @@ class SettingsScreen extends ConsumerWidget {
           settingsAsync.when(
             data: (settings) => Column(
               children: [
+                _ThemeSection(settings: settings),
+                const SizedBox(height: 24),
                 _CurrencySection(settings: settings),
                 const SizedBox(height: 24),
                 _NamingFormatSection(settings: settings),
@@ -74,9 +79,11 @@ class SettingsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                    const Icon(Icons.error_outline,
+                        size: 48, color: AppColors.error),
                     const SizedBox(height: 16),
-                    Text('Error loading settings', style: const TextStyle(color: AppColors.error)),
+                    Text('Error loading settings',
+                        style: const TextStyle(color: AppColors.error)),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => ref.refresh(settingsProvider),
@@ -93,29 +100,199 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _CurrencySection extends ConsumerWidget {
+class _ThemeSection extends ConsumerWidget {
+  final SettingsState settings;
+
+  const _ThemeSection({required this.settings});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeLabels = {
+      AppThemeMode.light: 'Light',
+      AppThemeMode.dark: 'Dark',
+      AppThemeMode.system: 'System',
+    };
+
+    return _SettingsSection(
+      title: 'Theme',
+      icon: Icons.palette_outlined,
+      child: Column(
+        children: AppThemeMode.values.map((theme) {
+          final isSelected = settings.themeMode == theme;
+          return _SettingsTile(
+            title: themeLabels[theme] ?? theme.name,
+            trailing: isSelected
+                ? Icon(Icons.check, color: context.primaryColor, size: 20)
+                : null,
+            onTap: () {
+              ref.read(settingsProvider.notifier).setThemeMode(theme);
+            },
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _CurrencySection extends ConsumerStatefulWidget {
   final SettingsState settings;
 
   const _CurrencySection({required this.settings});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CurrencySection> createState() => _CurrencySectionState();
+}
+
+class _CurrencySectionState extends ConsumerState<_CurrencySection> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  final ExpansionTileController _expansionController = ExpansionTileController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String _getCurrencySymbol(String code) {
+    final symbols = {
+      'USD': '\$',
+      'EUR': '€',
+      'GBP': '£',
+      'JPY': '¥',
+      'CNY': '¥',
+      'INR': '₹',
+      'AUD': 'A\$',
+      'CAD': 'C\$',
+      'AED': 'د.إ',
+      'SAR': 'ر.س',
+      'ZAR': 'R',
+      'BRL': 'R\$',
+      'MXN': '\$',
+      'KRW': '₩',
+      'SGD': 'S\$',
+      'HKD': 'HK\$',
+      'CHF': 'CHF',
+      'SEK': 'kr',
+      'NOK': 'kr',
+      'DKK': 'kr',
+      'PLN': 'zł',
+      'TRY': '₺',
+      'RUB': '₽',
+      'NZD': 'NZ\$',
+    };
+    return symbols[code] ?? code;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredCurrencies = _searchQuery.isEmpty
+        ? Currency.values
+        : Currency.values
+            .where((c) => c.name.toLowerCase().contains(_searchQuery))
+            .toList();
+
     return _SettingsSection(
       title: 'Currency',
       icon: Icons.attach_money_outlined,
-      child: Column(
-        children: Currency.values.map((currency) {
-          final isSelected = settings.currency == currency;
-          return _SettingsTile(
-            title: currency.name,
-            trailing: isSelected
-                ? Icon(Icons.check, color: AppColors.primary, size: 20)
-                : null,
-            onTap: () {
-              ref.read(settingsProvider.notifier).setCurrency(currency);
-            },
-          );
-        }).toList(),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          controller: _expansionController,
+          title: Text(
+            '${_getCurrencySymbol(widget.settings.currency.name)} ${widget.settings.currency.name}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: context.onSurfaceColor,
+            ),
+          ),
+          childrenPadding: EdgeInsets.zero,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search currency...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+              ),
+            ),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 250),
+              child: filteredCurrencies.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('No currencies found'),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filteredCurrencies.length,
+                      itemBuilder: (context, index) {
+                        final currency = filteredCurrencies[index];
+                        final isSelected = widget.settings.currency == currency;
+                        return InkWell(
+                          onTap: () {
+                            ref
+                                .read(settingsProvider.notifier)
+                                .setCurrency(currency);
+                            // Optional: Close dropdown on selection
+                            _expansionController.collapse();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${_getCurrencySymbol(currency.name)} ${currency.name}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: context.onSurfaceColor,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check,
+                                      color: context.primaryColor, size: 20),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -144,7 +321,7 @@ class _NamingFormatSection extends ConsumerWidget {
           return _SettingsTile(
             title: formatLabels[format] ?? format.name,
             trailing: isSelected
-                ? Icon(Icons.check, color: AppColors.primary, size: 20)
+                ? Icon(Icons.check, color: context.primaryColor, size: 20)
                 : null,
             onTap: () {
               ref.read(settingsProvider.notifier).setNamingFormat(format);
@@ -167,6 +344,18 @@ class _DataSection extends ConsumerWidget {
       child: Column(
         children: [
           _SettingsTile(
+            title: 'Backup Data',
+            subtitle: 'Export all receipts and settings',
+            leading: Icons.backup_outlined,
+            onTap: () => _backupData(context, ref),
+          ),
+          _SettingsTile(
+            title: 'Restore Data',
+            subtitle: 'Import receipts and settings from backup',
+            leading: Icons.restore_outlined,
+            onTap: () => _restoreData(context, ref),
+          ),
+          _SettingsTile(
             title: 'Export Data',
             subtitle: 'Export all receipts as JSON',
             leading: Icons.download_outlined,
@@ -176,7 +365,7 @@ class _DataSection extends ConsumerWidget {
             title: 'Clear All Data',
             subtitle: 'Delete all receipts and settings',
             leading: Icons.delete_outline,
-            textColor: AppColors.error,
+            textColor: Theme.of(context).colorScheme.error,
             onTap: () => _showClearDataDialog(context, ref),
           ),
         ],
@@ -184,11 +373,162 @@ class _DataSection extends ConsumerWidget {
     );
   }
 
+  Future<void> _backupData(BuildContext context, WidgetRef ref) async {
+    try {
+      final receiptsAsync = ref.read(receiptsStoreProvider);
+      final receipts = receiptsAsync.valueOrNull ?? [];
+      final settingsAsync = ref.read(settingsProvider);
+      final settings = settingsAsync.valueOrNull ?? SettingsState();
+
+      final data = {
+        'backupDate': DateTime.now().toIso8601String(),
+        'version': '1.0.0',
+        'settings': {
+          'currency': settings.currency.name,
+          'namingFormat': settings.namingFormat.name,
+          'themeMode': settings.themeMode.name,
+        },
+        'receipts': receipts
+            .map((r) => {
+                  'id': r.id,
+                  'name': r.name,
+                  'date': r.date.toIso8601String(),
+                  'store': r.store,
+                  'total': r.total,
+                  'items': r.items.map((i) => i.toJson()).toList(),
+                })
+            .toList(),
+      };
+
+      final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+
+      await Clipboard.setData(ClipboardData(text: jsonString));
+
+      if (context.mounted) {
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+            '${tempDir.path}/hisabi_backup_${DateTime.now().millisecondsSinceEpoch}.json');
+        await file.writeAsString(jsonString);
+
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Hisabi Backup',
+        );
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Backup created and copied to clipboard'),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backup failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _restoreData(BuildContext context, WidgetRef ref) async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData?.text == null || clipboardData!.text!.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'No data found in clipboard. Please copy a backup file first.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final data = jsonDecode(clipboardData.text!) as Map<String, dynamic>;
+
+      if (data['settings'] != null) {
+        final settingsData = data['settings'] as Map<String, dynamic>;
+        final currency = Currency.values.firstWhere(
+          (c) => c.name == settingsData['currency'],
+          orElse: () => Currency.USD,
+        );
+        final namingFormat = NamingFormat.values.firstWhere(
+          (f) => f.name == settingsData['namingFormat'],
+          orElse: () => NamingFormat.storeDate,
+        );
+        final themeMode = AppThemeMode.values.firstWhere(
+          (t) => t.name == settingsData['themeMode'],
+          orElse: () => AppThemeMode.dark,
+        );
+
+        final settings = SettingsState(
+          currency: currency,
+          namingFormat: namingFormat,
+          themeMode: themeMode,
+        );
+        await StorageService.saveSettings(settings);
+        ref.invalidate(settingsProvider);
+      }
+
+      if (data['receipts'] != null) {
+        final receiptsList = data['receipts'] as List;
+        final receipts = receiptsList.map((json) {
+          return ReceiptModel(
+            id: json['id'] as String? ?? '',
+            name: json['name'] as String? ?? '',
+            date: DateTime.tryParse(json['date'] as String? ?? '') ??
+                DateTime.now(),
+            store: json['store'] as String? ?? '',
+            items: (json['items'] as List?)
+                    ?.map((item) => ReceiptItem(
+                          name: item['name'] as String? ?? '',
+                          quantity:
+                              (item['quantity'] as num?)?.toDouble() ?? 0.0,
+                          price: (item['price'] as num?)?.toDouble() ?? 0.0,
+                          total: (item['total'] as num?)?.toDouble() ?? 0.0,
+                        ))
+                    .toList() ??
+                [],
+            total: (json['total'] as num?)?.toDouble() ?? 0.0,
+          );
+        }).toList();
+
+        await StorageService.saveReceipts(receipts);
+        ref.invalidate(receiptsStoreProvider);
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Data restored successfully'),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Restore failed: $e'),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     try {
       final receiptsAsync = ref.read(receiptsStoreProvider);
       final receipts = receiptsAsync.valueOrNull ?? [];
-      
+
       if (receipts.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No data to export')),
@@ -198,27 +538,30 @@ class _DataSection extends ConsumerWidget {
 
       final data = {
         'exportDate': DateTime.now().toIso8601String(),
-        'receipts': receipts.map((r) => {
-          'id': r.id,
-          'name': r.name,
-          'date': r.date.toIso8601String(),
-          'store': r.store,
-          'total': r.total,
-          'items': r.items.map((i) => i.toJson()).toList(),
-        }).toList(),
+        'receipts': receipts
+            .map((r) => {
+                  'id': r.id,
+                  'name': r.name,
+                  'date': r.date.toIso8601String(),
+                  'store': r.store,
+                  'total': r.total,
+                  'items': r.items.map((i) => i.toJson()).toList(),
+                })
+            .toList(),
       };
 
       final jsonString = const JsonEncoder.withIndent('  ').convert(data);
-      
+
       // Copy to clipboard
       await Clipboard.setData(ClipboardData(text: jsonString));
-      
+
       // Also try to share
       if (context.mounted) {
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/hisabi_export_${DateTime.now().millisecondsSinceEpoch}.json');
+        final file = File(
+            '${tempDir.path}/hisabi_export_${DateTime.now().millisecondsSinceEpoch}.json');
         await file.writeAsString(jsonString);
-        
+
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Hisabi Receipt Export',
@@ -227,9 +570,9 @@ class _DataSection extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data exported and copied to clipboard'),
-            backgroundColor: AppColors.success,
+          SnackBar(
+            content: const Text('Data exported and copied to clipboard'),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           ),
         );
       }
@@ -238,7 +581,7 @@ class _DataSection extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Export failed: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
           ),
         );
       }
@@ -249,7 +592,7 @@ class _DataSection extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.surfaceColor,
         title: const Text('Clear All Data?'),
         content: const Text(
           'This will permanently delete all receipts and settings. This action cannot be undone.',
@@ -262,7 +605,7 @@ class _DataSection extends ConsumerWidget {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: Theme.of(context).colorScheme.errorContainer,
             ),
             child: const Text('Delete All'),
           ),
@@ -274,12 +617,12 @@ class _DataSection extends ConsumerWidget {
       await StorageService.clearAll();
       ref.invalidate(receiptsStoreProvider);
       ref.invalidate(settingsProvider);
-      
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All data cleared'),
-            backgroundColor: AppColors.success,
+          SnackBar(
+            content: const Text('All data cleared'),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           ),
         );
       }
@@ -306,14 +649,14 @@ class _AboutSection extends StatelessWidget {
             title: 'Privacy Policy',
             leading: Icons.privacy_tip_outlined,
             onTap: () {
-              // Navigate to privacy policy
+              context.push('/privacy-policy');
             },
           ),
           _SettingsTile(
             title: 'Terms of Service',
             leading: Icons.description_outlined,
             onTap: () {
-              // Navigate to terms
+              context.push('/terms-of-service');
             },
           ),
         ],
@@ -355,10 +698,10 @@ class _SettingsSection extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.border,
+              color: Theme.of(context).dividerColor.withOpacity(0.2),
               width: 1,
             ),
           ),
@@ -396,7 +739,7 @@ class _SettingsTile extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: AppColors.border.withOpacity(0.5),
+              color: context.borderColor.withOpacity(0.5),
               width: 0.5,
             ),
           ),
@@ -407,7 +750,7 @@ class _SettingsTile extends StatelessWidget {
               Icon(
                 leading,
                 size: 20,
-                color: textColor ?? AppColors.onSurfaceMuted,
+                color: textColor ?? context.onSurfaceMutedColor,
               ),
               const SizedBox(width: 12),
             ],
@@ -420,7 +763,7 @@ class _SettingsTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: textColor ?? AppColors.onSurface,
+                      color: textColor ?? context.onSurfaceColor,
                     ),
                   ),
                   if (subtitle != null) ...[
@@ -429,7 +772,7 @@ class _SettingsTile extends StatelessWidget {
                       subtitle!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.onSurfaceMuted,
+                        color: context.onSurfaceMutedColor,
                       ),
                     ),
                   ],
@@ -443,4 +786,3 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
-

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
@@ -13,16 +14,16 @@ class MainShell extends ConsumerWidget {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Subtle background pattern
           Positioned.fill(
             child: CustomPaint(
-              painter: _BackgroundPatternPainter(),
+              painter: _BackgroundPatternPainter(
+                color: Theme.of(context).dividerColor.withOpacity(0.05),
+              ),
             ),
           ),
-          // Main content
           Row(
             children: [
               if (!isMobile) const _DesktopSidebar(),
@@ -49,12 +50,14 @@ class MainShell extends ConsumerWidget {
   }
 }
 
-/// Subtle background pattern painter
 class _BackgroundPatternPainter extends CustomPainter {
+  final Color color;
+  _BackgroundPatternPainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.border.withOpacity(0.03)
+      ..color = color
       ..strokeWidth = 1;
 
     // Draw subtle grid pattern
@@ -89,18 +92,17 @@ class _DesktopSidebar extends ConsumerWidget {
 
     return Container(
       width: 240,
-      decoration: const BoxDecoration(
-        color: AppColors.background,
+      decoration: BoxDecoration(
+        color: context.backgroundColor,
         border: Border(
           right: BorderSide(
-            color: AppColors.border,
+            color: context.borderColor,
             width: 1,
           ),
         ),
       ),
       child: Column(
         children: [
-          // Logo/Brand Section
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
             child: Row(
@@ -109,7 +111,7 @@ class _DesktopSidebar extends ConsumerWidget {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Icon(
@@ -119,19 +121,19 @@ class _DesktopSidebar extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Hisabi',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: -0.2,
-                    color: AppColors.onSurface,
+                    color: context.onSurfaceColor,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: context.borderColor),
           const SizedBox(height: 4),
 
           // Navigation Items
@@ -177,10 +179,10 @@ class _DesktopSidebar extends ConsumerWidget {
           // User Profile & Logout Section
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: AppColors.border,
+                  color: context.borderColor,
                   width: 1,
                 ),
               ),
@@ -201,16 +203,16 @@ class _DesktopSidebar extends ConsumerWidget {
                           width: 20,
                           height: 20,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.15),
+                            color: context.primaryColor.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Center(
                             child: Text(
                               user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.primary,
+                                color: context.primaryColor,
                               ),
                             ),
                           ),
@@ -223,18 +225,18 @@ class _DesktopSidebar extends ConsumerWidget {
                             children: [
                               Text(
                                 user?.name ?? 'User',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w400,
                                   fontSize: 13,
-                                  color: AppColors.onSurface,
+                                  color: context.onSurfaceColor,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 user?.email ?? '',
-                                style: const TextStyle(
-                                  color: AppColors.onSurfaceMuted,
+                                style: TextStyle(
+                                  color: context.onSurfaceMutedColor,
                                   fontSize: 11,
                                 ),
                                 maxLines: 1,
@@ -258,20 +260,20 @@ class _DesktopSidebar extends ConsumerWidget {
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.logout_outlined,
                           size: 16,
-                          color: AppColors.onSurfaceMuted,
+                          color: context.onSurfaceMutedColor,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Logout',
                           style: TextStyle(
                             fontWeight: FontWeight.w400,
                             fontSize: 13,
-                            color: AppColors.onSurfaceMuted,
+                            color: context.onSurfaceMutedColor,
                           ),
                         ),
                       ],
@@ -304,7 +306,7 @@ class _DesktopSidebar extends ConsumerWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.hover : Colors.transparent,
+          color: isActive ? Theme.of(context).hoverColor : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
@@ -312,7 +314,7 @@ class _DesktopSidebar extends ConsumerWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? AppColors.onSurface : AppColors.onSurfaceMuted,
+              color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
             ),
             const SizedBox(width: 8),
             Text(
@@ -321,7 +323,7 @@ class _DesktopSidebar extends ConsumerWidget {
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
                 fontSize: 14,
                 color:
-                    isActive ? AppColors.onSurface : AppColors.onSurfaceMuted,
+                    isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
                 letterSpacing: -0.1,
               ),
             ),
@@ -344,11 +346,11 @@ class _AppHeader extends ConsumerWidget {
       bottom: false,
       child: Container(
         height: isMobile ? 64 : 56,
-        decoration: const BoxDecoration(
-          color: AppColors.background,
+        decoration: BoxDecoration(
+          color: context.backgroundColor,
           border: Border(
             bottom: BorderSide(
-              color: AppColors.border,
+              color: context.borderColor,
               width: 1,
             ),
           ),
@@ -363,7 +365,7 @@ class _AppHeader extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.menu_outlined, size: 24),
                 onPressed: () => Scaffold.of(context).openDrawer(),
-                color: AppColors.onSurface,
+                color: context.onSurfaceColor,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
                   minWidth: 40,
@@ -378,7 +380,7 @@ class _AppHeader extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.hover,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -388,16 +390,16 @@ class _AppHeader extends ConsumerWidget {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.15),
+                        color: context.primaryColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Center(
                         child: Text(
                           user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            color: context.primaryColor,
                           ),
                         ),
                       ),
@@ -405,10 +407,10 @@ class _AppHeader extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       user?.name ?? 'User',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 15,
-                        color: AppColors.onSurface,
+                        color: context.onSurfaceColor,
                       ),
                     ),
                   ],
@@ -419,16 +421,16 @@ class _AppHeader extends ConsumerWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: context.primaryColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Center(
                   child: Text(
                     user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                   ),
                 ),
@@ -450,16 +452,16 @@ class _MobileDrawer extends ConsumerWidget {
     final currentPath = GoRouterState.of(context).uri.path;
 
     return Drawer(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       child: Column(
         children: [
           // Header
           Container(
             padding: const EdgeInsets.fromLTRB(14, 48, 14, 12),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: AppColors.border,
+                  color: context.borderColor,
                   width: 1,
                 ),
               ),
@@ -470,7 +472,7 @@ class _MobileDrawer extends ConsumerWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Icon(
@@ -480,13 +482,13 @@ class _MobileDrawer extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Hisabi',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     letterSpacing: -0.2,
-                    color: AppColors.onSurface,
+                    color: context.onSurfaceColor,
                   ),
                 ),
               ],
@@ -535,10 +537,10 @@ class _MobileDrawer extends ConsumerWidget {
           // User & Logout
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: AppColors.border,
+                  color: context.borderColor,
                   width: 1,
                 ),
               ),
@@ -561,16 +563,16 @@ class _MobileDrawer extends ConsumerWidget {
                           width: 24,
                           height: 24,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.15),
+                            color: context.primaryColor.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Center(
                             child: Text(
                               user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.primary,
+                                color: context.primaryColor,
                               ),
                             ),
                           ),
@@ -583,18 +585,18 @@ class _MobileDrawer extends ConsumerWidget {
                             children: [
                               Text(
                                 user?.name ?? 'User',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w400,
                                   fontSize: 14,
-                                  color: AppColors.onSurface,
+                                  color: context.onSurfaceColor,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 user?.email ?? '',
-                                style: const TextStyle(
-                                  color: AppColors.onSurfaceMuted,
+                                style: TextStyle(
+                                  color: context.onSurfaceMutedColor,
                                   fontSize: 12,
                                 ),
                                 maxLines: 1,
@@ -618,20 +620,20 @@ class _MobileDrawer extends ConsumerWidget {
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.logout_outlined,
                           size: 16,
-                          color: AppColors.onSurfaceMuted,
+                          color: context.onSurfaceMutedColor,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Logout',
                           style: TextStyle(
                             fontWeight: FontWeight.w400,
                             fontSize: 13,
-                            color: AppColors.onSurfaceMuted,
+                            color: context.onSurfaceMutedColor,
                           ),
                         ),
                       ],
@@ -665,7 +667,7 @@ class _MobileDrawer extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.hover : Colors.transparent,
+          color: isActive ? Theme.of(context).hoverColor : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
@@ -673,7 +675,7 @@ class _MobileDrawer extends ConsumerWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? AppColors.onSurface : AppColors.onSurfaceMuted,
+              color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
             ),
             const SizedBox(width: 8),
             Text(
@@ -682,7 +684,7 @@ class _MobileDrawer extends ConsumerWidget {
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
                 fontSize: 14,
                 color:
-                    isActive ? AppColors.onSurface : AppColors.onSurfaceMuted,
+                    isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
                 letterSpacing: -0.1,
               ),
             ),
@@ -701,11 +703,11 @@ class _MobileBottomNav extends StatelessWidget {
     final selectedIndex = _calculateSelectedIndex(context);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
+      decoration: BoxDecoration(
+        color: context.backgroundColor,
         border: Border(
           top: BorderSide(
-            color: AppColors.border,
+            color: context.borderColor,
             width: 1,
           ),
         ),
@@ -764,7 +766,9 @@ class _MobileBottomNav extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: isActive ? AppColors.primary : AppColors.onSurfaceMuted,
+                color: isActive
+                    ? context.primaryColor
+                    : context.onSurfaceMutedColor,
               ),
               const SizedBox(height: 4),
               Text(
@@ -773,7 +777,7 @@ class _MobileBottomNav extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
                   color:
-                      isActive ? AppColors.primary : AppColors.onSurfaceMuted,
+                      isActive ? context.primaryColor : context.onSurfaceMutedColor,
                 ),
               ),
             ],

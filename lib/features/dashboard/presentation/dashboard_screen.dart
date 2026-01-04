@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:hisabi/core/constants/app_styles.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/core/widgets/fade_in_widget.dart';
 import 'package:hisabi/core/widgets/shimmer_loading.dart';
 import 'package:hisabi/features/dashboard/providers/dashboard_provider.dart';
@@ -61,51 +62,50 @@ class DashboardScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Dashboard',
           style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
             letterSpacing: -1.0,
-            color: AppColors.onSurface,
+            color: context.onSurfaceColor,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Track your expenses and manage receipts',
           style: TextStyle(
             fontSize: 16,
-            color: AppColors.onSurfaceMuted,
+            color: context.onSurfaceMutedColor,
             fontWeight: FontWeight.w400,
           ),
         ),
         const SizedBox(height: 20),
-        // Period Selector
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: AppColors.border.withOpacity(0.5),
+              color: context.borderColor.withOpacity(0.5),
               width: 1,
             ),
           ),
           child: DropdownButton<Period>(
-          value: period,
+            value: period,
             underline: const SizedBox(),
             isDense: true,
-            icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                color: AppColors.onSurfaceMuted),
+            icon: Icon(Icons.keyboard_arrow_down_rounded,
+                color: context.onSurfaceMutedColor),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
-            dropdownColor: AppColors.surface,
-          items: Period.values.map((p) {
-            return DropdownMenuItem(
-              value: p,
+            dropdownColor: context.surfaceColor,
+            items: Period.values.map((p) {
+              return DropdownMenuItem(
+                value: p,
                 child: Text(
                   p
                       .toString()
@@ -117,13 +117,13 @@ class DashboardScreen extends ConsumerWidget {
                       )
                       .trim(),
                 ),
-            );
-          }).toList(),
-          onChanged: (p) {
-            if (p != null) {
-              ref.read(periodProvider.notifier).state = p;
-            }
-          },
+              );
+            }).toList(),
+            onChanged: (p) {
+              if (p != null) {
+                ref.read(periodProvider.notifier).state = p;
+              }
+            },
           ),
         ),
       ],
@@ -133,7 +133,7 @@ class DashboardScreen extends ConsumerWidget {
   // --- Summary Cards Section ---
   Widget _buildSummaryCards(WidgetRef ref, NumberFormat formatter) {
     final statsAsync = ref.watch(dashboardStatsProvider);
-    
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: statsAsync.when(
@@ -143,7 +143,7 @@ class DashboardScreen extends ConsumerWidget {
             final isMobile = constraints.maxWidth < 600;
             final crossAxisCount = isMobile ? 2 : 4;
             final spacing = isMobile ? 16.0 : 24.0;
-            
+
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -212,7 +212,7 @@ class DashboardScreen extends ConsumerWidget {
   // --- Quick Stats Section ---
   Widget _buildQuickStats(WidgetRef ref, NumberFormat formatter) {
     final quickStatsAsync = ref.watch(quickStatsProvider);
-    
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: quickStatsAsync.when(
@@ -276,7 +276,7 @@ class DashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         receiptsAsync.when(
-          data: (receipts) => receipts.isEmpty 
+          data: (receipts) => receipts.isEmpty
               ? const Center(child: Text('No recent receipts.'))
               : _ReceiptsDataTable(receipts: receipts, formatter: formatter),
           loading: () => const _LoadingSkeletonTable(),
@@ -316,7 +316,7 @@ class _SummaryCard extends StatelessWidget {
     final trendColor = trend == 'up'
         ? Colors.green
         : (trend == 'down' ? Colors.red : Colors.white70);
-    
+
     return Card(
       margin: const EdgeInsets.all(4),
       child: Padding(
@@ -328,9 +328,9 @@ class _SummaryCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.onSurfaceMuted,
+                color: context.onSurfaceMutedColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -343,10 +343,10 @@ class _SummaryCard extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     value,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
+                      color: context.onSurfaceColor,
                       height: 1.2,
                       letterSpacing: -0.3,
                     ),
@@ -403,9 +403,9 @@ class _QuickStatBox extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.onSurfaceMuted,
+                color: context.onSurfaceMutedColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -421,7 +421,7 @@ class _QuickStatBox extends StatelessWidget {
                   color: AppColors.onSurface,
                   height: 1.1,
                   letterSpacing: -0.3,
-                    ),
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -510,7 +510,7 @@ class _LoadingSkeleton extends StatelessWidget {
       itemCount: itemCount,
       itemBuilder: (context, index) => ShimmerLoading(
         child: Card(
-          color: AppColors.surface,
+          color: context.surfaceColor,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -545,17 +545,17 @@ class _LoadingSkeletonTable extends StatelessWidget {
         children: List.generate(
             5,
             (index) => Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(width: 80, height: 10, color: Colors.white10),
-              Container(width: 120, height: 10, color: Colors.white10),
-              Container(width: 60, height: 10, color: Colors.white10),
-              Container(width: 50, height: 10, color: Colors.white10),
-            ],
-          ),
-        )),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(width: 80, height: 10, color: Colors.white10),
+                      Container(width: 120, height: 10, color: Colors.white10),
+                      Container(width: 60, height: 10, color: Colors.white10),
+                      Container(width: 50, height: 10, color: Colors.white10),
+                    ],
+                  ),
+                )),
       ),
     );
   }

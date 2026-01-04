@@ -10,8 +10,9 @@ import 'package:hisabi/features/receipts/presentation/saved_receipts_screen.dart
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/features/shell/presentation/main_shell.dart';
 import 'package:hisabi/features/settings/presentation/settings_screen.dart';
+import 'package:hisabi/features/settings/presentation/privacy_policy_screen.dart';
+import 'package:hisabi/features/settings/presentation/terms_of_service_screen.dart';
 
-// Helper to bridge Riverpod StateNotifier to GoRouter's refreshListenable
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -60,11 +61,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
           ),
+          GoRoute(
+            path: '/privacy-policy',
+            builder: (context, state) => const PrivacyPolicyScreen(),
+          ),
+          GoRoute(
+            path: '/terms-of-service',
+            builder: (context, state) => const TermsOfServiceScreen(),
+          ),
         ],
       ),
     ],
     redirect: (context, state) {
-      // Handle home widget deep links
       if (state.uri.scheme == 'homewidget') {
         if (state.uri.host == 'quick_voice_add') {
           return '/voice-add';

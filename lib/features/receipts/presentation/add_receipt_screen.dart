@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/widgets/fade_in_widget.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
@@ -32,17 +32,12 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
     super.dispose();
   }
 
-  // ---------------------------------------------------------------------------
-  // Save Receipt Flow Handler
-  // ---------------------------------------------------------------------------
   void _startSaveReceiptFlow(ReceiptModel receipt) {
     showDialog(
       context: context,
       builder: (context) => _SaveReceiptModal(receipt: receipt),
     ).then((saved) {
-      // Optionally refresh Dashboard/Saved Receipts lists here
       if (saved == true) {
-        // Show success toast
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -69,7 +64,7 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
                 ),
               ],
             ),
-            backgroundColor: AppColors.surface,
+            backgroundColor: context.surfaceColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -131,7 +126,7 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
                         'New Receipt Entry',
                         style: Theme.of(context).textTheme.displayMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.onSurface,
+                              color: context.onSurfaceColor,
                             ),
                       ),
                     ),
@@ -139,20 +134,19 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
                 ),
               ),
               const SizedBox(height: 8),
-              const FadeInWidget(
-                delay: Duration(milliseconds: 100),
+              FadeInWidget(
+                delay: const Duration(milliseconds: 100),
                 child: Text(
                   'Upload a receipt image or enter details manually',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.onSurfaceMuted,
+                    color: context.onSurfaceMutedColor,
                     fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
               const SizedBox(height: 32),
 
-          // Show Results Section if analysis is complete
           if (isAnalysisComplete)
             FadeInWidget(
               child: _ResultsSection(
@@ -166,7 +160,6 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
             ],
           ),
         ),
-        // Quick Add Floating Button
         Positioned(
           bottom: isMobile ? 80 : 24,
           right: isMobile ? 20 : 32,
@@ -179,16 +172,15 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
   Widget _buildEntryTabs(BuildContext context, bool isAnalyzing) {
     return FadeInWidget(
       delay: const Duration(milliseconds: 150),
-      child: Column(
-        children: [
-          // Modern Tab Bar
-          Container(
+            child: Column(
+              children: [
+                Container(
             constraints: const BoxConstraints(minHeight: 64),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.border,
+                color: context.borderColor,
                 width: 1,
               ),
             ),
@@ -197,12 +189,12 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
               controller: _tabController,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(6),
-                color: AppColors.primary,
+                color: context.primaryColor,
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               labelColor: Colors.white,
-              unselectedLabelColor: AppColors.onSurfaceMuted,
+              unselectedLabelColor: context.onSurfaceMutedColor,
               labelStyle: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -260,7 +252,6 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
             ),
           ),
           const SizedBox(height: 32),
-          // Tab Content
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.65,
             child: TabBarView(
@@ -277,25 +268,16 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
   }
 }
 
-// -----------------------------------------------------------------------------
-// Tab 1: Upload Receipt
-// -----------------------------------------------------------------------------
 class _UploadReceiptTab extends ConsumerWidget {
   final bool isAnalyzing;
   const _UploadReceiptTab({required this.isAnalyzing});
 
-  void _handleImageUpload(WidgetRef ref) async {
-    // In a real app, use image_picker or file_picker package
-    // For MVP, simulate a file selection
-
-    // final imageFile = await pickImage();
-    // if (imageFile != null) {
-    //   ref.read(receiptEntryProvider.notifier).analyzeImage(imageFile);
-    // }
-
-    // Simulation:
-    // Passing a dummy File object for simulation purposes
-    ref.read(receiptEntryProvider.notifier).analyzeImage(File('dummy.jpg'));
+  void _handleImageUpload(BuildContext context, WidgetRef ref) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Receipt image upload is not yet implemented. Please use manual entry.'),
+      ),
+    );
   }
 
   @override
@@ -305,7 +287,7 @@ class _UploadReceiptTab extends ConsumerWidget {
       children: [
         // Enhanced Drag-and-Drop Area
         _UploadArea(
-          onTap: () => _handleImageUpload(ref),
+          onTap: () => _handleImageUpload(context, ref),
           isAnalyzing: isAnalyzing,
         ),
         const SizedBox(height: 40),
@@ -313,7 +295,7 @@ class _UploadReceiptTab extends ConsumerWidget {
           _AnalysisProgress()
         else
           _AnalyzeButton(
-            onPressed: () => _handleImageUpload(ref),
+            onPressed: () => _handleImageUpload(context, ref),
           ),
       ],
     );
@@ -366,10 +348,10 @@ class _UploadAreaState extends State<_UploadArea>
           height: 320,
           decoration: BoxDecoration(
             color: _isHovered
-                ? AppColors.surface
-                : AppColors.surface.withOpacity(0.5),
+                ? context.surfaceColor
+                : context.surfaceColor.withOpacity(0.5),
             border: Border.all(
-              color: _isHovered ? AppColors.primary : AppColors.border,
+              color: _isHovered ? context.primaryColor : context.borderColor,
               width: _isHovered ? 2 : 1.5,
             ),
             borderRadius: BorderRadius.circular(16),
@@ -385,7 +367,7 @@ class _UploadAreaState extends State<_UploadArea>
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(
+                          color: context.primaryColor.withOpacity(
                             0.3 + (_pulseController.value * 0.2),
                           ),
                           width: 2,
@@ -403,30 +385,30 @@ class _UploadAreaState extends State<_UploadArea>
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.15),
+                        color: context.primaryColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.receipt_long_outlined,
                         size: 48,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Drop your receipt here',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
+                        color: context.onSurfaceColor,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'or tap to browse files',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.onSurfaceMuted,
+                        color: context.onSurfaceMutedColor,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -436,23 +418,23 @@ class _UploadAreaState extends State<_UploadArea>
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: context.primaryColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.image_outlined,
                             size: 16,
-                            color: AppColors.primary,
+                            color: context.primaryColor,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
                             'Supports JPG, PNG, PDF',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.primary,
+                              color: context.primaryColor,
                             ),
                           ),
                         ],
@@ -478,38 +460,38 @@ class _AnalysisProgress extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.border,
+              color: context.borderColor,
               width: 1,
             ),
           ),
-          child: const Column(
+          child: Column(
             children: [
               SizedBox(
                 width: 48,
                 height: 48,
                 child: CircularProgressIndicator(
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(context.primaryColor),
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Analyzing receipt...',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
+                  color: context.onSurfaceColor,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'This may take a moment',
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.onSurfaceMuted,
+                  color: context.onSurfaceMutedColor,
                 ),
               ),
             ],
@@ -541,7 +523,7 @@ class _AnalyzeButton extends StatelessWidget {
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: context.primaryColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
@@ -633,7 +615,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
             ),
             onSaved: (v) => _storeName = v ?? '',
             validator: (v) => v!.isEmpty ? 'Store name is required' : null,
-            style: const TextStyle(color: AppColors.onSurface),
+            style: TextStyle(color: context.onSurfaceColor),
           ),
           const SizedBox(height: 20),
           // Date Picker
@@ -647,11 +629,11 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 builder: (context, child) {
                   return Theme(
                     data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.dark(
-                        primary: AppColors.primary,
+                      colorScheme: ColorScheme.dark(
+                        primary: context.primaryColor,
                         onPrimary: Colors.white,
-                        surface: AppColors.surface,
-                        onSurface: AppColors.onSurface,
+                        surface: context.surfaceColor,
+                        onSurface: context.onSurfaceColor,
                       ),
                     ),
                     child: child!,
@@ -664,18 +646,18 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.border,
+                  color: context.borderColor,
                   width: 1,
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_outlined,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -683,28 +665,28 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Date',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.onSurfaceMuted,
+                            color: context.onSurfaceMutedColor,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat.yMMMMd().format(_selectedDate),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: AppColors.onSurface,
+                            color: context.onSurfaceColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
-                    color: AppColors.onSurfaceMuted,
+                    color: context.onSurfaceMutedColor,
                   ),
                 ],
               ),
@@ -719,7 +701,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               Text(
                 'Items',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.onSurface,
+                      color: context.onSurfaceColor,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -728,7 +710,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 icon: const Icon(Icons.add_circle_outline, size: 18),
                 label: const Text('Add Item'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
+                  foregroundColor: context.primaryColor,
                 ),
               ),
             ],
@@ -745,13 +727,13 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                         Icon(
                           Icons.receipt_long_outlined,
                           size: 64,
-                          color: AppColors.onSurfaceMuted.withOpacity(0.5),
+                          color: context.onSurfaceMutedColor.withOpacity(0.5),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'No items added yet',
                           style: TextStyle(
-                            color: AppColors.onSurfaceMuted,
+                            color: context.onSurfaceMutedColor,
                             fontSize: 16,
                           ),
                         ),
@@ -761,7 +743,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add First Item'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: context.primaryColor,
                             foregroundColor: Colors.white,
                           ),
                         ),
@@ -791,30 +773,30 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.border,
+                  color: context.borderColor,
                   width: 1,
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
+                      color: context.onSurfaceColor,
                     ),
                   ),
                   Text(
                     NumberFormat.currency(symbol: '\$').format(total),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                   ),
                 ],
@@ -826,7 +808,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               child: ElevatedButton(
                 onPressed: _calculateAndSave,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -870,10 +852,10 @@ class _ManualItemRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: AppColors.border,
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -895,7 +877,7 @@ class _ManualItemRow extends StatelessWidget {
               total: item.total,
             )),
             validator: (v) => v!.isEmpty ? 'Required' : null,
-            style: const TextStyle(color: AppColors.onSurface),
+            style: TextStyle(color: context.onSurfaceColor),
           ),
           const SizedBox(height: 16),
           // Quantity and Price Row
@@ -917,7 +899,7 @@ class _ManualItemRow extends StatelessWidget {
                     price: item.price,
                     total: item.total,
                   )),
-                  style: const TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurfaceColor),
                 ),
               ),
               const SizedBox(width: 12),
@@ -939,7 +921,7 @@ class _ManualItemRow extends StatelessWidget {
                   )),
                   validator: (v) =>
                       (double.tryParse(v ?? '') ?? -1) < 0 ? 'Invalid' : null,
-                  style: const TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurfaceColor),
                 ),
               ),
             ],
@@ -955,15 +937,15 @@ class _ManualItemRow extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: context.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   'Total: ${NumberFormat.currency(symbol: '\$').format(total)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                   ),
                 ),
               ),
@@ -1031,7 +1013,7 @@ class _ResultsSection extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1040,15 +1022,15 @@ class _ResultsSection extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
+                        color: context.onSurfaceColor,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Review the details below',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.onSurfaceMuted,
+                        color: context.onSurfaceMutedColor,
                       ),
                     ),
                   ],
@@ -1056,9 +1038,9 @@ class _ResultsSection extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: onClear,
-                icon: const Icon(
+                icon: Icon(
                   Icons.close,
-                  color: AppColors.onSurfaceMuted,
+                  color: context.onSurfaceMutedColor,
                 ),
                 tooltip: 'Clear and start over',
               ),
@@ -1074,30 +1056,30 @@ class _ResultsSection extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.border,
+                    color: context.borderColor,
                     width: 1,
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Store',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.onSurfaceMuted,
+                        color: context.onSurfaceMutedColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       receipt.store,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
+                        color: context.onSurfaceColor,
                       ),
                     ),
                   ],
@@ -1109,30 +1091,30 @@ class _ResultsSection extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.border,
+                    color: context.borderColor,
                     width: 1,
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Date',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.onSurfaceMuted,
+                        color: context.onSurfaceMutedColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       DateFormat.yMMMMd().format(receipt.date),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
+                        color: context.onSurfaceColor,
                       ),
                     ),
                   ],
@@ -1146,10 +1128,10 @@ class _ResultsSection extends ConsumerWidget {
         // Items List
         Text(
           'Items (${receipt.items.length})',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.onSurface,
+            color: context.onSurfaceColor,
           ),
         ),
         const SizedBox(height: 16),
@@ -1160,10 +1142,10 @@ class _ResultsSection extends ConsumerWidget {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.border,
+                color: context.borderColor,
                 width: 1,
               ),
             ),
@@ -1173,16 +1155,16 @@ class _ResultsSection extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: context.primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                       ),
                     ),
                   ),
@@ -1194,18 +1176,18 @@ class _ResultsSection extends ConsumerWidget {
                     children: [
                       Text(
                         item.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.onSurface,
+                          color: context.onSurfaceColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Qty: ${item.quantity.toStringAsFixed(1)} × ${formatter.format(item.price)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.onSurfaceMuted,
+                          color: context.onSurfaceMutedColor,
                         ),
                       ),
                     ],
@@ -1213,10 +1195,10 @@ class _ResultsSection extends ConsumerWidget {
                 ),
                 Text(
                   formatter.format(item.total),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                   ),
                 ),
               ],
@@ -1229,30 +1211,30 @@ class _ResultsSection extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: context.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
+              color: context.primaryColor.withOpacity(0.3),
               width: 1.5,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Grand Total',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
+                  color: context.onSurfaceColor,
                 ),
               ),
               Text(
                 formatter.format(receipt.total),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                 ),
               ),
             ],
@@ -1274,7 +1256,7 @@ class _ResultsSection extends ConsumerWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: context.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -1340,11 +1322,11 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.surfaceColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(
-          color: AppColors.border,
+        side: BorderSide(
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -1360,39 +1342,39 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: context.primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.save_outlined,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                     size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Save Receipt',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
+                      color: context.onSurfaceColor,
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
                   onPressed: () => Navigator.of(context).pop(false),
-                  color: AppColors.onSurfaceMuted,
+                  color: context.onSurfaceMutedColor,
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Give your receipt a name',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.onSurfaceMuted,
+                color: context.onSurfaceMutedColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -1405,33 +1387,33 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
               ),
               validator: (v) =>
                   v!.trim().isEmpty ? 'Name cannot be empty' : null,
-              style: const TextStyle(color: AppColors.onSurface),
+              style: TextStyle(color: context.onSurfaceColor),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: context.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.onSurfaceMuted,
+                      color: context.onSurfaceMutedColor,
                     ),
                   ),
                   Text(
                     NumberFormat.currency(symbol: currency.name).format(
                       widget.receipt.total,
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                   ),
                 ],
@@ -1445,7 +1427,7 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: context.borderColor),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -1456,7 +1438,7 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.primaryColor,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -1501,13 +1483,13 @@ class _QuickAddButton extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.primary,
-            AppColors.primaryLight,
+            context.primaryColor,
+            Color.lerp(context.primaryColor, Colors.white, 0.2)!,
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
+            color: context.primaryColor.withOpacity(0.4),
             blurRadius: 20,
             spreadRadius: 0,
           ),

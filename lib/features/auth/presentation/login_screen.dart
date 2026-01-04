@@ -57,7 +57,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Animated background
           _AnimatedBackground(controller: _backgroundController),
           
           SafeArea(
@@ -76,11 +75,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Logo Section with animation
                         _LogoSection(),
                         const SizedBox(height: 48),
 
-                        // Welcome Text
                         const Text(
                           'Welcome to Hisabi',
                           style: TextStyle(
@@ -104,7 +101,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         ),
                         const SizedBox(height: 48),
 
-                        // Login Button
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -159,11 +155,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         ),
                         const SizedBox(height: 24),
 
-                        // Features List
                         _FeaturesList(),
                         const SizedBox(height: 32),
 
-                        // Info Text
                         const Text(
                           'By continuing, you agree to our Terms of Service\nand Privacy Policy',
                           textAlign: TextAlign.center,
@@ -264,7 +258,6 @@ class _FeaturesList extends StatelessWidget {
   }
 }
 
-// Animated background widget
 class _AnimatedBackground extends StatelessWidget {
   final AnimationController controller;
 
@@ -284,7 +277,6 @@ class _AnimatedBackground extends StatelessWidget {
   }
 }
 
-// Background painter for animations
 class _BackgroundPainter extends CustomPainter {
   final double animationValue;
 
