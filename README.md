@@ -1,16 +1,10 @@
-# hisabi
+# Hisabi
 
-A new Flutter project.
+This is your own personal budgeting companion, built for you, by us. Plan your expenses, 
 
-## Getting Started
+## 🛠️ Features
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- [x] 🗣️ Quick add your expenses by speaking it out
+- [x] 📊 Your expenses visualized for you 
+- [x] 📂 Upload reciepts, and let OCR do your work for you
+- [ ] 🤖 Hisabi's AI companion (coming soon)
