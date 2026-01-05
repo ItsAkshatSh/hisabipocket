@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
-import 'package:hisabi/core/widgets/fade_in_widget.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
+import 'package:hisabi/core/widgets/fade_in_widget.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
@@ -49,9 +49,9 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
                     color: AppColors.success,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.check,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onPrimary,
                     size: 16,
                   ),
                 ),
@@ -85,12 +85,12 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.white),
+                Icon(Icons.error_outline, color: Theme.of(context).colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Analysis Failed: ${next.analysisError}')),
               ],
             ),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -193,7 +193,7 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
-              labelColor: Colors.white,
+              labelColor: Theme.of(context).colorScheme.onPrimary,
               unselectedLabelColor: context.onSurfaceMutedColor,
               labelStyle: const TextStyle(
                 fontSize: 12,
@@ -477,21 +477,21 @@ class _AnalysisProgress extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(context.primaryColor),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'Analyzing receipt...',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: context.onSurfaceColor,
+                  color: AppColors.onSurface,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'This may take a moment',
                 style: TextStyle(
                   fontSize: 14,
-                  color: context.onSurfaceMutedColor,
+                  color: AppColors.onSurfaceMuted,
                 ),
               ),
             ],
@@ -524,7 +524,7 @@ class _AnalyzeButton extends StatelessWidget {
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: context.primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -615,7 +615,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
             ),
             onSaved: (v) => _storeName = v ?? '',
             validator: (v) => v!.isEmpty ? 'Store name is required' : null,
-            style: TextStyle(color: context.onSurfaceColor),
+            style: const TextStyle(color: AppColors.onSurface),
           ),
           const SizedBox(height: 20),
           // Date Picker
@@ -629,11 +629,11 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 builder: (context, child) {
                   return Theme(
                     data: Theme.of(context).copyWith(
-                      colorScheme: ColorScheme.dark(
-                        primary: context.primaryColor,
+                      colorScheme: const ColorScheme.dark(
+                        primary: AppColors.primary,
                         onPrimary: Colors.white,
-                        surface: context.surfaceColor,
-                        onSurface: context.onSurfaceColor,
+                        surface: AppColors.surface,
+                        onSurface: AppColors.onSurface,
                       ),
                     ),
                     child: child!,
@@ -655,9 +655,9 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.calendar_today_outlined,
-                    color: context.primaryColor,
+                    color: AppColors.primary,
                     size: 20,
                   ),
                   const SizedBox(width: 12),
@@ -665,28 +665,28 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Date',
                           style: TextStyle(
                             fontSize: 12,
-                            color: context.onSurfaceMutedColor,
+                            color: AppColors.onSurfaceMuted,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat.yMMMMd().format(_selectedDate),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 16,
-                            color: context.onSurfaceColor,
+                            color: AppColors.onSurface,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(
+                  const Icon(
                     Icons.chevron_right,
-                    color: context.onSurfaceMutedColor,
+                    color: AppColors.onSurfaceMuted,
                   ),
                 ],
               ),
@@ -701,7 +701,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               Text(
                 'Items',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: context.onSurfaceColor,
+                      color: AppColors.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -710,7 +710,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 icon: const Icon(Icons.add_circle_outline, size: 18),
                 label: const Text('Add Item'),
                 style: TextButton.styleFrom(
-                  foregroundColor: context.primaryColor,
+                  foregroundColor: AppColors.primary,
                 ),
               ),
             ],
@@ -727,13 +727,13 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                         Icon(
                           Icons.receipt_long_outlined,
                           size: 64,
-                          color: context.onSurfaceMutedColor.withOpacity(0.5),
+                          color: AppColors.onSurfaceMuted.withOpacity(0.5),
                         ),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'No items added yet',
                           style: TextStyle(
-                            color: context.onSurfaceMutedColor,
+                            color: AppColors.onSurfaceMuted,
                             fontSize: 16,
                           ),
                         ),
@@ -743,7 +743,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add First Item'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: context.primaryColor,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                           ),
                         ),
@@ -783,20 +783,20 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: context.onSurfaceColor,
+                      color: AppColors.onSurface,
                     ),
                   ),
                   Text(
                     NumberFormat.currency(symbol: '\$').format(total),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: context.primaryColor,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -808,7 +808,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               child: ElevatedButton(
                 onPressed: _calculateAndSave,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: context.primaryColor,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -852,10 +852,10 @@ class _ManualItemRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: context.surfaceColor,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: context.borderColor,
+          color: AppColors.border,
           width: 1,
         ),
       ),
@@ -877,7 +877,7 @@ class _ManualItemRow extends StatelessWidget {
               total: item.total,
             )),
             validator: (v) => v!.isEmpty ? 'Required' : null,
-            style: TextStyle(color: context.onSurfaceColor),
+            style: const TextStyle(color: AppColors.onSurface),
           ),
           const SizedBox(height: 16),
           // Quantity and Price Row
@@ -899,7 +899,7 @@ class _ManualItemRow extends StatelessWidget {
                     price: item.price,
                     total: item.total,
                   )),
-                  style: TextStyle(color: context.onSurfaceColor),
+                  style: const TextStyle(color: AppColors.onSurface),
                 ),
               ),
               const SizedBox(width: 12),
@@ -921,7 +921,7 @@ class _ManualItemRow extends StatelessWidget {
                   )),
                   validator: (v) =>
                       (double.tryParse(v ?? '') ?? -1) < 0 ? 'Invalid' : null,
-                  style: TextStyle(color: context.onSurfaceColor),
+                  style: const TextStyle(color: AppColors.onSurface),
                 ),
               ),
             ],
@@ -937,15 +937,15 @@ class _ManualItemRow extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: context.primaryColor.withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   'Total: ${NumberFormat.currency(symbol: '\$').format(total)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: context.primaryColor,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
@@ -1013,7 +1013,7 @@ class _ResultsSection extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1022,15 +1022,15 @@ class _ResultsSection extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: context.onSurfaceColor,
+                        color: AppColors.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Review the details below',
                       style: TextStyle(
                         fontSize: 14,
-                        color: context.onSurfaceMutedColor,
+                        color: AppColors.onSurfaceMuted,
                       ),
                     ),
                   ],
@@ -1038,9 +1038,9 @@ class _ResultsSection extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: onClear,
-                icon: Icon(
+                icon: const Icon(
                   Icons.close,
-                  color: context.onSurfaceMutedColor,
+                  color: AppColors.onSurfaceMuted,
                 ),
                 tooltip: 'Clear and start over',
               ),
@@ -1056,30 +1056,30 @@ class _ResultsSection extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: context.surfaceColor,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: context.borderColor,
+                    color: AppColors.border,
                     width: 1,
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Store',
                       style: TextStyle(
                         fontSize: 12,
-                        color: context.onSurfaceMutedColor,
+                        color: AppColors.onSurfaceMuted,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       receipt.store,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: context.onSurfaceColor,
+                        color: AppColors.onSurface,
                       ),
                     ),
                   ],
@@ -1091,30 +1091,30 @@ class _ResultsSection extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: context.surfaceColor,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: context.borderColor,
+                    color: AppColors.border,
                     width: 1,
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Date',
                       style: TextStyle(
                         fontSize: 12,
-                        color: context.onSurfaceMutedColor,
+                        color: AppColors.onSurfaceMuted,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       DateFormat.yMMMMd().format(receipt.date),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: context.onSurfaceColor,
+                        color: AppColors.onSurface,
                       ),
                     ),
                   ],
@@ -1128,10 +1128,10 @@ class _ResultsSection extends ConsumerWidget {
         // Items List
         Text(
           'Items (${receipt.items.length})',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: context.onSurfaceColor,
+            color: AppColors.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -1142,10 +1142,10 @@ class _ResultsSection extends ConsumerWidget {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: context.surfaceColor,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: context.borderColor,
+                color: AppColors.border,
                 width: 1,
               ),
             ),
@@ -1155,16 +1155,16 @@ class _ResultsSection extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: context.primaryColor.withOpacity(0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: context.primaryColor,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -1176,18 +1176,18 @@ class _ResultsSection extends ConsumerWidget {
                     children: [
                       Text(
                         item.name,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: context.onSurfaceColor,
+                          color: AppColors.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Qty: ${item.quantity.toStringAsFixed(1)} × ${formatter.format(item.price)}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: context.onSurfaceMutedColor,
+                          color: AppColors.onSurfaceMuted,
                         ),
                       ),
                     ],
@@ -1195,10 +1195,10 @@ class _ResultsSection extends ConsumerWidget {
                 ),
                 Text(
                   formatter.format(item.total),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: context.primaryColor,
+                    color: AppColors.primary,
                   ),
                 ),
               ],
@@ -1211,30 +1211,30 @@ class _ResultsSection extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: context.primaryColor.withOpacity(0.1),
+            color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: context.primaryColor.withOpacity(0.3),
+              color: AppColors.primary.withOpacity(0.3),
               width: 1.5,
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Grand Total',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: context.onSurfaceColor,
+                  color: AppColors.onSurface,
                 ),
               ),
               Text(
                 formatter.format(receipt.total),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: context.primaryColor,
+                  color: AppColors.primary,
                 ),
               ),
             ],
@@ -1256,7 +1256,7 @@ class _ResultsSection extends ConsumerWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: context.primaryColor,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -1322,11 +1322,11 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
     return Dialog(
-      backgroundColor: context.surfaceColor,
+      backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: context.borderColor,
+        side: const BorderSide(
+          color: AppColors.border,
           width: 1,
         ),
       ),
@@ -1342,39 +1342,39 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: context.primaryColor.withOpacity(0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.save_outlined,
-                    color: context.primaryColor,
+                    color: AppColors.primary,
                     size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'Save Receipt',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: context.onSurfaceColor,
+                      color: AppColors.onSurface,
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
                   onPressed: () => Navigator.of(context).pop(false),
-                  color: context.onSurfaceMutedColor,
+                  color: AppColors.onSurfaceMuted,
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            Text(
+            const Text(
               'Give your receipt a name',
               style: TextStyle(
                 fontSize: 14,
-                color: context.onSurfaceMutedColor,
+                color: AppColors.onSurfaceMuted,
               ),
             ),
             const SizedBox(height: 12),
@@ -1387,33 +1387,33 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
               ),
               validator: (v) =>
                   v!.trim().isEmpty ? 'Name cannot be empty' : null,
-              style: TextStyle(color: context.onSurfaceColor),
+              style: const TextStyle(color: AppColors.onSurface),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.primaryColor.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 14,
-                      color: context.onSurfaceMutedColor,
+                      color: AppColors.onSurfaceMuted,
                     ),
                   ),
                   Text(
                     NumberFormat.currency(symbol: currency.name).format(
                       widget.receipt.total,
                     ),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: context.primaryColor,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -1427,7 +1427,7 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: context.borderColor),
+                      side: const BorderSide(color: AppColors.border),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -1438,7 +1438,7 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: context.primaryColor,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -1484,7 +1484,7 @@ class _QuickAddButton extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             context.primaryColor,
-            Color.lerp(context.primaryColor, Colors.white, 0.2)!,
+            context.primaryColor.withOpacity(0.8),
           ],
         ),
         boxShadow: [
@@ -1500,9 +1500,9 @@ class _QuickAddButton extends StatelessWidget {
         child: InkWell(
           onTap: () => context.push('/voice-add'),
           borderRadius: BorderRadius.circular(32),
-          child: const Icon(
+          child: Icon(
             Icons.mic,
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onPrimary,
             size: 28,
           ),
         ),

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 
@@ -54,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       body: Stack(
         children: [
           _AnimatedBackground(controller: _backgroundController),
@@ -78,24 +80,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         _LogoSection(),
                         const SizedBox(height: 48),
 
-                        const Text(
+                        Text(
                           'Welcome to Hisabi',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -1.0,
-                            color: AppColors.onSurface,
+                            color: context.onSurfaceColor,
                             height: 1.2,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'AI-Powered Receipt Analysis\nTrack your expenses effortlessly',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w400,
-                            color: AppColors.onSurfaceMuted,
+                            color: context.onSurfaceMutedColor,
                             height: 1.5,
                           ),
                         ),
@@ -106,8 +108,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
+                              backgroundColor: context.primaryColor,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
@@ -115,13 +117,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                             ),
                             child: _isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Theme.of(context).colorScheme.onPrimary,
+                                      ),
                                     ),
                                   )
                                 : Row(
@@ -131,12 +134,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         width: 20,
                                         height: 20,
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.onPrimary,
                                           borderRadius: BorderRadius.circular(4),
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.g_mobiledata,
-                                          color: AppColors.primary,
+                                          color: context.primaryColor,
                                           size: 16,
                                         ),
                                       ),
@@ -158,12 +161,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         _FeaturesList(),
                         const SizedBox(height: 32),
 
-                        const Text(
+                        Text(
                           'By continuing, you agree to our Terms of Service\nand Privacy Policy',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.onSurfaceSubtle,
+                            color: context.onSurfaceMutedColor,
                             height: 1.4,
                           ),
                         ),
@@ -183,32 +186,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 class _LogoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primaryLight,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.receipt_long_outlined,
-        color: Colors.white,
-        size: 40,
-      ),
+    return SvgPicture.asset(
+      'lib/assets/logo.svg',
+      width: 180,
+      height: 180,
     );
   }
 }
@@ -244,10 +225,10 @@ class _FeaturesList extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 feature['text'] as String,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.onSurfaceMuted,
+                  color: context.onSurfaceMutedColor,
                 ),
               ),
             ],

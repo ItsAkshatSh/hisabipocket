@@ -66,4 +66,3 @@
 - [ ] Integration with accounting software
 - [ ] Receipt validation and fraud detection
 
-

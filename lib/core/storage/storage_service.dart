@@ -7,6 +7,9 @@ class StorageService {
   static const String _settingsBoxName = 'settings';
   static const String _authBoxName = 'auth';
   
+  // Store current user email to track data ownership
+  static String? _currentUserEmail;
+  
   static Future<void> init() async {
     try {
       await Hive.initFlutter();
@@ -19,14 +22,38 @@ class StorageService {
       rethrow;
     }
   }
+  
+  // Initialize user-specific storage and clear old data if user changed
+  static Future<void> initializeUserStorage(String userEmail) async {
+    final box = await Hive.openBox(_receiptsBoxName);
+    final storedUserEmail = box.get('_user_email') as String?;
+    
+    // If different user, clear old data
+    if (storedUserEmail != null && storedUserEmail != userEmail) {
+      print('Different user detected. Clearing old data for: $storedUserEmail');
+      await box.clear();
+      final settingsBox = await Hive.openBox(_settingsBoxName);
+      await settingsBox.clear();
+    }
+    
+    // Store current user email
+    await box.put('_user_email', userEmail);
+    await box.flush();
+    _currentUserEmail = userEmail;
+    print('User storage initialized for: $userEmail');
+  }
 
   static Future<void> saveReceipts(List<ReceiptModel> receipts) async {
     try {
+      if (_currentUserEmail == null) {
+        throw Exception('User storage not initialized. Call initializeUserStorage first.');
+      }
       final box = await Hive.openBox(_receiptsBoxName);
       final receiptsJson = receipts.map((r) => _receiptToJson(r)).toList();
       await box.put('receipts_list', receiptsJson);
+      await box.put('_user_email', _currentUserEmail);
       await box.flush();
-      print('Saved ${receipts.length} receipts to storage');
+      print('Saved ${receipts.length} receipts to storage for user: $_currentUserEmail');
     } catch (e) {
       print('Error saving receipts: $e');
       rethrow;
@@ -35,7 +62,19 @@ class StorageService {
 
   static Future<List<ReceiptModel>> loadReceipts() async {
     try {
+      if (_currentUserEmail == null) {
+        print('User storage not initialized. Returning empty receipts.');
+        return [];
+      }
       final box = await Hive.openBox(_receiptsBoxName);
+      final storedUserEmail = box.get('_user_email') as String?;
+      
+      // Verify data belongs to current user
+      if (storedUserEmail != _currentUserEmail) {
+        print('Receipts belong to different user. Returning empty list.');
+        return [];
+      }
+      
       final receiptsData = box.get('receipts_list');
       
       if (receiptsData == null) {
@@ -50,7 +89,7 @@ class StorageService {
       }
       
       final receiptsList = receiptsData;
-      print('Loading ${receiptsList.length} receipts from storage');
+      print('Loading ${receiptsList.length} receipts from storage for user: $_currentUserEmail');
       
       final loadedReceipts = receiptsList
           .map((item) {
@@ -102,11 +141,16 @@ class StorageService {
 
   static Future<void> saveSettings(SettingsState settings) async {
     try {
+      if (_currentUserEmail == null) {
+        throw Exception('User storage not initialized. Call initializeUserStorage first.');
+      }
       final box = await Hive.openBox(_settingsBoxName);
       await box.put('currency', settings.currency.name);
       await box.put('namingFormat', settings.namingFormat.name);
       await box.put('themeMode', settings.themeMode.name);
+      await box.put('_user_email', _currentUserEmail);
       await box.flush();
+      print('Settings saved for user: $_currentUserEmail');
     } catch (e) {
       print('Error saving settings: $e');
       rethrow;
@@ -115,7 +159,19 @@ class StorageService {
 
   static Future<SettingsState> loadSettings() async {
     try {
+      if (_currentUserEmail == null) {
+        print('User storage not initialized. Returning default settings.');
+        return SettingsState();
+      }
       final box = await Hive.openBox(_settingsBoxName);
+      final storedUserEmail = box.get('_user_email') as String?;
+      
+      // Verify data belongs to current user
+      if (storedUserEmail != _currentUserEmail) {
+        print('Settings belong to different user. Returning default settings.');
+        return SettingsState();
+      }
+      
       final currencyName = box.get('currency') as String?;
       final namingFormatName = box.get('namingFormat') as String?;
       final themeModeName = box.get('themeMode') as String?;
@@ -141,6 +197,7 @@ class StorageService {
             )
           : AppThemeMode.dark;
       
+      print('Settings loaded for user: $_currentUserEmail');
       return SettingsState(
         currency: currency,
         namingFormat: namingFormat,
@@ -187,6 +244,8 @@ class StorageService {
     await box.put('name', name);
     await box.put('pictureUrl', pictureUrl ?? '');
     await box.put('isAuthenticated', true);
+    // Initialize user storage when auth state is saved
+    await initializeUserStorage(email);
   }
 
   static Future<Map<String, dynamic>?> loadAuthState() async {
@@ -211,12 +270,16 @@ class StorageService {
   static Future<void> clearAuthState() async {
     final box = await Hive.openBox(_authBoxName);
     await box.clear();
+    _currentUserEmail = null;
+    print('Auth state cleared');
   }
 
   static Future<void> clearAll() async {
     await Hive.deleteBoxFromDisk(_receiptsBoxName);
     await Hive.deleteBoxFromDisk(_settingsBoxName);
     await Hive.deleteBoxFromDisk(_authBoxName);
+    _currentUserEmail = null;
+    print('All data cleared');
   }
 }
 

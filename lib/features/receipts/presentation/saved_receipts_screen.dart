@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 
 class SavedReceiptsScreen extends ConsumerWidget {
@@ -24,50 +26,51 @@ class SavedReceiptsScreen extends ConsumerWidget {
         data: (receipts) => receipts.isEmpty
             ? const _EmptyState()
             : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Saved receipts',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onSurface,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Saved receipts',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: receipts.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final r = receipts[receipts.length - 1 - index];
-                    return Card(
-                      child: ListTile(
-                        title: Text(
-                          r.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.onSurface,
+                  const SizedBox(height: 16),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: receipts.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final r = receipts[receipts.length - 1 - index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(
+                            r.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${DateFormat.yMMMd().format(r.date)} • ${r.store}',
+                            style: const TextStyle(
+                                color: AppColors.onSurfaceMuted),
+                          ),
+                          trailing: Text(
+                            formatter.format(r.total),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onSurface,
+                            ),
                           ),
                         ),
-                        subtitle: Text(
-                          '${DateFormat.yMMMd().format(r.date)} • ${r.store}',
-                          style: const TextStyle(color: AppColors.onSurfaceMuted),
-                        ),
-                        trailing: Text(
-                          formatter.format(r.total),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.onSurface,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
+                      );
+                    },
+                  ),
+                ],
+              ),
         loading: () => const Center(
           child: Padding(
             padding: EdgeInsets.all(32.0),
@@ -102,14 +105,24 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: Colors.white38),
-          SizedBox(height: 16),
-          Text('No receipts saved yet.',
-              style: TextStyle(color: Colors.white54)),
+          SvgPicture.asset(
+            'lib/assets/logo.svg',
+            width: 80,
+            height: 80,
+            colorFilter: ColorFilter.mode(
+              context.onSurfaceMutedColor.withOpacity(0.4),
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No receipts saved yet.',
+            style: TextStyle(color: context.onSurfaceMutedColor),
+          ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
@@ -19,9 +20,7 @@ class MainShell extends ConsumerWidget {
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _BackgroundPatternPainter(
-                color: Theme.of(context).dividerColor.withOpacity(0.05),
-              ),
+              painter: _BackgroundPatternPainter(),
             ),
           ),
           Row(
@@ -51,13 +50,10 @@ class MainShell extends ConsumerWidget {
 }
 
 class _BackgroundPatternPainter extends CustomPainter {
-  final Color color;
-  _BackgroundPatternPainter({required this.color});
-
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color
+      ..color = Colors.grey.withOpacity(0.03)
       ..strokeWidth = 1;
 
     // Draw subtle grid pattern
@@ -105,35 +101,13 @@ class _DesktopSidebar extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: context.primaryColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long_outlined,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Hisabi',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
-                    color: context.onSurfaceColor,
-                  ),
-                ),
-              ],
+            child: SvgPicture.asset(
+              'lib/assets/logo.svg',
+              width: 80,
+              height: 80,
             ),
           ),
-          Divider(height: 1, color: context.borderColor),
+          const Divider(height: 1),
           const SizedBox(height: 4),
 
           // Navigation Items
@@ -306,7 +280,7 @@ class _DesktopSidebar extends ConsumerWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? Theme.of(context).hoverColor : Colors.transparent,
+          color: isActive ? AppColors.hover : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
@@ -322,8 +296,7 @@ class _DesktopSidebar extends ConsumerWidget {
               style: TextStyle(
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
                 fontSize: 14,
-                color:
-                    isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
+                color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
                 letterSpacing: -0.1,
               ),
             ),
@@ -421,7 +394,7 @@ class _AppHeader extends ConsumerWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: context.primaryColor.withOpacity(0.15),
+                  color: AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Center(
@@ -466,32 +439,10 @@ class _MobileDrawer extends ConsumerWidget {
                 ),
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: context.primaryColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long_outlined,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Hisabi',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.2,
-                    color: context.onSurfaceColor,
-                  ),
-                ),
-              ],
+            child: SvgPicture.asset(
+              'lib/assets/logo.svg',
+              width: 80,
+              height: 80,
             ),
           ),
           const Divider(height: 1),
@@ -667,7 +618,7 @@ class _MobileDrawer extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? Theme.of(context).hoverColor : Colors.transparent,
+          color: isActive ? AppColors.hover : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
@@ -683,8 +634,7 @@ class _MobileDrawer extends ConsumerWidget {
               style: TextStyle(
                 fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
                 fontSize: 14,
-                color:
-                    isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
+                color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
                 letterSpacing: -0.1,
               ),
             ),

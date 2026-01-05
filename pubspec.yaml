@@ -21,6 +21,7 @@ dependencies:
   share_plus: ^10.0.2
   path_provider: ^2.1.5
   cross_file: ^0.3.4
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +30,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - lib/assets/logo.svg

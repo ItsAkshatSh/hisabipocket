@@ -11,4 +11,3 @@ extension ThemeExtensions on BuildContext {
   Color get primaryColor => Theme.of(this).colorScheme.primary;
 }
 
-

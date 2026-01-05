@@ -49,6 +49,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         name: savedAuth['name'] as String,
         pictureUrl: savedAuth['pictureUrl'] as String?,
       );
+      // Initialize user storage when restoring auth state
+      await StorageService.initializeUserStorage(user.email);
       state = AuthState(status: AuthStatus.authenticated, user: user);
       return;
     }

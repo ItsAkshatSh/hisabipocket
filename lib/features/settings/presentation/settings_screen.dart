@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
@@ -79,11 +78,11 @@ class SettingsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: AppColors.error),
+                    Icon(Icons.error_outline,
+                        size: 48, color: Theme.of(context).colorScheme.error),
                     const SizedBox(height: 16),
                     Text('Error loading settings',
-                        style: const TextStyle(color: AppColors.error)),
+                        style: TextStyle(color: Theme.of(context).colorScheme.error)),
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () => ref.refresh(settingsProvider),
@@ -134,35 +133,10 @@ class _ThemeSection extends ConsumerWidget {
   }
 }
 
-class _CurrencySection extends ConsumerStatefulWidget {
+class _CurrencySection extends ConsumerWidget {
   final SettingsState settings;
 
   const _CurrencySection({required this.settings});
-
-  @override
-  ConsumerState<_CurrencySection> createState() => _CurrencySectionState();
-}
-
-class _CurrencySectionState extends ConsumerState<_CurrencySection> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  final ExpansionTileController _expansionController = ExpansionTileController();
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   String _getCurrencySymbol(String code) {
     final symbols = {
@@ -195,6 +169,99 @@ class _CurrencySectionState extends ConsumerState<_CurrencySection> {
   }
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SettingsSection(
+      title: 'Currency',
+      icon: Icons.attach_money_outlined,
+      child: _CurrencyDropdown(
+        selectedCurrency: settings.currency,
+        onCurrencySelected: (currency) {
+          ref.read(settingsProvider.notifier).setCurrency(currency);
+        },
+        getCurrencySymbol: _getCurrencySymbol,
+      ),
+    );
+  }
+}
+
+class _CurrencyDropdown extends StatefulWidget {
+  final Currency selectedCurrency;
+  final Function(Currency) onCurrencySelected;
+  final String Function(String) getCurrencySymbol;
+
+  const _CurrencyDropdown({
+    required this.selectedCurrency,
+    required this.onCurrencySelected,
+    required this.getCurrencySymbol,
+  });
+
+  @override
+  State<_CurrencyDropdown> createState() => _CurrencyDropdownState();
+}
+
+class _CurrencyDropdownState extends State<_CurrencyDropdown> {
+  void _showCurrencyPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CurrencyPickerBottomSheet(
+        selectedCurrency: widget.selectedCurrency,
+        onCurrencySelected: widget.onCurrencySelected,
+        getCurrencySymbol: widget.getCurrencySymbol,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => _showCurrencyPicker(context),
+      child: _SettingsTile(
+        title: '${widget.getCurrencySymbol(widget.selectedCurrency.name)} ${widget.selectedCurrency.name}',
+        trailing: const Icon(Icons.keyboard_arrow_down, size: 20),
+      ),
+    );
+  }
+}
+
+class _CurrencyPickerBottomSheet extends StatefulWidget {
+  final Currency selectedCurrency;
+  final Function(Currency) onCurrencySelected;
+  final String Function(String) getCurrencySymbol;
+
+  const _CurrencyPickerBottomSheet({
+    required this.selectedCurrency,
+    required this.onCurrencySelected,
+    required this.getCurrencySymbol,
+  });
+
+  @override
+  State<_CurrencyPickerBottomSheet> createState() => _CurrencyPickerBottomSheetState();
+}
+
+class _CurrencyPickerBottomSheetState extends State<_CurrencyPickerBottomSheet> {
+  late TextEditingController _searchController;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final filteredCurrencies = _searchQuery.isEmpty
         ? Currency.values
@@ -202,97 +269,142 @@ class _CurrencySectionState extends ConsumerState<_CurrencySection> {
             .where((c) => c.name.toLowerCase().contains(_searchQuery))
             .toList();
 
-    return _SettingsSection(
-      title: 'Currency',
-      icon: Icons.attach_money_outlined,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          controller: _expansionController,
-          title: Text(
-            '${_getCurrencySymbol(widget.settings.currency.name)} ${widget.settings.currency.name}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: context.onSurfaceColor,
+    return Container(
+      decoration: BoxDecoration(
+        color: context.backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: context.borderColor,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          childrenPadding: EdgeInsets.zero,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search currency...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Theme.of(context).scaffoldBackgroundColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Select Currency',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: context.onSurfaceColor,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Search currency...',
+                hintStyle: TextStyle(color: context.onSurfaceMutedColor),
+                prefixIcon: Icon(Icons.search, size: 20, color: context.onSurfaceMutedColor),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, size: 20, color: context.onSurfaceMutedColor),
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: context.surfaceColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.primaryColor, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
               ),
             ),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 250),
-              child: filteredCurrencies.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('No currencies found'),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filteredCurrencies.length,
-                      itemBuilder: (context, index) {
-                        final currency = filteredCurrencies[index];
-                        final isSelected = widget.settings.currency == currency;
-                        return InkWell(
-                          onTap: () {
-                            ref
-                                .read(settingsProvider.notifier)
-                                .setCurrency(currency);
-                            // Optional: Close dropdown on selection
-                            _expansionController.collapse();
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${_getCurrencySymbol(currency.name)} ${currency.name}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: context.onSurfaceColor,
-                                    ),
+          ),
+          Flexible(
+            child: filteredCurrencies.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      'No currencies found',
+                      style: TextStyle(
+                        color: context.onSurfaceMutedColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filteredCurrencies.length,
+                    itemBuilder: (context, index) {
+                      final currency = filteredCurrencies[index];
+                      final isSelected = widget.selectedCurrency == currency;
+                      return InkWell(
+                        onTap: () {
+                          widget.onCurrencySelected(currency);
+                          Navigator.of(context).pop();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? context.primaryColor.withOpacity(0.1)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: isSelected
+                                ? Border.all(
+                                    color: context.primaryColor.withOpacity(0.3),
+                                    width: 1,
+                                  )
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${widget.getCurrencySymbol(currency.name)} ${currency.name}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w500
+                                        : FontWeight.w400,
+                                    color: context.onSurfaceColor,
                                   ),
                                 ),
-                                if (isSelected)
-                                  Icon(Icons.check,
-                                      color: context.primaryColor, size: 20),
-                              ],
-                            ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check,
+                                  color: context.primaryColor,
+                                  size: 20,
+                                ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+        ],
       ),
     );
   }
@@ -683,14 +795,14 @@ class _SettingsSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: AppColors.primary),
+            Icon(icon, size: 18, color: context.primaryColor),
             const SizedBox(width: 8),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.onSurface,
+                color: context.onSurfaceColor,
               ),
             ),
           ],
@@ -698,10 +810,10 @@ class _SettingsSection extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withOpacity(0.2),
+              color: context.borderColor,
               width: 1,
             ),
           ),
