@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
@@ -20,7 +19,7 @@ class SavedReceiptsScreen extends ConsumerWidget {
         left: isMobile ? 20.0 : 32.0,
         right: isMobile ? 20.0 : 32.0,
         top: isMobile ? 20.0 : 32.0,
-        bottom: isMobile ? 100.0 : 32.0, // Extra padding for bottom nav
+        bottom: isMobile ? 100.0 : 32.0, 
       ),
       child: receiptsAsync.when(
         data: (receipts) => receipts.isEmpty
@@ -109,13 +108,17 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            'lib/assets/logo.svg',
+          Container(
             width: 80,
             height: 80,
-            colorFilter: ColorFilter.mode(
-              context.onSurfaceMutedColor.withOpacity(0.4),
-              BlendMode.srcIn,
+            decoration: BoxDecoration(
+              color: context.onSurfaceMutedColor.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.receipt_long_outlined,
+              size: 40,
+              color: context.onSurfaceMutedColor.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 16),

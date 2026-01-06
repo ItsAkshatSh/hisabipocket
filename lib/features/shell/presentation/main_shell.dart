@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
@@ -99,14 +98,7 @@ class _DesktopSidebar extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-            child: SvgPicture.asset(
-              'lib/assets/logo.svg',
-              width: 80,
-              height: 80,
-            ),
-          ),
+          const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 4),
 
@@ -429,22 +421,7 @@ class _MobileDrawer extends ConsumerWidget {
       child: Column(
         children: [
           // Header
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 48, 14, 12),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: context.borderColor,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: SvgPicture.asset(
-              'lib/assets/logo.svg',
-              width: 80,
-              height: 80,
-            ),
-          ),
+          const SizedBox(height: 48),
           const Divider(height: 1),
           const SizedBox(height: 4),
 
