@@ -8,6 +8,7 @@ import 'package:hisabi/core/storage/storage_service.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
@@ -65,6 +66,8 @@ class SettingsScreen extends ConsumerWidget {
                 _DataSection(),
                 const SizedBox(height: 24),
                 _AboutSection(),
+                const SizedBox(height: 24),
+                _AccountSection(),
               ],
             ),
             loading: () => const Center(
@@ -769,6 +772,60 @@ class _AboutSection extends StatelessWidget {
             leading: Icons.description_outlined,
             onTap: () {
               context.push('/terms-of-service');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountSection extends ConsumerWidget {
+  const _AccountSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SettingsSection(
+      title: 'Account',
+      icon: Icons.person_outline,
+      child: Column(
+        children: [
+          _SettingsTile(
+            title: 'Logout',
+            subtitle: 'Sign out of your account',
+            leading: Icons.logout_outlined,
+            textColor: Theme.of(context).colorScheme.error,
+            onTap: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: context.surfaceColor,
+                  title: const Text('Logout?'),
+                  content: const Text(
+                    'Are you sure you want to logout?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                      ),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed == true && context.mounted) {
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              }
             },
           ),
         ],

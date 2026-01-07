@@ -43,12 +43,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> checkAuthStatus() async {
     final savedAuth = await StorageService.loadAuthState();
     if (savedAuth != null) {
+      // Try to get current Google user to refresh profile picture
+      GoogleSignInAccount? currentUser;
+      try {
+        currentUser = await _googleSignIn.signInSilently();
+      } catch (_) {
+        // If silent sign-in fails, try to get current user
+        currentUser = _googleSignIn.currentUser;
+      }
+
+      // Use current Google user's photo if available, otherwise use saved
+      final pictureUrl = currentUser?.photoUrl ?? savedAuth['pictureUrl'] as String?;
+      final name = currentUser?.displayName ?? savedAuth['name'] as String;
+      final email = currentUser?.email ?? savedAuth['email'] as String;
+
       final user = UserModel(
         id: 0,
-        email: savedAuth['email'] as String,
-        name: savedAuth['name'] as String,
-        pictureUrl: savedAuth['pictureUrl'] as String?,
+        email: email,
+        name: name,
+        pictureUrl: pictureUrl,
       );
+      
+      // Update saved auth state with latest picture if it changed
+      if (currentUser?.photoUrl != null && currentUser!.photoUrl != savedAuth['pictureUrl']) {
+        await StorageService.saveAuthState(user.email, user.name, user.pictureUrl);
+      }
+      
       // Initialize user storage when restoring auth state
       await StorageService.initializeUserStorage(user.email);
       state = AuthState(status: AuthStatus.authenticated, user: user);
@@ -60,8 +80,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
           .get('/api/user')
           .timeout(const Duration(seconds: 3));
       final user = UserModel.fromJson(data);
-      await StorageService.saveAuthState(user.email, user.name, user.pictureUrl);
-      state = AuthState(status: AuthStatus.authenticated, user: user);
+      
+      // Try to get current Google user to ensure we have the latest photo
+      GoogleSignInAccount? currentUser;
+      try {
+        currentUser = await _googleSignIn.signInSilently();
+      } catch (_) {
+        currentUser = _googleSignIn.currentUser;
+      }
+      
+      // Use Google user's photo if available, otherwise use API response
+      final pictureUrl = currentUser?.photoUrl ?? user.pictureUrl;
+      final finalUser = UserModel(
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        pictureUrl: pictureUrl,
+      );
+      
+      await StorageService.saveAuthState(finalUser.email, finalUser.name, finalUser.pictureUrl);
+      state = AuthState(status: AuthStatus.authenticated, user: finalUser);
     } catch (_) {
       state = AuthState(status: AuthStatus.unauthenticated);
     }

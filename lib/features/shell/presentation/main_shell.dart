@@ -82,8 +82,8 @@ class _AppHeader extends ConsumerWidget {
           color: context.backgroundColor,
           border: Border(
             bottom: BorderSide(
-              color: context.borderColor,
-              width: 1,
+              color: context.borderColor.withOpacity(0.3),
+              width: 0.5,
             ),
           ),
         ),
@@ -95,19 +95,28 @@ class _AppHeader extends ConsumerWidget {
           children: [
             const Spacer(),
             // Profile icon button that opens settings
-            InkWell(
-              onTap: () => context.go('/settings'),
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: context.borderColor.withOpacity(0.5),
-                    width: 1,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => context.go('/settings'),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: context.borderColor.withOpacity(0.5),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.primaryColor.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ),
                 child: user?.pictureUrl != null && user!.pictureUrl!.isNotEmpty
                     ? ClipOval(
                         child: Image.network(
@@ -151,6 +160,7 @@ class _AppHeader extends ConsumerWidget {
                           ),
                         ),
                       ),
+                ),
               ),
             ),
           ],
@@ -237,63 +247,97 @@ class _MobileBottomNav extends StatelessWidget {
     bool isCenter = false,
   }) {
     return Expanded(
-      child: InkWell(
-        onTap: () {
-          if (path == '/stats') {
-            // Placeholder for future stats feature
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Stats feature coming soon!'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            return;
-          }
-          context.go(path);
-        },
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isCenter)
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? context.primaryColor
-                        : context.primaryColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 24,
-                    color: isActive ? Colors.white : context.primaryColor,
-                  ),
-                )
-              else
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isActive
-                      ? context.primaryColor
-                      : context.onSurfaceMutedColor,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (path == '/stats') {
+              // Placeholder for future stats feature
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Stats feature coming soon!'),
+                  duration: Duration(seconds: 2),
                 ),
-              if (!isCenter) const SizedBox(height: 4),
-              if (!isCenter)
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                    color: isActive
-                        ? context.primaryColor
-                        : context.onSurfaceMutedColor,
+              );
+              return;
+            }
+            context.go(path);
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isCenter)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: isActive
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                context.primaryColor,
+                                context.primaryLightColor,
+                              ],
+                            )
+                          : null,
+                      color: isActive
+                          ? null
+                          : context.primaryColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      boxShadow: isActive
+                          ? [
+                              BoxShadow(
+                                color: context.primaryColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 24,
+                      color: isActive ? Colors.white : context.primaryColor,
+                    ),
+                  )
+                else
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      fontSize: isActive ? 22 : 20,
+                      color: isActive
+                          ? context.primaryColor
+                          : context.onSurfaceMutedColor,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: isActive ? 22 : 20,
+                      color: isActive
+                          ? context.primaryColor
+                          : context.onSurfaceMutedColor,
+                    ),
                   ),
-                ),
-            ],
+                if (!isCenter) const SizedBox(height: 4),
+                if (!isCenter)
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                      color: isActive
+                          ? context.primaryColor
+                          : context.onSurfaceMutedColor,
+                    ),
+                    child: Text(label),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

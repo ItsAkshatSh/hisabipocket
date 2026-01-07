@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/core/widgets/fade_in_widget.dart';
 import 'package:hisabi/core/widgets/shimmer_loading.dart';
+import 'package:hisabi/core/widgets/animated_counter.dart';
 import 'package:hisabi/features/dashboard/providers/dashboard_provider.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
@@ -340,7 +341,7 @@ class DashboardScreen extends ConsumerWidget {
 // Component Widgets
 // -----------------------------------------------------------------------------
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String value;
@@ -358,128 +359,306 @@ class _SummaryCard extends StatelessWidget {
   });
 
   @override
+  State<_SummaryCard> createState() => _SummaryCardState();
+}
+
+class _SummaryCardState extends State<_SummaryCard>
+    with SingleTickerProviderStateMixin {
+  bool _isPressed = false;
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final trendIcon = trend == 'up'
+    final trendIcon = widget.trend == 'up'
         ? Icons.arrow_upward
-        : (trend == 'down' ? Icons.arrow_downward : Icons.remove);
-    final trendColor = trend == 'up'
+        : (widget.trend == 'down' ? Icons.arrow_downward : Icons.remove);
+    final trendColor = widget.trend == 'up'
         ? Colors.green
-        : (trend == 'down' 
+        : (widget.trend == 'down' 
             ? Colors.red 
             : Theme.of(context).brightness == Brightness.dark 
                 ? Colors.white70 
                 : Colors.black54);
 
-    return Card(
-      margin: const EdgeInsets.all(4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: context.primaryColor, size: 28),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: context.onSurfaceMutedColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: context.onSurfaceColor,
-                      height: 1.2,
-                      letterSpacing: -0.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(trendIcon, color: trendColor, size: 12),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    trend == 'flat'
-                        ? subtitle
-                        : '${change.toStringAsFixed(1)}% vs last period',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: trendColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+    // Determine gradient colors based on card type
+    final gradientColors = _getGradientColors(context);
+
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradientColors,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: context.primaryColor.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+              spreadRadius: 0,
             ),
           ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTapDown: (_) {
+              setState(() => _isPressed = true);
+              _scaleController.forward();
+            },
+            onTapUp: (_) {
+              setState(() => _isPressed = false);
+              _scaleController.reverse();
+            },
+            onTapCancel: () {
+              setState(() => _isPressed = false);
+              _scaleController.reverse();
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          widget.value,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.2,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(trendIcon, color: Colors.white.withOpacity(0.9), size: 12),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          widget.trend == 'flat'
+                              ? widget.subtitle
+                              : '${widget.change.toStringAsFixed(1)}% vs last period',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
+  List<Color> _getGradientColors(BuildContext context) {
+    // Different gradient colors for different card types
+    switch (widget.icon) {
+      case Icons.account_balance_wallet_outlined:
+        return [
+          context.primaryColor,
+          context.primaryLightColor,
+        ];
+      case Icons.receipt_long:
+        return [
+          const Color(0xFF10B981),
+          const Color(0xFF34D399),
+        ];
+      case Icons.price_change:
+        return [
+          const Color(0xFF3B82F6),
+          const Color(0xFF60A5FA),
+        ];
+      case Icons.store_outlined:
+        return [
+          const Color(0xFF8B5CF6),
+          const Color(0xFFA78BFA),
+        ];
+      default:
+        return [
+          context.primaryColor,
+          context.primaryLightColor,
+        ];
+    }
+  }
 }
 
-class _QuickStatBox extends StatelessWidget {
+class _QuickStatBox extends StatefulWidget {
   final String title;
   final String value;
 
   const _QuickStatBox({required this.title, required this.value});
 
   @override
+  State<_QuickStatBox> createState() => _QuickStatBoxState();
+}
+
+class _QuickStatBoxState extends State<_QuickStatBox>
+    with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.all(4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: context.onSurfaceMutedColor,
-                fontWeight: FontWeight.w500,
-              ),
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _controller.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _controller.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: context.borderColor.withOpacity(0.5),
+              width: 1,
             ),
-            const SizedBox(height: 10),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: context.onSurfaceColor,
-                  height: 1.1,
-                  letterSpacing: -0.3,
+            boxShadow: _isHovered
+                ? [
+                    BoxShadow(
+                      color: context.primaryColor.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(
+                        Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.05,
+                      ),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0,
+                    ),
+                  ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.onSurfaceMutedColor,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(height: 10),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.value,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: context.onSurfaceColor,
+                      height: 1.1,
+                      letterSpacing: -0.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -494,10 +673,30 @@ class _ReceiptsDataTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
+    return Container(
+      decoration: BoxDecoration(
+        color: context.surfaceColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.borderColor.withOpacity(0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.05,
+            ),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
           columns: [
             DataColumn(
               label: Text(
@@ -603,6 +802,7 @@ class _ReceiptsDataTable extends StatelessWidget {
               ],
             );
           }).toList(),
+          ),
         ),
       ),
     );

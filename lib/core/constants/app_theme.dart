@@ -225,7 +225,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(12),
       side: const BorderSide(
         color: AppColors.border,
         width: 1,
@@ -302,6 +302,24 @@ final ThemeData hisabiDarkTheme = ThemeData(
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(8)),
     ),
+  ),
+  dataTableTheme: DataTableThemeData(
+    headingTextStyle: const TextStyle(
+      color: AppColors.onSurface,
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+    ),
+    dataTextStyle: const TextStyle(
+      color: AppColors.onSurface,
+      fontSize: 14,
+    ),
+    decoration: BoxDecoration(
+      color: AppColors.background,
+    ),
+  ),
+  listTileTheme: const ListTileThemeData(
+    textColor: AppColors.onSurface,
+    iconColor: AppColors.onSurfaceMuted,
   ),
 );
 
@@ -525,7 +543,7 @@ final ThemeData hisabiLightTheme = ThemeData(
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(12),
       side: const BorderSide(
         color: LightAppColors.border,
         width: 1,
@@ -602,5 +620,23 @@ final ThemeData hisabiLightTheme = ThemeData(
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(8)),
     ),
+  ),
+  dataTableTheme: DataTableThemeData(
+    headingTextStyle: const TextStyle(
+      color: LightAppColors.onSurface,
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+    ),
+    dataTextStyle: const TextStyle(
+      color: LightAppColors.onSurface,
+      fontSize: 14,
+    ),
+    decoration: BoxDecoration(
+      color: LightAppColors.background,
+    ),
+  ),
+  listTileTheme: const ListTileThemeData(
+    textColor: LightAppColors.onSurface,
+    iconColor: LightAppColors.onSurfaceMuted,
   ),
 );
