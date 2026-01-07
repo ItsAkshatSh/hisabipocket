@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 
@@ -19,7 +18,7 @@ class SavedReceiptsScreen extends ConsumerWidget {
         left: isMobile ? 20.0 : 32.0,
         right: isMobile ? 20.0 : 32.0,
         top: isMobile ? 20.0 : 32.0,
-        bottom: isMobile ? 100.0 : 32.0, 
+        bottom: isMobile ? 100.0 : 32.0,
       ),
       child: receiptsAsync.when(
         data: (receipts) => receipts.isEmpty
@@ -27,12 +26,12 @@ class SavedReceiptsScreen extends ConsumerWidget {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Saved receipts',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.onSurface,
+                      color: context.onSurfaceColor,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -47,21 +46,21 @@ class SavedReceiptsScreen extends ConsumerWidget {
                         child: ListTile(
                           title: Text(
                             r.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: AppColors.onSurface,
+                              color: context.onSurfaceColor,
                             ),
                           ),
                           subtitle: Text(
                             '${DateFormat.yMMMd().format(r.date)} • ${r.store}',
-                            style: const TextStyle(
-                                color: AppColors.onSurfaceMuted),
+                            style:
+                                TextStyle(color: context.onSurfaceMutedColor),
                           ),
                           trailing: Text(
                             formatter.format(r.total),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.onSurface,
+                              color: context.onSurfaceColor,
                             ),
                           ),
                         ),
@@ -76,22 +75,24 @@ class SavedReceiptsScreen extends ConsumerWidget {
             child: CircularProgressIndicator(),
           ),
         ),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading receipts',
-                style: const TextStyle(color: AppColors.error),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => ref.refresh(receiptsStoreProvider),
-                child: const Text('Retry'),
-              ),
-            ],
+        error: (error, stack) => Builder(
+          builder: (context) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: context.errorColor),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading receipts',
+                  style: TextStyle(color: context.errorColor),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => ref.refresh(receiptsStoreProvider),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -9,13 +9,15 @@ import 'package:intl/intl.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/utils/quick_add_parser.dart';
+import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
 
 class VoiceQuickAddScreen extends ConsumerStatefulWidget {
   const VoiceQuickAddScreen({super.key});
 
   @override
-  ConsumerState<VoiceQuickAddScreen> createState() => _VoiceQuickAddScreenState();
+  ConsumerState<VoiceQuickAddScreen> createState() =>
+      _VoiceQuickAddScreenState();
 }
 
 class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
@@ -105,20 +107,23 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppColors.surface,
-          title: const Text('Use this entry?'),
+          backgroundColor: context.surfaceColor,
+          title: Text(
+            'Use this entry?',
+            style: TextStyle(color: context.onSurfaceColor),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Heard: $_rawTranscript',
-                style: const TextStyle(color: AppColors.onSurface),
+                style: TextStyle(color: context.onSurfaceColor),
               ),
               const SizedBox(height: 8),
               Text(
                 'Parsed: ${parsed.amount} for ${parsed.description}',
-                style: const TextStyle(color: AppColors.onSurface),
+                style: TextStyle(color: context.onSurfaceColor),
               ),
             ],
           ),
@@ -185,7 +190,8 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
           _error = 'Failed to save receipt.';
         });
       } else {
-        final formattedAmount = NumberFormat.currency(symbol: 'USD').format(parsed.amount);
+        final formattedAmount =
+            NumberFormat.currency(symbol: 'USD').format(parsed.amount);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Added $formattedAmount for ${parsed.description}'),
@@ -219,13 +225,17 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.backgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            size: 20,
+            color: context.onSurfaceColor,
+          ),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -234,12 +244,13 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
             }
           },
         ),
-        title: const Text(
+        title: Text(
           'Quick Add',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.5,
+            color: context.onSurfaceColor,
           ),
         ),
       ),
@@ -249,6 +260,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
             controller: _backgroundController,
             waveController: _waveController,
             isListening: _isListening,
+            primaryColor: context.primaryColor,
           ),
           SafeArea(
             child: Column(
@@ -276,27 +288,28 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
                           child: _isListening
-                              ? const Text(
+                              ? Text(
                                   'Listening...',
-                                  key: ValueKey('listening'),
+                                  key: const ValueKey('listening'),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.primary,
+                                    color: context.primaryColor,
                                     letterSpacing: 0.5,
                                   ),
                                 )
                               : _rawTranscript.isEmpty
-                                  ? const Text(
+                                  ? Text(
                                       'Tap to start recording',
-                                      key: ValueKey('idle'),
+                                      key: const ValueKey('idle'),
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: AppColors.onSurfaceMuted,
+                                        color: context.onSurfaceMutedColor,
                                         letterSpacing: 0.2,
                                       ),
                                     )
-                                  : const SizedBox.shrink(key: ValueKey('transcript')),
+                                  : const SizedBox.shrink(
+                                      key: ValueKey('transcript')),
                         ),
                       ],
                     ),
@@ -313,18 +326,19 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppColors.surface.withOpacity(0.6),
+                          color: context.surfaceColor.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: _rawTranscript.isNotEmpty
-                                ? AppColors.primary.withOpacity(0.3)
-                                : AppColors.border.withOpacity(0.5),
+                                ? context.primaryColor.withOpacity(0.3)
+                                : context.borderColor.withOpacity(0.5),
                             width: 1.5,
                           ),
                           boxShadow: _rawTranscript.isNotEmpty
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color:
+                                        context.primaryColor.withOpacity(0.1),
                                     blurRadius: 20,
                                     spreadRadius: 0,
                                   ),
@@ -337,13 +351,15 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                   Icon(
                                     Icons.mic_none,
                                     size: 18,
-                                    color: AppColors.onSurfaceMuted.withOpacity(0.6),
+                                    color: context.onSurfaceMutedColor
+                                        .withOpacity(0.6),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Say something like "20 for groceries"...',
                                     style: TextStyle(
-                                      color: AppColors.onSurfaceMuted.withOpacity(0.7),
+                                      color: context.onSurfaceMutedColor
+                                          .withOpacity(0.7),
                                       fontSize: 14,
                                       height: 1.5,
                                     ),
@@ -361,15 +377,17 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color: context.primaryColor
+                                              .withOpacity(0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           'TRANSCRIPT',
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.primary,
+                                            color: context.primaryColor,
                                             letterSpacing: 1,
                                           ),
                                         ),
@@ -379,8 +397,8 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                   const SizedBox(height: 12),
                                   Text(
                                     _rawTranscript,
-                                    style: const TextStyle(
-                                      color: AppColors.onSurface,
+                                    style: TextStyle(
+                                      color: context.onSurfaceColor,
                                       fontSize: 16,
                                       height: 1.6,
                                       letterSpacing: 0.2,
@@ -394,10 +412,10 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.1),
+                            color: context.errorColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: AppColors.error.withOpacity(0.3),
+                              color: context.errorColor.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
@@ -406,14 +424,14 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                               Icon(
                                 Icons.error_outline,
                                 size: 18,
-                                color: AppColors.error,
+                                color: context.errorColor,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   _error!,
-                                  style: const TextStyle(
-                                    color: AppColors.error,
+                                  style: TextStyle(
+                                    color: context.errorColor,
                                     fontSize: 13,
                                     height: 1.4,
                                   ),
@@ -438,7 +456,8 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                       }
                                     },
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -456,9 +475,12 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                           Expanded(
                             flex: 2,
                             child: ElevatedButton(
-                              onPressed: _isSaving || _rawTranscript.isEmpty ? null : _showConfirmAndSave,
+                              onPressed: _isSaving || _rawTranscript.isEmpty
+                                  ? null
+                                  : _showConfirmAndSave,
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -470,13 +492,15 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
                                           Colors.white,
                                         ),
                                       ),
                                     )
                                   : const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.check, size: 18),
                                         SizedBox(width: 8),
@@ -509,11 +533,13 @@ class _AnimatedBackground extends StatelessWidget {
   final AnimationController controller;
   final AnimationController waveController;
   final bool isListening;
+  final Color primaryColor;
 
   const _AnimatedBackground({
     required this.controller,
     required this.waveController,
     required this.isListening,
+    required this.primaryColor,
   });
 
   @override
@@ -526,6 +552,7 @@ class _AnimatedBackground extends StatelessWidget {
             animationValue: controller.value,
             waveValue: waveController.value,
             isListening: isListening,
+            primaryColor: primaryColor,
           ),
           size: Size.infinite,
         );
@@ -538,11 +565,13 @@ class _BackgroundPainter extends CustomPainter {
   final double animationValue;
   final double waveValue;
   final bool isListening;
+  final Color primaryColor;
 
   _BackgroundPainter({
     required this.animationValue,
     required this.waveValue,
     required this.isListening,
+    required this.primaryColor,
   });
 
   @override
@@ -558,7 +587,7 @@ class _BackgroundPainter extends CustomPainter {
       final radius = 80 + math.sin(animationValue * 2 * math.pi + i) * 30;
       final opacity = 0.03 + math.sin(animationValue * 2 * math.pi + i) * 0.02;
 
-      paint.color = AppColors.primary.withOpacity(opacity);
+      paint.color = primaryColor.withOpacity(opacity);
       canvas.drawCircle(Offset(x, y), radius, paint);
     }
 
@@ -569,7 +598,9 @@ class _BackgroundPainter extends CustomPainter {
 
       for (double x = 0; x <= size.width; x++) {
         final y = size.height * 0.7 +
-            math.sin((x / size.width * 4 * math.pi) + (waveValue * 2 * math.pi)) * 20;
+            math.sin((x / size.width * 4 * math.pi) +
+                    (waveValue * 2 * math.pi)) *
+                20;
         path.lineTo(x, y);
       }
 
@@ -577,7 +608,7 @@ class _BackgroundPainter extends CustomPainter {
       path.lineTo(0, size.height);
       path.close();
 
-      paint.color = AppColors.primary.withOpacity(0.05);
+      paint.color = primaryColor.withOpacity(0.05);
       canvas.drawPath(path, paint);
     }
 
@@ -592,10 +623,12 @@ class _BackgroundPainter extends CustomPainter {
               math.cos(animationValue * 2 * math.pi + seed) * 30) %
           (size.height * 0.6);
 
-      final particleSize = 2 + math.sin(animationValue * 2 * math.pi + seed) * 1;
-      final opacity = 0.1 + math.sin(animationValue * 2 * math.pi + seed) * 0.05;
+      final particleSize =
+          2 + math.sin(animationValue * 2 * math.pi + seed) * 1;
+      final opacity =
+          0.1 + math.sin(animationValue * 2 * math.pi + seed) * 0.05;
 
-      paint.color = AppColors.primary.withOpacity(opacity);
+      paint.color = primaryColor.withOpacity(opacity);
       canvas.drawCircle(Offset(x, y), particleSize, paint);
     }
   }
@@ -628,8 +661,10 @@ class _MicrophoneButton extends StatelessWidget {
       child: AnimatedBuilder(
         animation: pulseController,
         builder: (context, child) {
-          final pulseScale = isListening ? 1.0 + pulseController.value * 0.15 : 1.0;
-          final glowOpacity = isListening ? 0.3 + pulseController.value * 0.2 : 0.1;
+          final pulseScale =
+              isListening ? 1.0 + pulseController.value * 0.15 : 1.0;
+          final glowOpacity =
+              isListening ? 0.3 + pulseController.value * 0.2 : 0.1;
 
           return Stack(
             alignment: Alignment.center,
@@ -649,7 +684,10 @@ class _MicrophoneButton extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.primary.withOpacity(opacity),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(opacity),
                           width: 2,
                         ),
                       ),
@@ -665,8 +703,11 @@ class _MicrophoneButton extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.primary.withOpacity(glowOpacity),
-                        AppColors.primary.withOpacity(0),
+                        Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(glowOpacity),
+                        Theme.of(context).colorScheme.primary.withOpacity(0),
                       ],
                     ),
                   ),
@@ -682,19 +723,30 @@ class _MicrophoneButton extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: isListening
                         ? [
-                            AppColors.primary,
-                            AppColors.primaryLight,
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.8),
                           ]
                         : [
-                            AppColors.surface,
-                            AppColors.surfaceVariant,
+                            Theme.of(context).colorScheme.surface,
+                            Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                           ],
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: isListening
-                          ? AppColors.primary.withOpacity(0.4)
-                          : AppColors.primary.withOpacity(0.1),
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.4)
+                          : Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.1),
                       blurRadius: 30,
                       spreadRadius: 0,
                     ),
@@ -702,7 +754,11 @@ class _MicrophoneButton extends StatelessWidget {
                 ),
                 child: Icon(
                   isListening ? Icons.mic : Icons.mic_none,
-                  color: isListening ? Colors.white : AppColors.onSurfaceMuted,
+                  color: isListening
+                      ? Colors.white
+                      : Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.onSurfaceMuted
+                          : LightAppColors.onSurfaceMuted,
                   size: 48,
                 ),
               ),

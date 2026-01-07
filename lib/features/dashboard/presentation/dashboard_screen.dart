@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:hisabi/core/constants/app_styles.dart';
-import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/core/widgets/fade_in_widget.dart';
 import 'package:hisabi/core/widgets/shimmer_loading.dart';
@@ -97,12 +95,32 @@ class DashboardScreen extends ConsumerWidget {
             isDense: true,
             icon: Icon(Icons.keyboard_arrow_down_rounded,
                 color: context.onSurfaceMutedColor),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: context.onSurfaceColor,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
             dropdownColor: context.surfaceColor,
+            selectedItemBuilder: (context) {
+              return Period.values.map((p) {
+                return Text(
+                  p
+                      .toString()
+                      .split('.')
+                      .last
+                      .replaceAllMapped(
+                        RegExp(r'([A-Z])'),
+                        (m) => ' ${m.group(0)!}',
+                      )
+                      .trim(),
+                  style: TextStyle(
+                    color: context.onSurfaceColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              }).toList();
+            },
             items: Period.values.map((p) {
               return DropdownMenuItem(
                 value: p,
@@ -116,6 +134,9 @@ class DashboardScreen extends ConsumerWidget {
                         (m) => ' ${m.group(0)!}',
                       )
                       .trim(),
+                  style: TextStyle(
+                    color: context.onSurfaceColor,
+                  ),
                 ),
               );
             }).toList(),
@@ -202,9 +223,15 @@ class DashboardScreen extends ConsumerWidget {
             );
           },
         ),
-        error: (e, s) => Center(
+        error: (e, s) => Builder(
+          builder: (context) => Center(
             key: const ValueKey('stats_error'),
-            child: Text('Error loading stats: $e')),
+            child: Text(
+              'Error loading stats: $e',
+              style: TextStyle(color: context.errorColor),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -255,9 +282,15 @@ class DashboardScreen extends ConsumerWidget {
             );
           },
         ),
-        error: (e, s) => Center(
+        error: (e, s) => Builder(
+          builder: (context) => Center(
             key: const ValueKey('quick_stats_error'),
-            child: Text('Error loading quick stats: $e')),
+            child: Text(
+              'Error loading quick stats: $e',
+              style: TextStyle(color: context.errorColor),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -270,17 +303,33 @@ class DashboardScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Recent Receipts',
-          style: AppText.title,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
+            height: 1.3,
+            color: context.onSurfaceColor,
+          ),
         ),
         const SizedBox(height: 16),
         receiptsAsync.when(
           data: (receipts) => receipts.isEmpty
-              ? const Center(child: Text('No recent receipts.'))
+              ? Center(
+                  child: Text(
+                    'No recent receipts.',
+                    style: TextStyle(color: context.onSurfaceMutedColor),
+                  ),
+                )
               : _ReceiptsDataTable(receipts: receipts, formatter: formatter),
           loading: () => const _LoadingSkeletonTable(),
-          error: (e, s) => Center(child: Text('Error loading receipts: $e')),
+          error: (e, s) => Center(
+            child: Text(
+              'Error loading receipts: $e',
+              style: TextStyle(color: context.errorColor),
+            ),
+          ),
         ),
       ],
     );
@@ -315,7 +364,11 @@ class _SummaryCard extends StatelessWidget {
         : (trend == 'down' ? Icons.arrow_downward : Icons.remove);
     final trendColor = trend == 'up'
         ? Colors.green
-        : (trend == 'down' ? Colors.red : Colors.white70);
+        : (trend == 'down' 
+            ? Colors.red 
+            : Theme.of(context).brightness == Brightness.dark 
+                ? Colors.white70 
+                : Colors.black54);
 
     return Card(
       margin: const EdgeInsets.all(4),
@@ -324,7 +377,7 @@ class _SummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.primary, size: 28),
+            Icon(icon, color: context.primaryColor, size: 28),
             const SizedBox(height: 10),
             Text(
               title,
@@ -415,10 +468,10 @@ class _QuickStatBox extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onSurface,
+                  color: context.onSurfaceColor,
                   height: 1.1,
                   letterSpacing: -0.3,
                 ),
@@ -445,37 +498,108 @@ class _ReceiptsDataTable extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Date', style: AppText.label)),
-            DataColumn(label: Text('Store', style: AppText.label)),
-            DataColumn(label: Text('Items Count', style: AppText.label)),
+          columns: [
             DataColumn(
-                label: Text('Amount',
-                    style: AppText.label, textAlign: TextAlign.right)),
-            DataColumn(label: Text('Action', style: AppText.label)),
+              label: Text(
+                'Date',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Store',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Items Count',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Amount',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                  color: context.onSurfaceColor,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Action',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ),
           ],
           rows: receipts.map((receipt) {
             return DataRow(
               cells: [
-                DataCell(Text(DateFormat.yMd().format(receipt.savedAt))),
-                DataCell(Text(receipt.store)),
-                DataCell(Text(receipt.itemCount.toString())),
-                DataCell(Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(formatter.format(receipt.total)),
-                )),
-                DataCell(ElevatedButton(
-                  onPressed: () {
-                    // Show Receipt Details Modal
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) =>
-                          ReceiptDetailsModal(receiptId: receipt.id),
-                    );
-                  },
-                  child: const Text('View'),
-                )),
+                DataCell(
+                  Text(
+                    DateFormat.yMd().format(receipt.savedAt),
+                    style: TextStyle(color: context.onSurfaceColor),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    receipt.store,
+                    style: TextStyle(color: context.onSurfaceColor),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    receipt.itemCount.toString(),
+                    style: TextStyle(color: context.onSurfaceColor),
+                  ),
+                ),
+                DataCell(
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      formatter.format(receipt.total),
+                      style: TextStyle(color: context.onSurfaceColor),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  ElevatedButton(
+                    onPressed: () {
+                      // Show Receipt Details Modal
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) =>
+                            ReceiptDetailsModal(receiptId: receipt.id),
+                      );
+                    },
+                    child: const Text('View'),
+                  ),
+                ),
               ],
             );
           }).toList(),
@@ -549,10 +673,34 @@ class _LoadingSkeletonTable extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(width: 80, height: 10, color: Colors.white10),
-                      Container(width: 120, height: 10, color: Colors.white10),
-                      Container(width: 60, height: 10, color: Colors.white10),
-                      Container(width: 50, height: 10, color: Colors.white10),
+                      Container(
+                        width: 80,
+                        height: 10,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white10
+                            : Colors.black12,
+                      ),
+                      Container(
+                        width: 120,
+                        height: 10,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white10
+                            : Colors.black12,
+                      ),
+                      Container(
+                        width: 60,
+                        height: 10,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white10
+                            : Colors.black12,
+                      ),
+                      Container(
+                        width: 50,
+                        height: 10,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white10
+                            : Colors.black12,
+                      ),
                     ],
                   ),
                 )),

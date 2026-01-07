@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
-import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 
 class MainShell extends ConsumerWidget {
@@ -11,8 +10,6 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
@@ -22,28 +19,20 @@ class MainShell extends ConsumerWidget {
               painter: _BackgroundPatternPainter(),
             ),
           ),
-          Row(
+          Column(
             children: [
-              if (!isMobile) const _DesktopSidebar(),
+              const _AppHeader(),
               Expanded(
-                child: Column(
-                  children: [
-                    const _AppHeader(),
-                    Expanded(
-                      child: Container(
-                        color: Colors.transparent,
-                        child: child,
-                      ),
-                    ),
-                  ],
+                child: Container(
+                  color: Colors.transparent,
+                  child: child,
                 ),
               ),
             ],
           ),
         ],
       ),
-      drawer: isMobile ? const _MobileDrawer() : null,
-      bottomNavigationBar: isMobile ? const _MobileBottomNav() : null,
+      bottomNavigationBar: const _MobileBottomNav(),
     );
   }
 }
@@ -77,227 +66,6 @@ class _BackgroundPatternPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _DesktopSidebar extends ConsumerWidget {
-  const _DesktopSidebar();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).user;
-    final currentPath = GoRouterState.of(context).uri.path;
-
-    return Container(
-      width: 240,
-      decoration: BoxDecoration(
-        color: context.backgroundColor,
-        border: Border(
-          right: BorderSide(
-            color: context.borderColor,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 4),
-
-          // Navigation Items
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildNavItem(
-                    context,
-                    'Dashboard',
-                    Icons.dashboard_outlined,
-                    '/dashboard',
-                    currentPath,
-                  ),
-                  _buildNavItem(
-                    context,
-                    'Add Receipt',
-                    Icons.add_outlined,
-                    '/add-receipt',
-                    currentPath,
-                  ),
-                  _buildNavItem(
-                    context,
-                    'Saved Receipts',
-                    Icons.receipt_long_outlined,
-                    '/saved-receipts',
-                    currentPath,
-                  ),
-                  _buildNavItem(
-                    context,
-                    'Settings',
-                    Icons.settings_outlined,
-                    '/settings',
-                    currentPath,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // User Profile & Logout Section
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: context.borderColor,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // User Profile
-                InkWell(
-                  onTap: () => context.go('/settings'),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: context.primaryColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Center(
-                            child: Text(
-                              user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: context.primaryColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.name ?? 'User',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 13,
-                                  color: context.onSurfaceColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                user?.email ?? '',
-                                style: TextStyle(
-                                  color: context.onSurfaceMutedColor,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Logout Button
-                InkWell(
-                  onTap: () {
-                    ref.read(authProvider.notifier).logout();
-                    context.go('/login');
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.logout_outlined,
-                          size: 16,
-                          color: context.onSurfaceMutedColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Logout',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
-                            color: context.onSurfaceMutedColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-    BuildContext context,
-    String title,
-    IconData icon,
-    String path,
-    String currentPath,
-  ) {
-    final isActive = currentPath == path ||
-        (path != '/dashboard' && currentPath.startsWith(path));
-
-    return InkWell(
-      onTap: () => context.go(path),
-      borderRadius: BorderRadius.circular(4),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.hover : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                fontSize: 14,
-                color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
-                letterSpacing: -0.1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _AppHeader extends ConsumerWidget {
   const _AppHeader();
@@ -305,12 +73,11 @@ class _AppHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
-    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return SafeArea(
       bottom: false,
       child: Container(
-        height: isMobile ? 64 : 56,
+        height: 64,
         decoration: BoxDecoration(
           color: context.backgroundColor,
           border: Border(
@@ -320,299 +87,70 @@ class _AppHeader extends ConsumerWidget {
             ),
           ),
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 16 : 20,
-          vertical: isMobile ? 12 : 8,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
         ),
         child: Row(
           children: [
-            if (isMobile)
-              IconButton(
-                icon: const Icon(Icons.menu_outlined, size: 24),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-                color: context.onSurfaceColor,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 40,
-                  minHeight: 40,
-                ),
-              ),
-            if (isMobile) const SizedBox(width: 12),
             const Spacer(),
-            // User info (minimal)
-            if (!isMobile) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            // Profile icon button that opens settings
+            InkWell(
+              onTap: () => context.go('/settings'),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: context.primaryColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Center(
-                        child: Text(
-                          user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: context.primaryColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      user?.name ?? 'User',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                        color: context.onSurfaceColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Center(
-                  child: Text(
-                    user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: context.primaryColor,
-                    ),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: context.borderColor.withOpacity(0.5),
+                    width: 1,
                   ),
                 ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MobileDrawer extends ConsumerWidget {
-  const _MobileDrawer();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).user;
-    final currentPath = GoRouterState.of(context).uri.path;
-
-    return Drawer(
-      backgroundColor: context.backgroundColor,
-      child: Column(
-        children: [
-          // Header
-          const SizedBox(height: 48),
-          const Divider(height: 1),
-          const SizedBox(height: 4),
-
-          // Navigation
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              children: [
-                _buildMobileNavItem(
-                  context,
-                  'Dashboard',
-                  Icons.dashboard_outlined,
-                  '/dashboard',
-                  currentPath,
-                ),
-                _buildMobileNavItem(
-                  context,
-                  'Add Receipt',
-                  Icons.add_outlined,
-                  '/add-receipt',
-                  currentPath,
-                ),
-                _buildMobileNavItem(
-                  context,
-                  'Saved Receipts',
-                  Icons.receipt_long_outlined,
-                  '/saved-receipts',
-                  currentPath,
-                ),
-                _buildMobileNavItem(
-                  context,
-                  'Settings',
-                  Icons.settings_outlined,
-                  '/settings',
-                  currentPath,
-                ),
-              ],
-            ),
-          ),
-
-          // User & Logout
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: context.borderColor,
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: () {
-                    context.go('/settings');
-                    Navigator.pop(context);
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: context.primaryColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Center(
-                            child: Text(
-                              user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: context.primaryColor,
+                child: user?.pictureUrl != null && user!.pictureUrl!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          user.pictureUrl!,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: context.primaryColor.withOpacity(0.15),
+                                shape: BoxShape.circle,
                               ),
+                              child: Center(
+                                child: Text(
+                                  user.name.substring(0, 1).toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.primaryColor,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: context.primaryColor.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: context.primaryColor,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.name ?? 'User',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14,
-                                  color: context.onSurfaceColor,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                user?.email ?? '',
-                                style: TextStyle(
-                                  color: context.onSurfaceMutedColor,
-                                  fontSize: 12,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                InkWell(
-                  onTap: () {
-                    ref.read(authProvider.notifier).logout();
-                    context.go('/login');
-                    Navigator.pop(context);
-                  },
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.logout_outlined,
-                          size: 16,
-                          color: context.onSurfaceMutedColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Logout',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
-                            color: context.onSurfaceMutedColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileNavItem(
-    BuildContext context,
-    String title,
-    IconData icon,
-    String path,
-    String currentPath,
-  ) {
-    final isActive = currentPath == path ||
-        (path != '/dashboard' && currentPath.startsWith(path));
-
-    return InkWell(
-      onTap: () {
-        context.go(path);
-        Navigator.pop(context);
-      },
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.hover : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                fontSize: 14,
-                color: isActive ? context.onSurfaceColor : context.onSurfaceMutedColor,
-                letterSpacing: -0.1,
+                      ),
               ),
             ),
           ],
@@ -621,6 +159,7 @@ class _MobileDrawer extends ConsumerWidget {
     );
   }
 }
+
 
 class _MobileBottomNav extends StatelessWidget {
   const _MobileBottomNav();
@@ -641,7 +180,7 @@ class _MobileBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 56,
+          height: 64,
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -649,23 +188,38 @@ class _MobileBottomNav extends StatelessWidget {
               _buildBottomNavItem(
                 context,
                 Icons.dashboard_outlined,
-                'Dashboard',
+                'Home',
                 '/dashboard',
                 selectedIndex == 0,
               ),
               _buildBottomNavItem(
                 context,
-                Icons.add_outlined,
+                Icons.bar_chart_outlined,
+                'Stats',
+                '/stats',
+                selectedIndex == 1,
+              ),
+              _buildBottomNavItem(
+                context,
+                Icons.add_circle_outline,
                 'Add',
                 '/add-receipt',
-                selectedIndex == 1,
+                selectedIndex == 2,
+                isCenter: true,
               ),
               _buildBottomNavItem(
                 context,
                 Icons.receipt_long_outlined,
                 'Saved',
                 '/saved-receipts',
-                selectedIndex == 2,
+                selectedIndex == 3,
+              ),
+              _buildBottomNavItem(
+                context,
+                Icons.settings_outlined,
+                'Settings',
+                '/settings',
+                selectedIndex == 4,
               ),
             ],
           ),
@@ -679,34 +233,66 @@ class _MobileBottomNav extends StatelessWidget {
     IconData icon,
     String label,
     String path,
-    bool isActive,
-  ) {
+    bool isActive, {
+    bool isCenter = false,
+  }) {
     return Expanded(
       child: InkWell(
-        onTap: () => context.go(path),
+        onTap: () {
+          if (path == '/stats') {
+            // Placeholder for future stats feature
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Stats feature coming soon!'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+          context.go(path);
+        },
         borderRadius: BorderRadius.circular(4),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isActive
-                    ? context.primaryColor
-                    : context.onSurfaceMutedColor,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                  color:
-                      isActive ? context.primaryColor : context.onSurfaceMutedColor,
+              if (isCenter)
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? context.primaryColor
+                        : context.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 24,
+                    color: isActive ? Colors.white : context.primaryColor,
+                  ),
+                )
+              else
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isActive
+                      ? context.primaryColor
+                      : context.onSurfaceMutedColor,
                 ),
-              ),
+              if (!isCenter) const SizedBox(height: 4),
+              if (!isCenter)
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
+                    color: isActive
+                        ? context.primaryColor
+                        : context.onSurfaceMutedColor,
+                  ),
+                ),
             ],
           ),
         ),
@@ -716,11 +302,17 @@ class _MobileBottomNav extends StatelessWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/add-receipt')) {
+    if (location.startsWith('/stats')) {
       return 1;
     }
-    if (location.startsWith('/saved-receipts')) {
+    if (location.startsWith('/add-receipt')) {
       return 2;
+    }
+    if (location.startsWith('/saved-receipts')) {
+      return 3;
+    }
+    if (location.startsWith('/settings')) {
+      return 4;
     }
     return 0;
   }
