@@ -9,6 +9,7 @@ import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
+import 'package:hisabi/features/settings/presentation/widgets/widget_preview.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
@@ -62,6 +63,8 @@ class SettingsScreen extends ConsumerWidget {
                 _CurrencySection(settings: settings),
                 const SizedBox(height: 24),
                 _NamingFormatSection(settings: settings),
+                const SizedBox(height: 24),
+                _WidgetSection(settings: settings),
                 const SizedBox(height: 24),
                 _DataSection(),
                 const SizedBox(height: 24),
@@ -443,6 +446,146 @@ class _NamingFormatSection extends ConsumerWidget {
             },
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _WidgetSection extends ConsumerWidget {
+  final SettingsState settings;
+
+  const _WidgetSection({required this.settings});
+
+  String _getStatLabel(WidgetStat stat) {
+    switch (stat) {
+      case WidgetStat.totalThisMonth:
+        return 'Total This Month';
+      case WidgetStat.topStore:
+        return 'Top Store';
+      case WidgetStat.receiptsCount:
+        return 'Receipts Count';
+      case WidgetStat.averagePerReceipt:
+        return 'Average Per Receipt';
+      case WidgetStat.daysWithExpenses:
+        return 'Days with Expenses';
+      case WidgetStat.totalItems:
+        return 'Total Items';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SettingsSection(
+      title: 'Home Widget',
+      icon: Icons.widgets_outlined,
+      child: Column(
+        children: [
+          // Preview
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Preview',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: context.onSurfaceMutedColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                WidgetPreview(
+                  enabledStats: settings.widgetSettings.enabledStats,
+                  currency: settings.currency,
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          // Stat options
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Text(
+                    'Display Stats',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: context.onSurfaceMutedColor,
+                    ),
+                  ),
+                ),
+                ...WidgetStat.values.map((stat) {
+                  final isEnabled = settings.widgetSettings.enabledStats.contains(stat);
+                  return InkWell(
+                    onTap: () {
+                      final currentStats = Set<WidgetStat>.from(
+                        settings.widgetSettings.enabledStats,
+                      );
+                      if (isEnabled) {
+                        currentStats.remove(stat);
+                      } else {
+                        currentStats.add(stat);
+                      }
+                      final updatedWidgetSettings = settings.widgetSettings.copyWith(
+                        enabledStats: currentStats,
+                      );
+                      ref.read(settingsProvider.notifier).setWidgetSettings(
+                        updatedWidgetSettings,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _getStatLabel(stat),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: context.onSurfaceColor,
+                              ),
+                            ),
+                          ),
+                          Checkbox(
+                            value: isEnabled,
+                            onChanged: (value) {
+                              final currentStats = Set<WidgetStat>.from(
+                                settings.widgetSettings.enabledStats,
+                              );
+                              if (value == true) {
+                                currentStats.add(stat);
+                              } else {
+                                currentStats.remove(stat);
+                              }
+                              final updatedWidgetSettings = settings.widgetSettings.copyWith(
+                                enabledStats: currentStats,
+                              );
+                              ref.read(settingsProvider.notifier).setWidgetSettings(
+                                updatedWidgetSettings,
+                              );
+                            },
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

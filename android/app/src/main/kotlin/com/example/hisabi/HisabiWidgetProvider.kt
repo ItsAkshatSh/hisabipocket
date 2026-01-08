@@ -5,9 +5,11 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.net.Uri
+import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
+import org.json.JSONArray
 import org.json.JSONObject
 
 class HisabiWidgetProvider : AppWidgetProvider() {
@@ -21,11 +23,71 @@ class HisabiWidgetProvider : AppWidgetProvider() {
             val widgetData = HomeWidgetPlugin.getData(context)
             val summaryJson = widgetData.getString("widget_summary", "{}")
             val obj = JSONObject(summaryJson ?: "{}")
+            
+            // Get currency code
+            val currencyCode = widgetData.getString("currency_code", "USD")
+            
+            // Get widget settings
+            val settingsJson = widgetData.getString("widget_settings", "{}")
+            val settingsObj = JSONObject(settingsJson ?: "{}")
+            val enabledStatsArray = settingsObj.optJSONArray("enabledStats")
+            val enabledStats = if (enabledStatsArray != null) {
+                (0 until enabledStatsArray.length()).map { enabledStatsArray.getString(it) }.toSet()
+            } else {
+                // Default to totalThisMonth and topStore if no settings
+                setOf("totalThisMonth", "topStore")
+            }
+
+            // Extract all stats from summary
             val total = obj.optDouble("totalThisMonth", 0.0)
             val topStore = obj.optString("topStore", "—")
+            val receiptsCount = obj.optInt("receiptsCount", 0)
+            val averagePerReceipt = obj.optDouble("averagePerReceipt", 0.0)
+            val daysWithExpenses = obj.optInt("daysWithExpenses", 0)
+            val totalItems = obj.optInt("totalItems", 0)
 
-            views.setTextViewText(R.id.tvTotal, formatCurrency(total))
-            views.setTextViewText(R.id.tvTopStore, "Top: $topStore")
+            // Show/hide and set text for each stat based on settings
+            if (enabledStats.contains("totalThisMonth")) {
+                views.setViewVisibility(R.id.tvTotal, View.VISIBLE)
+                views.setTextViewText(R.id.tvTotal, formatCurrency(total, currencyCode))
+            } else {
+                views.setViewVisibility(R.id.tvTotal, View.GONE)
+            }
+
+            if (enabledStats.contains("topStore")) {
+                views.setViewVisibility(R.id.tvTopStore, View.VISIBLE)
+                views.setTextViewText(R.id.tvTopStore, "Top: $topStore")
+            } else {
+                views.setViewVisibility(R.id.tvTopStore, View.GONE)
+            }
+
+            if (enabledStats.contains("receiptsCount")) {
+                views.setViewVisibility(R.id.tvReceiptsCount, View.VISIBLE)
+                views.setTextViewText(R.id.tvReceiptsCount, "Receipts: $receiptsCount")
+            } else {
+                views.setViewVisibility(R.id.tvReceiptsCount, View.GONE)
+            }
+
+            if (enabledStats.contains("averagePerReceipt")) {
+                views.setViewVisibility(R.id.tvAverage, View.VISIBLE)
+                views.setTextViewText(R.id.tvAverage, "Avg: ${formatCurrency(averagePerReceipt, currencyCode)}")
+            } else {
+                views.setViewVisibility(R.id.tvAverage, View.GONE)
+            }
+
+            if (enabledStats.contains("daysWithExpenses")) {
+                views.setViewVisibility(R.id.tvDays, View.VISIBLE)
+                views.setTextViewText(R.id.tvDays, "Days: $daysWithExpenses")
+            } else {
+                views.setViewVisibility(R.id.tvDays, View.GONE)
+            }
+
+            if (enabledStats.contains("totalItems")) {
+                views.setViewVisibility(R.id.tvItems, View.VISIBLE)
+                views.setTextViewText(R.id.tvItems, "Items: $totalItems")
+            } else {
+                views.setViewVisibility(R.id.tvItems, View.GONE)
+            }
 
             val openDashboardIntent: PendingIntent = HomeWidgetLaunchIntent.getActivity(
                 context,
@@ -45,9 +107,35 @@ class HisabiWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    private fun formatCurrency(value: Double): String {
-        // Adjust currency formatting as needed
-        return "USD " + String.format("%,.0f", value)
+    private fun formatCurrency(value: Double, currencyCode: String = "USD"): String {
+        val symbol = when (currencyCode) {
+            "USD" -> "$"
+            "EUR" -> "€"
+            "GBP" -> "£"
+            "JPY" -> "¥"
+            "CNY" -> "¥"
+            "INR" -> "₹"
+            "AUD" -> "A$"
+            "CAD" -> "C$"
+            "AED" -> "د.إ"
+            "SAR" -> "ر.س"
+            "ZAR" -> "R"
+            "BRL" -> "R$"
+            "MXN" -> "$"
+            "KRW" -> "₩"
+            "SGD" -> "S$"
+            "HKD" -> "HK$"
+            "CHF" -> "CHF"
+            "SEK" -> "kr"
+            "NOK" -> "kr"
+            "DKK" -> "kr"
+            "PLN" -> "zł"
+            "TRY" -> "₺"
+            "RUB" -> "₽"
+            "NZD" -> "NZ$"
+            else -> currencyCode
+        }
+        return "$symbol${String.format("%,.2f", value)}"
     }
 }
 

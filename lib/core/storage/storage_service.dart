@@ -1,5 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
+import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class StorageService {
@@ -148,6 +149,7 @@ class StorageService {
       await box.put('currency', settings.currency.name);
       await box.put('namingFormat', settings.namingFormat.name);
       await box.put('themeMode', settings.themeMode.name);
+      await box.put('widgetSettings', settings.widgetSettings.toJson());
       await box.put('_user_email', _currentUserEmail);
       await box.flush();
       print('Settings saved for user: $_currentUserEmail');
@@ -197,11 +199,17 @@ class StorageService {
             )
           : AppThemeMode.dark;
       
+      final widgetSettingsData = box.get('widgetSettings');
+      final widgetSettings = widgetSettingsData != null
+          ? WidgetSettings.fromJson(Map<String, dynamic>.from(widgetSettingsData))
+          : WidgetSettings();
+      
       print('Settings loaded for user: $_currentUserEmail');
       return SettingsState(
         currency: currency,
         namingFormat: namingFormat,
         themeMode: themeMode,
+        widgetSettings: widgetSettings,
       );
     } catch (e) {
       return SettingsState();
@@ -226,12 +234,22 @@ class StorageService {
       date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
       store: json['store'] as String? ?? '',
       items: (json['items'] as List?)
-              ?.map((item) => ReceiptItem(
-                    name: item['name'] as String? ?? '',
-                    quantity: (item['quantity'] as num?)?.toDouble() ?? 0.0,
-                    price: (item['price'] as num?)?.toDouble() ?? 0.0,
-                    total: (item['total'] as num?)?.toDouble() ?? 0.0,
-                  ))
+              ?.map((item) {
+                final categoryName = item['category'] as String?;
+                final category = categoryName != null
+                    ? ExpenseCategory.values.firstWhere(
+                        (c) => c.name == categoryName,
+                        orElse: () => ExpenseCategory.other,
+                      )
+                    : null;
+                return ReceiptItem(
+                  name: item['name'] as String? ?? '',
+                  quantity: (item['quantity'] as num?)?.toDouble() ?? 0.0,
+                  price: (item['price'] as num?)?.toDouble() ?? 0.0,
+                  total: (item['total'] as num?)?.toDouble() ?? 0.0,
+                  category: category,
+                );
+              })
               .toList() ??
           [],
       total: (json['total'] as num?)?.toDouble() ?? 0.0,

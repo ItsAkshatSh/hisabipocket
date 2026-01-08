@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/core/widgets/fade_in_widget.dart';
 import 'package:hisabi/core/widgets/shimmer_loading.dart';
 import 'package:hisabi/core/widgets/animated_counter.dart';
 import 'package:hisabi/features/dashboard/providers/dashboard_provider.dart';
+import 'package:hisabi/features/dashboard/providers/wrapped_prompt_provider.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
+import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -36,7 +40,12 @@ class DashboardScreen extends ConsumerWidget {
             delay: const Duration(milliseconds: 50),
             child: _buildHeader(context, ref, period),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          FadeInWidget(
+            delay: const Duration(milliseconds: 60),
+            child: _buildWeeklyWrappedPrompt(context, ref),
+          ),
+          const SizedBox(height: 24),
           FadeInWidget(
             delay: const Duration(milliseconds: 100),
             child: _buildSummaryCards(ref, formatter),
@@ -399,29 +408,10 @@ class _SummaryCardState extends State<_SummaryCard>
                 ? Colors.white70 
                 : Colors.black54);
 
-    // Determine gradient colors based on card type
-    final gradientColors = _getGradientColors(context);
-
     return ScaleTransition(
       scale: _scaleAnimation,
-      child: Container(
+      child: Card(
         margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: context.primaryColor.withOpacity(0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -443,24 +433,13 @@ class _SummaryCardState extends State<_SummaryCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  Icon(widget.icon, color: context.primaryColor, size: 28),
+                  const SizedBox(height: 10),
                   Text(
                     widget.title,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.9),
+                      color: context.onSurfaceMutedColor,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -476,7 +455,7 @@ class _SummaryCardState extends State<_SummaryCard>
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: context.onSurfaceColor,
                             height: 1.2,
                             letterSpacing: -0.3,
                           ),
@@ -490,7 +469,7 @@ class _SummaryCardState extends State<_SummaryCard>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(trendIcon, color: Colors.white.withOpacity(0.9), size: 12),
+                      Icon(trendIcon, color: trendColor, size: 12),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
@@ -499,7 +478,7 @@ class _SummaryCardState extends State<_SummaryCard>
                               : '${widget.change.toStringAsFixed(1)}% vs last period',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.white.withOpacity(0.9),
+                            color: trendColor,
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -515,37 +494,6 @@ class _SummaryCardState extends State<_SummaryCard>
         ),
       ),
     );
-  }
-
-  List<Color> _getGradientColors(BuildContext context) {
-    // Different gradient colors for different card types
-    switch (widget.icon) {
-      case Icons.account_balance_wallet_outlined:
-        return [
-          context.primaryColor,
-          context.primaryLightColor,
-        ];
-      case Icons.receipt_long:
-        return [
-          const Color(0xFF10B981),
-          const Color(0xFF34D399),
-        ];
-      case Icons.price_change:
-        return [
-          const Color(0xFF3B82F6),
-          const Color(0xFF60A5FA),
-        ];
-      case Icons.store_outlined:
-        return [
-          const Color(0xFF8B5CF6),
-          const Color(0xFFA78BFA),
-        ];
-      default:
-        return [
-          context.primaryColor,
-          context.primaryLightColor,
-        ];
-    }
   }
 }
 
@@ -856,6 +804,123 @@ class _LoadingSkeleton extends StatelessWidget {
         ),
       ),
     );
+  }
+  
+  Widget _buildWeeklyWrappedPrompt(BuildContext context, WidgetRef ref) {
+    // Check if it's been a week since last view
+    final receiptsAsync = ref.watch(receiptsStoreProvider);
+    final receipts = receiptsAsync.valueOrNull ?? [];
+    
+    if (receipts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Get last week's start date
+    final now = DateTime.now();
+    final lastWeekStart = _getWeekStart(now.subtract(const Duration(days: 7)));
+    final thisWeekStart = _getWeekStart(now);
+    
+    // Check if we have receipts from last week
+    final lastWeekReceipts = receipts.where((r) {
+      final receiptDate = DateTime(r.date.year, r.date.month, r.date.day);
+      return receiptDate.isAfter(lastWeekStart.subtract(const Duration(days: 1))) &&
+             receiptDate.isBefore(thisWeekStart);
+    }).toList();
+    
+    if (lastWeekReceipts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Check if user has viewed wrapped this week using a provider
+    return ref.watch(shouldShowWrappedPromptProvider).when(
+      data: (shouldShow) {
+        if (!shouldShow) {
+          return const SizedBox.shrink();
+        }
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                context.primaryColor,
+                context.primaryColor.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.primaryColor.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.go('/wrapped?weekStart=${lastWeekStart.toIso8601String()}'),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.celebration,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your Week Wrapped is Ready! 🎵',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'See how you spent last week',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+  
+  DateTime _getWeekStart(DateTime date) {
+    final weekday = date.weekday;
+    return date.subtract(Duration(days: weekday - 1));
   }
 }
 

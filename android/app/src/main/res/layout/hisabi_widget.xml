@@ -24,7 +24,8 @@
         android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="@android:color/white"
-        android:paddingTop="4dp" />
+        android:paddingTop="4dp"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/tvTopStore"
@@ -34,7 +35,52 @@
         android:textSize="12sp"
         android:textColor="@android:color/white"
         android:alpha="0.8"
-        android:paddingTop="2dp" />
+        android:paddingTop="2dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvReceiptsCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Receipts: —"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.8"
+        android:paddingTop="2dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvAverage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Avg: —"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.8"
+        android:paddingTop="2dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvDays"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Days: —"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.8"
+        android:paddingTop="2dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvItems"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Items: —"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.8"
+        android:paddingTop="2dp"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -251,16 +251,6 @@ class _MobileBottomNav extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            if (path == '/stats') {
-              // Placeholder for future stats feature
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Stats feature coming soon!'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-              return;
-            }
             context.go(path);
           },
           borderRadius: BorderRadius.circular(8),
@@ -276,18 +266,8 @@ class _MobileBottomNav extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      gradient: isActive
-                          ? LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                context.primaryColor,
-                                context.primaryLightColor,
-                              ],
-                            )
-                          : null,
                       color: isActive
-                          ? null
+                          ? context.primaryColor
                           : context.primaryColor.withOpacity(0.1),
                       shape: BoxShape.circle,
                       boxShadow: isActive
@@ -346,7 +326,7 @@ class _MobileBottomNav extends StatelessWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/stats')) {
+    if (location.startsWith('/wrapped') || location.startsWith('/stats')) {
       return 1;
     }
     if (location.startsWith('/add-receipt')) {

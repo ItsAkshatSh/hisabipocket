@@ -96,14 +96,7 @@ class _EmptyState extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.primaryColor.withOpacity(0.15),
-                    context.primaryLightColor.withOpacity(0.1),
-                  ],
-                ),
+                color: context.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(

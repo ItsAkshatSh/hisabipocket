@@ -12,6 +12,8 @@ import 'package:hisabi/features/shell/presentation/main_shell.dart';
 import 'package:hisabi/features/settings/presentation/settings_screen.dart';
 import 'package:hisabi/features/settings/presentation/privacy_policy_screen.dart';
 import 'package:hisabi/features/settings/presentation/terms_of_service_screen.dart';
+import 'package:hisabi/features/wrapped/presentation/week_wrapped_screen.dart';
+import 'package:hisabi/features/insights/presentation/insights_screen.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -56,6 +58,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/saved-receipts',
             builder: (context, state) => const SavedReceiptsScreen(),
+          ),
+          GoRoute(
+            path: '/wrapped',
+            builder: (context, state) {
+              final weekStart = state.uri.queryParameters['weekStart'];
+              final date = weekStart != null ? DateTime.tryParse(weekStart) : null;
+              return WeekWrappedScreen(weekStart: date);
+            },
+          ),
+          GoRoute(
+            path: '/stats',
+            builder: (context, state) => const InsightsScreen(),
           ),
           GoRoute(
             path: '/settings',

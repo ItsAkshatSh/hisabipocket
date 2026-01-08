@@ -1,18 +1,61 @@
+import 'package:hisabi/core/models/category_model.dart';
+
 class ReceiptItem {
   final String name;
   final double quantity;
   final double price;
   final double total;
+  final ExpenseCategory? category;
 
-  ReceiptItem({required this.name, required this.quantity, required this.price, required this.total});
+  ReceiptItem({
+    required this.name,
+    required this.quantity,
+    required this.price,
+    required this.total,
+    this.category,
+  });
+
+  ReceiptItem copyWith({
+    String? name,
+    double? quantity,
+    double? price,
+    double? total,
+    ExpenseCategory? category,
+  }) {
+    return ReceiptItem(
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      total: total ?? this.total,
+      category: category ?? this.category,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'quantity': quantity,
     'price': price,
     'total': total,
+    'category': category?.name,
   };
+  
+  factory ReceiptItem.fromJson(Map<String, dynamic> json) {
+    return ReceiptItem(
+      name: json['name'],
+      quantity: (json['quantity'] as num).toDouble(),
+      price: (json['price'] as num).toDouble(),
+      total: (json['total'] as num).toDouble(),
+      category: json['category'] != null
+          ? ExpenseCategory.values.firstWhere(
+              (c) => c.name == json['category'],
+              orElse: () => ExpenseCategory.other,
+            )
+          : null,
+    );
+  }
 }
+
+import 'package:hisabi/core/models/category_model.dart';
 
 class ReceiptModel {
   final String id; // Use String for IDs in general for backend safety
@@ -21,11 +64,32 @@ class ReceiptModel {
   final String store;
   final List<ReceiptItem> items;
   final double total;
+  final ExpenseCategory? primaryCategory;
 
   ReceiptModel({
-    required this.id, required this.name, required this.date, 
-    required this.store, required this.items, required this.total
+    required this.id,
+    required this.name,
+    required this.date,
+    required this.store,
+    required this.items,
+    required this.total,
+    this.primaryCategory,
   });
+  
+  // Calculate primary category from items
+  ExpenseCategory? get calculatedPrimaryCategory {
+    if (items.isEmpty) return null;
+    final categoryCounts = <ExpenseCategory, int>{};
+    for (final item in items) {
+      if (item.category != null) {
+        categoryCounts[item.category!] = (categoryCounts[item.category!] ?? 0) + 1;
+      }
+    }
+    if (categoryCounts.isEmpty) return null;
+    return categoryCounts.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+  }
 
   // Factory constructor for full detail
   factory ReceiptModel.fromDetailJson(Map<String, dynamic> json) {
