@@ -66,7 +66,6 @@ class _BackgroundPatternPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-
 class _AppHeader extends ConsumerWidget {
   const _AppHeader();
 
@@ -94,11 +93,11 @@ class _AppHeader extends ConsumerWidget {
         child: Row(
           children: [
             const Spacer(),
-            // Profile icon button that opens settings
+            // Profile icon button that opens financial profile
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => context.go('/settings'),
+                onTap: () => context.go('/financial-profile'),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   width: 40,
@@ -117,49 +116,50 @@ class _AppHeader extends ConsumerWidget {
                       ),
                     ],
                   ),
-                child: user?.pictureUrl != null && user!.pictureUrl!.isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          user.pictureUrl!,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: context.primaryColor.withOpacity(0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  user.name.substring(0, 1).toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.primaryColor,
+                  child: user?.pictureUrl != null &&
+                          user!.pictureUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.pictureUrl!,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: context.primaryColor.withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    user.name.substring(0, 1).toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.primaryColor,
+                                    ),
                                   ),
                                 ),
+                              );
+                            },
+                          ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: context.primaryColor.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: context.primaryColor,
                               ),
-                            );
-                          },
-                        ),
-                      )
-                    : Container(
-                        decoration: BoxDecoration(
-                          color: context.primaryColor.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: context.primaryColor,
                             ),
                           ),
                         ),
-                      ),
                 ),
               ),
             ),
@@ -169,7 +169,6 @@ class _AppHeader extends ConsumerWidget {
     );
   }
 }
-
 
 class _MobileBottomNav extends StatelessWidget {
   const _MobileBottomNav();

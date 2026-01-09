@@ -934,6 +934,15 @@ class _AccountSection extends ConsumerWidget {
       child: Column(
         children: [
           _SettingsTile(
+            title: 'Financial Profile',
+            subtitle: 'Manage your income and financial goals',
+            leading: Icons.account_balance_wallet_outlined,
+            trailing: Icon(Icons.chevron_right, size: 20, color: context.onSurfaceMutedColor),
+            onTap: () {
+              context.push('/financial-profile');
+            },
+          ),
+          _SettingsTile(
             title: 'Logout',
             subtitle: 'Sign out of your account',
             leading: Icons.logout_outlined,

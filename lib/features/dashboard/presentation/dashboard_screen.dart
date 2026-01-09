@@ -344,6 +344,123 @@ class DashboardScreen extends ConsumerWidget {
       ],
     );
   }
+
+  Widget _buildWeeklyWrappedPrompt(BuildContext context, WidgetRef ref) {
+    // Check if it's been a week since last view
+    final receiptsAsync = ref.watch(receiptsStoreProvider);
+    final receipts = receiptsAsync.valueOrNull ?? [];
+    
+    if (receipts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Get last week's start date
+    final now = DateTime.now();
+    final lastWeekStart = _getWeekStart(now.subtract(const Duration(days: 7)));
+    final thisWeekStart = _getWeekStart(now);
+    
+    // Check if we have receipts from last week
+    final lastWeekReceipts = receipts.where((r) {
+      final receiptDate = DateTime(r.date.year, r.date.month, r.date.day);
+      return receiptDate.isAfter(lastWeekStart.subtract(const Duration(days: 1))) &&
+             receiptDate.isBefore(thisWeekStart);
+    }).toList();
+    
+    if (lastWeekReceipts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Check if user has viewed wrapped this week using a provider
+    return ref.watch(shouldShowWrappedPromptProvider).when(
+      data: (shouldShow) {
+        if (!shouldShow) {
+          return const SizedBox.shrink();
+        }
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                context.primaryColor,
+                context.primaryColor.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: context.primaryColor.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.go('/wrapped?weekStart=${lastWeekStart.toIso8601String()}'),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.celebration,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your Week Wrapped is Ready! 🎵',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'See how you spent last week',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+  
+  DateTime _getWeekStart(DateTime date) {
+    final weekday = date.weekday;
+    return date.subtract(Duration(days: weekday - 1));
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -804,123 +921,6 @@ class _LoadingSkeleton extends StatelessWidget {
         ),
       ),
     );
-  }
-  
-  Widget _buildWeeklyWrappedPrompt(BuildContext context, WidgetRef ref) {
-    // Check if it's been a week since last view
-    final receiptsAsync = ref.watch(receiptsStoreProvider);
-    final receipts = receiptsAsync.valueOrNull ?? [];
-    
-    if (receipts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    // Get last week's start date
-    final now = DateTime.now();
-    final lastWeekStart = _getWeekStart(now.subtract(const Duration(days: 7)));
-    final thisWeekStart = _getWeekStart(now);
-    
-    // Check if we have receipts from last week
-    final lastWeekReceipts = receipts.where((r) {
-      final receiptDate = DateTime(r.date.year, r.date.month, r.date.day);
-      return receiptDate.isAfter(lastWeekStart.subtract(const Duration(days: 1))) &&
-             receiptDate.isBefore(thisWeekStart);
-    }).toList();
-    
-    if (lastWeekReceipts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    // Check if user has viewed wrapped this week using a provider
-    return ref.watch(shouldShowWrappedPromptProvider).when(
-      data: (shouldShow) {
-        if (!shouldShow) {
-          return const SizedBox.shrink();
-        }
-        
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                context.primaryColor,
-                context.primaryColor.withOpacity(0.8),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: context.primaryColor.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => context.go('/wrapped?weekStart=${lastWeekStart.toIso8601String()}'),
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.celebration,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Your Week Wrapped is Ready! 🎵',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'See how you spent last week',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-  
-  DateTime _getWeekStart(DateTime date) {
-    final weekday = date.weekday;
-    return date.subtract(Duration(days: weekday - 1));
   }
 }
 

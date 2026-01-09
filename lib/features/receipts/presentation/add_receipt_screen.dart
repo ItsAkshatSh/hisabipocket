@@ -548,15 +548,32 @@ class _ManualEntryTab extends StatefulWidget {
 
 class _ManualEntryTabState extends State<_ManualEntryTab> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   String _storeName = '';
   DateTime _selectedDate = DateTime.now();
   final List<ReceiptItem> _items = [
     ReceiptItem(name: '', quantity: 1.0, price: 0.0, total: 0.0)
   ];
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _addItemRow() {
     setState(() {
       _items.add(ReceiptItem(name: '', quantity: 1.0, price: 0.0, total: 0.0));
+    });
+    // Scroll to bottom after item is added
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -751,15 +768,20 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                     ),
                   )
                 : ListView.builder(
+                    key: const PageStorageKey('manual_items_list'),
+                    controller: _scrollController,
                     itemCount: _items.length,
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _ManualItemRow(
-                          key: ValueKey(_items[index]),
+                          key: ValueKey('manual_item_$index'),
                           item: _items[index],
-                          onChanged: (updatedItem) =>
-                              setState(() => _items[index] = updatedItem),
+                          onChanged: (updatedItem) {
+                            setState(() {
+                              _items[index] = updatedItem;
+                            });
+                          },
                           onRemove: () => _removeItemRow(index),
                           canRemove: _items.length > 1,
                         ),
@@ -831,7 +853,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
   }
 }
 
-class _ManualItemRow extends StatelessWidget {
+class _ManualItemRow extends StatefulWidget {
   final ReceiptItem item;
   final ValueChanged<ReceiptItem> onChanged;
   final VoidCallback onRemove;
@@ -846,8 +868,72 @@ class _ManualItemRow extends StatelessWidget {
   });
 
   @override
+  State<_ManualItemRow> createState() => _ManualItemRowState();
+}
+
+class _ManualItemRowState extends State<_ManualItemRow> {
+  late TextEditingController _nameController;
+  late TextEditingController _quantityController;
+  late TextEditingController _priceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.item.name);
+    _quantityController = TextEditingController(
+      text: widget.item.quantity.toStringAsFixed(1),
+    );
+    _priceController = TextEditingController(
+      text: widget.item.price.toStringAsFixed(2),
+    );
+
+    // Add listeners to update parent when text changes
+    _nameController.addListener(_updateItem);
+    _quantityController.addListener(_updateItem);
+    _priceController.addListener(_updateItem);
+  }
+
+  @override
+  void didUpdateWidget(_ManualItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only update controllers if the item actually changed (not from our own updates)
+    if (oldWidget.item.name != widget.item.name &&
+        _nameController.text != widget.item.name) {
+      _nameController.text = widget.item.name;
+    }
+    if (oldWidget.item.quantity != widget.item.quantity &&
+        _quantityController.text != widget.item.quantity.toStringAsFixed(1)) {
+      _quantityController.text = widget.item.quantity.toStringAsFixed(1);
+    }
+    if (oldWidget.item.price != widget.item.price &&
+        _priceController.text != widget.item.price.toStringAsFixed(2)) {
+      _priceController.text = widget.item.price.toStringAsFixed(2);
+    }
+  }
+
+  void _updateItem() {
+    final quantity = double.tryParse(_quantityController.text) ?? widget.item.quantity;
+    final price = double.tryParse(_priceController.text) ?? widget.item.price;
+    
+    widget.onChanged(ReceiptItem(
+      name: _nameController.text,
+      quantity: quantity,
+      price: price,
+      total: quantity * price,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _quantityController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final total = item.price * item.quantity;
+    final total = widget.item.price * widget.item.quantity;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -864,18 +950,12 @@ class _ManualItemRow extends StatelessWidget {
         children: [
           // Item Name
           TextFormField(
-            initialValue: item.name,
+            controller: _nameController,
             decoration: const InputDecoration(
               labelText: 'Item Name',
               hintText: 'Enter item name',
               prefixIcon: Icon(Icons.shopping_bag_outlined),
             ),
-            onChanged: (v) => onChanged(ReceiptItem(
-              name: v,
-              quantity: item.quantity,
-              price: item.price,
-              total: item.total,
-            )),
             validator: (v) => v!.isEmpty ? 'Required' : null,
             style: const TextStyle(color: AppColors.onSurface),
           ),
@@ -885,7 +965,7 @@ class _ManualItemRow extends StatelessWidget {
             children: [
               Expanded(
                 child: TextFormField(
-                  initialValue: item.quantity.toStringAsFixed(1),
+                  controller: _quantityController,
                   decoration: const InputDecoration(
                     labelText: 'Quantity',
                     prefixIcon: Icon(Icons.numbers_outlined),
@@ -893,19 +973,13 @@ class _ManualItemRow extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  onChanged: (v) => onChanged(ReceiptItem(
-                    name: item.name,
-                    quantity: double.tryParse(v) ?? 1.0,
-                    price: item.price,
-                    total: item.total,
-                  )),
                   style: const TextStyle(color: AppColors.onSurface),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
-                  initialValue: item.price.toStringAsFixed(2),
+                  controller: _priceController,
                   decoration: const InputDecoration(
                     labelText: 'Price',
                     prefixIcon: Icon(Icons.attach_money_outlined),
@@ -913,12 +987,6 @@ class _ManualItemRow extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  onChanged: (v) => onChanged(ReceiptItem(
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: double.tryParse(v) ?? 0.0,
-                    total: item.total,
-                  )),
                   validator: (v) =>
                       (double.tryParse(v ?? '') ?? -1) < 0 ? 'Invalid' : null,
                   style: const TextStyle(color: AppColors.onSurface),
@@ -949,14 +1017,14 @@ class _ManualItemRow extends StatelessWidget {
                   ),
                 ),
               ),
-              if (canRemove)
+              if (widget.canRemove)
                 IconButton(
                   icon: const Icon(
                     Icons.delete_outline,
                     color: AppColors.error,
                     size: 20,
                   ),
-                  onPressed: onRemove,
+                  onPressed: widget.onRemove,
                   tooltip: 'Remove item',
                 ),
             ],

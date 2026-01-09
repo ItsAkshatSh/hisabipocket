@@ -35,7 +35,7 @@ class SpendingAnalysisCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    Icons.pie_chart_outlined,
+                    Icons.pie_chart,
                     color: context.primaryColor,
                     size: 28,
                   ),

@@ -55,8 +55,6 @@ class ReceiptItem {
   }
 }
 
-import 'package:hisabi/core/models/category_model.dart';
-
 class ReceiptModel {
   final String id; // Use String for IDs in general for backend safety
   final String name;

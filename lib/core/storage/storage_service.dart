@@ -2,11 +2,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
 
 class StorageService {
   static const String _receiptsBoxName = 'receipts';
   static const String _settingsBoxName = 'settings';
   static const String _authBoxName = 'auth';
+  static const String _financialProfileBoxName = 'financial_profile';
   
   // Store current user email to track data ownership
   static String? _currentUserEmail;
@@ -17,6 +19,7 @@ class StorageService {
       await Hive.openBox(_receiptsBoxName);
       await Hive.openBox(_settingsBoxName);
       await Hive.openBox(_authBoxName);
+      await Hive.openBox(_financialProfileBoxName);
       print('Storage initialized successfully');
     } catch (e) {
       print('Error initializing storage: $e');
@@ -35,6 +38,8 @@ class StorageService {
       await box.clear();
       final settingsBox = await Hive.openBox(_settingsBoxName);
       await settingsBox.clear();
+      final profileBox = await Hive.openBox(_financialProfileBoxName);
+      await profileBox.clear();
     }
     
     // Store current user email
@@ -292,10 +297,56 @@ class StorageService {
     print('Auth state cleared');
   }
 
+  static Future<void> saveFinancialProfile(FinancialProfile profile) async {
+    try {
+      if (_currentUserEmail == null) {
+        throw Exception('User storage not initialized. Call initializeUserStorage first.');
+      }
+      final box = await Hive.openBox(_financialProfileBoxName);
+      await box.put('profile', profile.toJson());
+      await box.put('_user_email', _currentUserEmail);
+      await box.flush();
+      print('Financial profile saved for user: $_currentUserEmail');
+    } catch (e) {
+      print('Error saving financial profile: $e');
+      rethrow;
+    }
+  }
+
+  static Future<FinancialProfile> loadFinancialProfile() async {
+    try {
+      if (_currentUserEmail == null) {
+        print('User storage not initialized. Returning default profile.');
+        return FinancialProfile();
+      }
+      final box = await Hive.openBox(_financialProfileBoxName);
+      final storedUserEmail = box.get('_user_email') as String?;
+
+      // Verify data belongs to current user
+      if (storedUserEmail != _currentUserEmail) {
+        print('Financial profile belongs to different user. Returning default profile.');
+        return FinancialProfile();
+      }
+
+      final profileData = box.get('profile');
+      if (profileData == null) {
+        print('No financial profile found in storage');
+        return FinancialProfile();
+      }
+
+      print('Financial profile loaded for user: $_currentUserEmail');
+      return FinancialProfile.fromJson(Map<String, dynamic>.from(profileData));
+    } catch (e) {
+      print('Error loading financial profile: $e');
+      return FinancialProfile();
+    }
+  }
+
   static Future<void> clearAll() async {
     await Hive.deleteBoxFromDisk(_receiptsBoxName);
     await Hive.deleteBoxFromDisk(_settingsBoxName);
     await Hive.deleteBoxFromDisk(_authBoxName);
+    await Hive.deleteBoxFromDisk(_financialProfileBoxName);
     _currentUserEmail = null;
     print('All data cleared');
   }
