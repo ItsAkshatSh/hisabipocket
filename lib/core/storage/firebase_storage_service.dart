@@ -14,7 +14,6 @@ class FirebaseStorageService {
 
   static Future<void> init() async {
     try {
-      // Enable Firestore offline persistence
       _firestore.settings = const Settings(
         persistenceEnabled: true,
         cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,

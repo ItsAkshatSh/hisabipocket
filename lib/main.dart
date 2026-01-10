@@ -10,10 +10,7 @@ import 'package:hisabi/features/settings/providers/settings_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
   await Firebase.initializeApp();
-  
-  // Initialize storage service
   await StorageService.init();
 
   runApp(

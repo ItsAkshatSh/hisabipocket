@@ -10,8 +10,6 @@ class StorageService {
   }
   
   static Future<void> initializeUserStorage(String userEmail) async {
-    // Firebase handles user isolation automatically via Firebase Auth
-    // This method is kept for compatibility but doesn't need to do anything
     print('User storage initialized for: $userEmail (Firebase handles isolation automatically)');
   }
 
@@ -40,21 +38,15 @@ class StorageService {
   }
 
   static Future<void> saveAuthState(String email, String name, String? pictureUrl) async {
-    // Auth state is now managed by Firebase Auth, but we keep this for compatibility
-    // The actual auth state comes from Firebase Auth.currentUser
     print('Auth state saved (Firebase Auth handles this automatically)');
   }
 
   static Future<Map<String, dynamic>?> loadAuthState() async {
-    // Auth state is now managed by Firebase Auth
-    // Return null to indicate no saved auth state (Firebase Auth will handle it)
     return null;
   }
 
   static Future<void> clearAuthState() async {
-    // Clear Firebase data
-    await firebase.FirebaseStorageService.clearAll();
-    print('Auth state and user data cleared');
+    print('Auth state cleared (user data preserved in Firebase)');
   }
 
   static Future<void> saveFinancialProfile(FinancialProfile profile) async {

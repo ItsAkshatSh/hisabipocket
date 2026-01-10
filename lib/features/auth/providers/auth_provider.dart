@@ -63,7 +63,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _googleSignIn.signOut();
       await _firebaseAuth.signOut();
-      await StorageService.clearAuthState();
 
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
@@ -100,9 +99,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     try {
-      await StorageService.clearAuthState();
       await _firebaseAuth.signOut();
       await _googleSignIn.signOut();
+      await StorageService.clearAuthState();
       state = AuthState(status: AuthStatus.unauthenticated);
     } catch (e) {
       print('Error during logout: $e');
