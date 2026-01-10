@@ -31,12 +31,12 @@ class SpendingAnalysisCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: context.primaryColor.withOpacity(0.1),
+                    color: context.borderColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.pie_chart_outlined,
-                    color: context.primaryColor,
+                    color: context.onSurfaceColor,
                     size: 28,
                   ),
                 ),
@@ -141,7 +141,7 @@ class SpendingAnalysisCard extends StatelessWidget {
                           minHeight: 6,
                           backgroundColor: context.borderColor.withOpacity(0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            categoryInfo.color,
+                            context.onSurfaceColor,
                           ),
                         ),
                       ),

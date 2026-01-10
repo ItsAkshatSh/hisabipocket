@@ -27,12 +27,12 @@ class BudgetPlannerCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: context.primaryColor.withOpacity(0.1),
+                    color: context.borderColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: context.primaryColor,
+                    color: context.onSurfaceColor,
                     size: 28,
                   ),
                 ),
@@ -153,7 +153,7 @@ class BudgetPlannerCard extends StatelessWidget {
                         valueColor: AlwaysStoppedAnimation<Color>(
                           percentage > 1
                               ? context.errorColor
-                              : context.primaryColor,
+                              : context.onSurfaceColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -176,8 +176,12 @@ class BudgetPlannerCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: context.primaryColor.withOpacity(0.1),
+                  color: context.borderColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: context.borderColor.withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,7 +190,7 @@ class BudgetPlannerCard extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.lightbulb_outline,
-                          color: context.primaryColor,
+                          color: context.onSurfaceColor,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -195,7 +199,7 @@ class BudgetPlannerCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: context.primaryColor,
+                            color: context.onSurfaceColor,
                           ),
                         ),
                       ],
@@ -209,7 +213,7 @@ class BudgetPlannerCard extends StatelessWidget {
                           Text(
                             '• ',
                             style: TextStyle(
-                              color: context.primaryColor,
+                              color: context.onSurfaceColor,
                               fontSize: 16,
                             ),
                           ),
@@ -276,9 +280,7 @@ class BudgetPlannerCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
-              color: isHighlight
-                  ? context.primaryColor
-                  : context.onSurfaceColor,
+              color: context.onSurfaceColor,
             ),
           ),
         ],

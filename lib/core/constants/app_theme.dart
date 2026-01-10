@@ -9,14 +9,14 @@ class AppColors {
   static const onSurfaceMuted = Color(0xFFB0B8C1);
   static const onSurfaceSubtle = Color(0xFF9B9A97);
 
-  // Primary colors
-  static const primary = Color(0xFF5355B9);
-  static const primaryLight = Color(0xFF6B6DD6);
-  static const primaryHover = Color(0xFF6B6DD6);
+  // Primary colors - white for dark theme
+  static const primary = Color(0xFFFFFFFF);
+  static const primaryLight = Color(0xFFE0E0E0);
+  static const primaryHover = Color(0xFFE0E0E0);
 
   // Borders
   static const border = Color(0xFF3A4354);
-  static const borderFocus = Color(0xFF5355B9);
+  static const borderFocus = Color(0xFFFFFFFF);
 
   // Status colors
   static const success = Color(0xFF10B981);
@@ -35,9 +35,9 @@ final ThemeData hisabiDarkTheme = ThemeData(
   scaffoldBackgroundColor: AppColors.background,
   colorScheme: const ColorScheme.dark(
     primary: AppColors.primary,
-    onPrimary: Colors.white,
+    onPrimary: Colors.black,
     secondary: AppColors.primary,
-    onSecondary: Colors.white,
+    onSecondary: Colors.black,
     surface: AppColors.surface,
     onSurface: AppColors.onSurface,
     error: AppColors.error,
@@ -108,7 +108,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ElevatedButton.styleFrom(
       backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
+      foregroundColor: Colors.black,
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -271,7 +271,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
     thumbColor: WidgetStateProperty.resolveWith<Color>(
       (states) => states.contains(WidgetState.selected)
           ? AppColors.primary
-          : Colors.white,
+          : Colors.grey,
     ),
     trackColor: WidgetStateProperty.resolveWith<Color>(
       (states) => states.contains(WidgetState.selected)
@@ -285,7 +285,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
           ? AppColors.primary
           : Colors.transparent,
     ),
-    checkColor: WidgetStateProperty.all(Colors.white),
+    checkColor: WidgetStateProperty.all(Colors.black),
     side: const BorderSide(color: AppColors.border, width: 1.5),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(3),
@@ -297,7 +297,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
   ),
   floatingActionButtonTheme: const FloatingActionButtonThemeData(
     backgroundColor: AppColors.primary,
-    foregroundColor: Colors.white,
+    foregroundColor: Colors.black,
     elevation: 0,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -331,12 +331,13 @@ class LightAppColors {
   static const onSurfaceMuted = Color(0xFF5A5F6F);
   static const onSurfaceSubtle = Color(0xFF8B8F9C);
 
-  static const primary = Color(0xFF5355B9);
-  static const primaryLight = Color(0xFF6B6DD6);
-  static const primaryHover = Color(0xFF6B6DD6);
+  // Primary colors - black for light theme
+  static const primary = Color(0xFF000000);
+  static const primaryLight = Color(0xFF1A1A1A);
+  static const primaryHover = Color(0xFF1A1A1A);
 
   static const border = Color(0xFFE1E5E9);
-  static const borderFocus = Color(0xFF5355B9);
+  static const borderFocus = Color(0xFF000000);
 
   static const success = Color(0xFF10B981);
   static const error = Color(0xFFEF4444);
@@ -589,7 +590,7 @@ final ThemeData hisabiLightTheme = ThemeData(
     thumbColor: WidgetStateProperty.resolveWith<Color>(
       (states) => states.contains(WidgetState.selected)
           ? LightAppColors.primary
-          : Colors.white,
+          : Colors.grey,
     ),
     trackColor: WidgetStateProperty.resolveWith<Color>(
       (states) => states.contains(WidgetState.selected)

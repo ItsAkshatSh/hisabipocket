@@ -20,12 +20,12 @@ class AIInsightsCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: context.primaryColor.withOpacity(0.1),
+                    color: context.borderColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.psychology_outlined,
-                    color: context.primaryColor,
+                    color: context.onSurfaceColor,
                     size: 28,
                   ),
                 ),
@@ -77,7 +77,7 @@ class AIInsightsCard extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: context.primaryColor,
+                        color: context.onSurfaceColor,
                         shape: BoxShape.circle,
                       ),
                     ),

@@ -161,15 +161,33 @@ class StorageService {
 
   static Future<SettingsState> loadSettings() async {
     try {
-      if (_currentUserEmail == null) {
-        print('User storage not initialized. Returning default settings.');
-        return SettingsState();
-      }
       final box = await Hive.openBox(_settingsBoxName);
       final storedUserEmail = box.get('_user_email') as String?;
       
+      // Restore current user email from storage if not set
+      if (_currentUserEmail == null && storedUserEmail != null) {
+        _currentUserEmail = storedUserEmail;
+        print('Restored user email from settings: $_currentUserEmail');
+      }
+      
+      // If still no user email, try to get it from receipts box
+      if (_currentUserEmail == null) {
+        final receiptsBox = await Hive.openBox(_receiptsBoxName);
+        final receiptsUserEmail = receiptsBox.get('_user_email') as String?;
+        if (receiptsUserEmail != null) {
+          _currentUserEmail = receiptsUserEmail;
+          print('Restored user email from receipts: $_currentUserEmail');
+        }
+      }
+      
+      // If no user email found anywhere, return default settings
+      if (_currentUserEmail == null) {
+        print('No user email found. Returning default settings.');
+        return SettingsState();
+      }
+      
       // Verify data belongs to current user
-      if (storedUserEmail != _currentUserEmail) {
+      if (storedUserEmail != null && storedUserEmail != _currentUserEmail) {
         print('Settings belong to different user. Returning default settings.');
         return SettingsState();
       }
