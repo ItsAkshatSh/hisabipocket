@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hisabi/core/api/api_client.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/services/ai_service.dart';
-import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
@@ -40,14 +38,13 @@ class ReceiptEntryState {
 
 final receiptEntryProvider =
     StateNotifierProvider<ReceiptEntryNotifier, ReceiptEntryState>((ref) {
-  return ReceiptEntryNotifier(ref.watch(apiClientProvider), ref);
+  return ReceiptEntryNotifier(ref);
 });
 
 class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
-  final ApiClient _apiClient;
   final Ref _ref;
 
-  ReceiptEntryNotifier(this._apiClient, this._ref) : super(ReceiptEntryState());
+  ReceiptEntryNotifier(this._ref) : super(ReceiptEntryState());
 
   Future<void> analyzeImage(File imageFile) async {
     state = state.copyWith(isAnalyzing: true, analysisError: null);
@@ -75,17 +72,8 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
     
     _ref.read(receiptsStoreProvider.notifier).add(categorizedReceipt);
 
-    try {
-      await _apiClient.post('/api/save_receipt', {
-        'name': name,
-        'data': {
-          'date': categorizedReceipt.date.toIso8601String(),
-          'store': categorizedReceipt.store,
-          'total': categorizedReceipt.total,
-          'items': categorizedReceipt.items.map((i) => i.toJson()).toList(),
-        }
-      });
-    } catch (_) {}
+    // API call removed - data is now saved to Firebase via receiptsStoreProvider
+    // If you need to sync to a backend API, add it here
 
     state = ReceiptEntryState();
     await _updateWidgetSummaryFromStore();

@@ -3,10 +3,24 @@ import 'package:hisabi/core/storage/storage_service.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
 import 'package:hisabi/features/financial_profile/models/recurring_payment_model.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
 final financialProfileProvider =
-    StateNotifierProvider<FinancialProfileNotifier, AsyncValue<FinancialProfile>>((ref) {
-  return FinancialProfileNotifier(ref)..loadProfile();
+    StateNotifierProvider.autoDispose<FinancialProfileNotifier, AsyncValue<FinancialProfile>>((ref) {
+  final authState = ref.watch(authProvider);
+  final notifier = FinancialProfileNotifier(ref);
+  
+  if (authState.status == AuthStatus.authenticated && authState.user != null) {
+    notifier.loadProfile();
+  }
+  
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    if (previous?.user?.email != next.user?.email) {
+      notifier.loadProfile();
+    }
+  });
+  
+  return notifier;
 });
 
 class FinancialProfileNotifier extends StateNotifier<AsyncValue<FinancialProfile>> {

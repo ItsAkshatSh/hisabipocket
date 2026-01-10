@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/router/app_router.dart';
@@ -9,7 +10,10 @@ import 'package:hisabi/features/settings/providers/settings_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize persistent storage
+  // Initialize Firebase
+  await Firebase.initializeApp();
+  
+  // Initialize storage service
   await StorageService.init();
 
   runApp(

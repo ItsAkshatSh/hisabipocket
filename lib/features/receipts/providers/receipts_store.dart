@@ -1,11 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
-/// Persistent store of receipts with local storage.
 final receiptsStoreProvider =
-    StateNotifierProvider<ReceiptsStore, AsyncValue<List<ReceiptModel>>>(
-  (ref) => ReceiptsStore()..loadReceipts(),
+    StateNotifierProvider.autoDispose<ReceiptsStore, AsyncValue<List<ReceiptModel>>>(
+  (ref) {
+    final authState = ref.watch(authProvider);
+    final store = ReceiptsStore();
+    
+    if (authState.status == AuthStatus.authenticated && authState.user != null) {
+      store.loadReceipts();
+    }
+    
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (previous?.user?.email != next.user?.email) {
+        store.loadReceipts();
+      }
+    });
+    
+    return store;
+  },
 );
 
 class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {

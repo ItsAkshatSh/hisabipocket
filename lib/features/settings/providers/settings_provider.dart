@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
 enum Currency { 
   USD, EUR, GBP, JPY, CNY, INR, AUD, CAD, 
@@ -83,8 +84,21 @@ class SettingsState {
   }
 }
 
-final settingsProvider = StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
-  return SettingsNotifier()..loadSettings();
+final settingsProvider = StateNotifierProvider.autoDispose<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
+  final authState = ref.watch(authProvider);
+  final notifier = SettingsNotifier();
+  
+  if (authState.status == AuthStatus.authenticated && authState.user != null) {
+    notifier.loadSettings();
+  }
+  
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    if (previous?.user?.email != next.user?.email) {
+      notifier.loadSettings();
+    }
+  });
+  
+  return notifier;
 });
 
 class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
