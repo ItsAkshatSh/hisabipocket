@@ -64,3 +64,6 @@ web/generated_plugin_registrant.dart
 *.sublime-workspace
 .env
 .env.local
+
+
+STATS_PAGE_FEATURES.md

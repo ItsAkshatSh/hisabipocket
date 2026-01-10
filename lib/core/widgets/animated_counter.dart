@@ -49,7 +49,7 @@ class _AnimatedCounterState extends State<AnimatedCounter>
     if (oldWidget.value != widget.value) {
       _previousValue = _animation.value;
       _animation = Tween<double>(
-        begin: _previousValue,
+        begin: _previousValue.toDouble(),
         end: widget.value.toDouble(),
       ).animate(CurvedAnimation(
         parent: _controller,

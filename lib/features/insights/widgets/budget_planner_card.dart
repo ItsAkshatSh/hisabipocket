@@ -148,7 +148,7 @@ class BudgetPlannerCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       LinearProgressIndicator(
-                        value: percentage > 1 ? 1 : percentage,
+                        value: percentage > 1 ? 1.0 : percentage.toDouble(),
                         backgroundColor: context.borderColor.withOpacity(0.2),
                         valueColor: AlwaysStoppedAnimation<Color>(
                           percentage > 1

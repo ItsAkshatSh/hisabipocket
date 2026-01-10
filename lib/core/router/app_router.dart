@@ -14,6 +14,7 @@ import 'package:hisabi/features/settings/presentation/privacy_policy_screen.dart
 import 'package:hisabi/features/settings/presentation/terms_of_service_screen.dart';
 import 'package:hisabi/features/wrapped/presentation/week_wrapped_screen.dart';
 import 'package:hisabi/features/insights/presentation/insights_screen.dart';
+import 'package:hisabi/features/financial_profile/presentation/financial_profile_screen.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -74,6 +75,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/financial-profile',
+            builder: (context, state) => const FinancialProfileScreen(),
           ),
           GoRoute(
             path: '/privacy-policy',

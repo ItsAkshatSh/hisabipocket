@@ -25,7 +25,7 @@ class HisabiWidgetProvider : AppWidgetProvider() {
             val obj = JSONObject(summaryJson ?: "{}")
             
             // Get currency code
-            val currencyCode = widgetData.getString("currency_code", "USD")
+            val currencyCode: String = widgetData.getString("currency_code", "USD") ?: "USD"
             
             // Get widget settings
             val settingsJson = widgetData.getString("widget_settings", "{}")
@@ -138,6 +138,7 @@ class HisabiWidgetProvider : AppWidgetProvider() {
         return "$symbol${String.format("%,.2f", value)}"
     }
 }
+
 
 
 

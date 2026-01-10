@@ -36,7 +36,7 @@ class SpendingAnalysisCard extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.pie_chart_outlined,
-                    color: context.onSurfaceColor,
+                    color: context.primaryColor,
                     size: 28,
                   ),
                 ),
