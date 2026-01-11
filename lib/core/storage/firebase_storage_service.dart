@@ -16,9 +16,10 @@ class FirebaseStorageService {
     try {
       _firestore.settings = const Settings(
         persistenceEnabled: true,
-        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+       
+        cacheSizeBytes: 100 * 1024 * 1024, 
       );
-      print('✅ Firebase storage initialized with offline persistence');
+      print(' Firebase storage initialized with offline persistence (100MB cache)');
     } catch (e) {
       print('⚠️ Warning: Could not enable Firestore offline persistence: $e');
       print('Firebase storage initialized (without offline persistence)');
@@ -48,7 +49,7 @@ class FirebaseStorageService {
     }
   }
 
-  static Future<List<ReceiptModel>> loadReceipts() async {
+  static Future<List<ReceiptModel>> loadReceipts({bool useCache = true}) async {
     final userId = currentUserId;
     if (userId == null) {
       print('User not authenticated. Returning empty receipts.');
@@ -56,12 +57,30 @@ class FirebaseStorageService {
     }
 
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('receipts')
-          .doc('list')
-          .get();
+     
+      Source source = useCache ? Source.cache : Source.server;
+      DocumentSnapshot doc;
+      
+      try {
+        doc = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('receipts')
+            .doc('list')
+            .get(GetOptions(source: source));
+      } catch (e) {
+        
+        if (useCache && source == Source.cache) {
+          doc = await _firestore
+              .collection('users')
+              .doc(userId)
+              .collection('receipts')
+              .doc('list')
+              .get(GetOptions(source: Source.server));
+        } else {
+          rethrow;
+        }
+      }
 
       if (!doc.exists || doc.data() == null) {
         print('No receipts found in Firebase');
@@ -90,7 +109,7 @@ class FirebaseStorageService {
           .whereType<ReceiptModel>()
           .toList();
 
-      print('Successfully loaded ${loadedReceipts.length} receipts from Firebase');
+      print('Successfully loaded ${loadedReceipts.length} receipts from Firebase (${doc.metadata.isFromCache ? "cache" : "server"})');
       return loadedReceipts;
     } catch (e) {
       print('Error loading receipts from Firebase: $e');
@@ -99,15 +118,73 @@ class FirebaseStorageService {
   }
 
   static Future<void> addReceipt(ReceiptModel receipt) async {
-    final receipts = await loadReceipts();
-    receipts.add(receipt);
-    await saveReceipts(receipts);
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      // Use Firestore transaction for atomic update
+      await _firestore.runTransaction((transaction) async {
+        final docRef = _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('receipts')
+            .doc('list');
+        
+        final doc = await transaction.get(docRef);
+        final receiptsData = doc.data()?['receipts'] as List? ?? [];
+        
+        // Add new receipt to the list
+        final receiptJson = _receiptToJson(receipt);
+        receiptsData.add(receiptJson);
+        
+        transaction.set(docRef, {'receipts': receiptsData}, SetOptions(merge: false));
+      });
+      
+      print('✅ Receipt added to Firebase for user: $userId');
+    } catch (e, stackTrace) {
+      print('❌ Error adding receipt to Firebase: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   static Future<void> deleteReceipt(String receiptId) async {
-    final receipts = await loadReceipts();
-    receipts.removeWhere((r) => r.id == receiptId);
-    await saveReceipts(receipts);
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      // Use Firestore transaction for atomic update
+      await _firestore.runTransaction((transaction) async {
+        final docRef = _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('receipts')
+            .doc('list');
+        
+        final doc = await transaction.get(docRef);
+        final receiptsData = doc.data()?['receipts'] as List? ?? [];
+        
+        // Remove receipt from the list
+        receiptsData.removeWhere((item) {
+          if (item is Map) {
+            return (item['id'] as String?) == receiptId;
+          }
+          return false;
+        });
+        
+        transaction.set(docRef, {'receipts': receiptsData}, SetOptions(merge: false));
+      });
+      
+      print('✅ Receipt deleted from Firebase for user: $userId');
+    } catch (e, stackTrace) {
+      print('❌ Error deleting receipt from Firebase: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   static Future<void> saveSettings(SettingsState settings) async {
@@ -137,7 +214,7 @@ class FirebaseStorageService {
     }
   }
 
-  static Future<SettingsState> loadSettings() async {
+  static Future<SettingsState> loadSettings({bool useCache = true}) async {
     final userId = currentUserId;
     if (userId == null) {
       print('User not authenticated. Returning default settings.');
@@ -145,10 +222,26 @@ class FirebaseStorageService {
     }
 
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
+      // Try cache first for faster reads
+      Source source = useCache ? Source.cache : Source.server;
+      DocumentSnapshot doc;
+      
+      try {
+        doc = await _firestore
+            .collection('users')
+            .doc(userId)
+            .get(GetOptions(source: source));
+      } catch (e) {
+        // If cache read fails, try server
+        if (useCache && source == Source.cache) {
+          doc = await _firestore
+              .collection('users')
+              .doc(userId)
+              .get(GetOptions(source: Source.server));
+        } else {
+          rethrow;
+        }
+      }
 
       if (!doc.exists || doc.data() == null) {
         print('No settings found in Firebase');
@@ -192,7 +285,7 @@ class FirebaseStorageService {
           ? WidgetSettings.fromJson(Map<String, dynamic>.from(widgetSettingsData))
           : WidgetSettings();
 
-      print('Settings loaded from Firebase for user: $userId');
+      print('Settings loaded from Firebase for user: $userId (${doc.metadata.isFromCache ? "cache" : "server"})');
       return SettingsState(
         currency: currency,
         namingFormat: namingFormat,

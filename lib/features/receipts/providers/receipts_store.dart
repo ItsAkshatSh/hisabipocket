@@ -25,11 +25,27 @@ final receiptsStoreProvider =
 
 class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
   ReceiptsStore() : super(const AsyncValue.loading());
+  
+  // Cache to avoid redundant loads
+  List<ReceiptModel>? _cachedReceipts;
+  DateTime? _lastLoadTime;
+  static const _cacheValidDuration = Duration(seconds: 5);
 
-  Future<void> loadReceipts() async {
+  Future<void> loadReceipts({bool forceRefresh = false}) async {
+    // Use cache if available and not expired
+    if (!forceRefresh && 
+        _cachedReceipts != null && 
+        _lastLoadTime != null &&
+        DateTime.now().difference(_lastLoadTime!) < _cacheValidDuration) {
+      state = AsyncValue.data(_cachedReceipts!);
+      return;
+    }
+
     state = const AsyncValue.loading();
     try {
       final receipts = await StorageService.loadReceipts();
+      _cachedReceipts = receipts;
+      _lastLoadTime = DateTime.now();
       state = AsyncValue.data(receipts);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -49,31 +65,43 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
           )
         : receipt;
 
-    // Persist to storage first
+    // Optimistically update UI first
+    final currentReceipts = state.valueOrNull ?? [];
+    state = AsyncValue.data([...currentReceipts, receiptWithId]);
+    _cachedReceipts = [...currentReceipts, receiptWithId];
+    _lastLoadTime = DateTime.now();
+
+    // Persist to storage in background
     try {
       await StorageService.addReceipt(receiptWithId);
-      
-      // After successful save, update local state
-      final currentReceipts = state.valueOrNull ?? [];
-      state = AsyncValue.data([...currentReceipts, receiptWithId]);
     } catch (e) {
       print('Error adding receipt to storage: $e');
-      // If persistence fails, reload from storage to sync
-      await loadReceipts();
+      // Revert on error
+      state = AsyncValue.data(currentReceipts);
+      _cachedReceipts = currentReceipts;
+      await loadReceipts(forceRefresh: true);
       rethrow;
     }
   }
 
   Future<void> delete(String receiptId) async {
     final currentReceipts = state.valueOrNull ?? [];
-    state = AsyncValue.data(
-      currentReceipts.where((r) => r.id != receiptId).toList(),
-    );
+    final updatedReceipts = currentReceipts.where((r) => r.id != receiptId).toList();
+    
+    // Optimistically update UI first
+    state = AsyncValue.data(updatedReceipts);
+    _cachedReceipts = updatedReceipts;
+    _lastLoadTime = DateTime.now();
 
+    // Persist to storage in background
     try {
       await StorageService.deleteReceipt(receiptId);
     } catch (e) {
-      await loadReceipts();
+      print('Error deleting receipt from storage: $e');
+      // Revert on error
+      state = AsyncValue.data(currentReceipts);
+      _cachedReceipts = currentReceipts;
+      await loadReceipts(forceRefresh: true);
       rethrow;
     }
   }

@@ -145,6 +145,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
   ),
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
+      backgroundColor: Colors.transparent,
       foregroundColor: AppColors.onSurface,
       side: const BorderSide(color: AppColors.border, width: 1),
       shape: RoundedRectangleBorder(
@@ -157,6 +158,17 @@ final ThemeData hisabiDarkTheme = ThemeData(
         fontWeight: FontWeight.w500,
       ),
     ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color>(
+        (states) {
+          if (states.contains(WidgetState.hovered)) {
+            return AppColors.hover;
+          }
+          if (states.contains(WidgetState.pressed)) {
+            return AppColors.hoverSubtle;
+          }
+          return Colors.transparent;
+        },
+      ),
       side: WidgetStateProperty.resolveWith<BorderSide>(
         (states) {
           if (states.contains(WidgetState.hovered)) {
@@ -221,7 +233,7 @@ final ThemeData hisabiDarkTheme = ThemeData(
     ),
   ),
   cardTheme: CardThemeData(
-    color: AppColors.background,
+    color: AppColors.surface,
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(
@@ -464,6 +476,7 @@ final ThemeData hisabiLightTheme = ThemeData(
   ),
   outlinedButtonTheme: OutlinedButtonThemeData(
     style: OutlinedButton.styleFrom(
+      backgroundColor: Colors.transparent,
       foregroundColor: LightAppColors.onSurface,
       side: const BorderSide(color: LightAppColors.border, width: 1),
       shape: RoundedRectangleBorder(
@@ -476,6 +489,17 @@ final ThemeData hisabiLightTheme = ThemeData(
         fontWeight: FontWeight.w500,
       ),
     ).copyWith(
+      backgroundColor: WidgetStateProperty.resolveWith<Color>(
+        (states) {
+          if (states.contains(WidgetState.hovered)) {
+            return LightAppColors.hover;
+          }
+          if (states.contains(WidgetState.pressed)) {
+            return LightAppColors.hoverSubtle;
+          }
+          return Colors.transparent;
+        },
+      ),
       side: WidgetStateProperty.resolveWith<BorderSide>(
         (states) {
           if (states.contains(WidgetState.hovered)) {
@@ -540,7 +564,7 @@ final ThemeData hisabiLightTheme = ThemeData(
     ),
   ),
   cardTheme: CardThemeData(
-    color: LightAppColors.background,
+    color: LightAppColors.surface,
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(

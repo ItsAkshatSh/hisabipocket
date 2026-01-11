@@ -19,6 +19,9 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Trigger widget update when dashboard loads
+    ref.watch(widgetUpdateProvider);
+    
     final period = ref.watch(periodProvider);
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;

@@ -27,35 +27,42 @@ class QuickStatsHeader extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatItem(
-              context,
-              'Total Spending',
-              formatter.format(insights.monthlySpending),
-              Icons.account_balance_wallet_outlined,
+            Expanded(
+              child: _buildStatItem(
+                context,
+                'Total Spending',
+                formatter.format(insights.monthlySpending),
+                Icons.account_balance_wallet_outlined,
+              ),
             ),
             Container(
               width: 1,
               height: 40,
               color: context.borderColor.withOpacity(0.3),
             ),
-            _buildStatItem(
-              context,
-              'Categories',
-              insights.categorySpending.length.toString(),
-              Icons.category_outlined,
+            Expanded(
+              child: _buildStatItem(
+                context,
+                'Categories',
+                insights.categorySpending.length.toString(),
+                Icons.category_outlined,
+              ),
             ),
             Container(
               width: 1,
               height: 40,
               color: context.borderColor.withOpacity(0.3),
             ),
-            _buildStatItem(
-              context,
-              'Savings Rate',
-              '${insights.savingsRate.toStringAsFixed(1)}%',
-              Icons.trending_up_outlined,
+            Expanded(
+              child: _buildStatItem(
+                context,
+                'Savings Rate',
+                '${insights.savingsRate.toStringAsFixed(1)}%',
+                Icons.trending_up_outlined,
+              ),
             ),
             if (topCategory != null) ...[
               Container(
@@ -63,11 +70,13 @@ class QuickStatsHeader extends ConsumerWidget {
                 height: 40,
                 color: context.borderColor.withOpacity(0.3),
               ),
-              _buildStatItem(
-                context,
-                'Top Category',
-                CategoryInfo.getInfo(topCategory.key).emoji,
-                Icons.star_outline,
+              Expanded(
+                child: _buildStatItem(
+                  context,
+                  'Top Category',
+                  CategoryInfo.getInfo(topCategory.key).emoji,
+                  Icons.star_outline,
+                ),
               ),
             ],
           ],
@@ -82,39 +91,38 @@ class QuickStatsHeader extends ConsumerWidget {
     String value,
     IconData icon,
   ) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 24,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 24,
+          color: context.onSurfaceMutedColor,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: context.onSurfaceColor,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
             color: context.onSurfaceMutedColor,
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: context.onSurfaceColor,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: context.onSurfaceMutedColor,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

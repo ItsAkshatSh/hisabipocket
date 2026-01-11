@@ -19,14 +19,6 @@ class _AddRecurringPaymentModalState
     extends ConsumerState<AddRecurringPaymentModal> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  RecurringPaymentPreset? _selectedPreset;
-  bool _isCreatingCustom = false;
-
-  // Custom payment fields
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-  PaymentFrequency _selectedFrequency = PaymentFrequency.monthly;
-  DateTime _startDate = DateTime.now();
 
   @override
   void initState() {
@@ -34,8 +26,6 @@ class _AddRecurringPaymentModalState
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
-        // Don't auto-show custom form, just track search query
-        _isCreatingCustom = false;
       });
     });
   }
@@ -43,77 +33,61 @@ class _AddRecurringPaymentModalState
   @override
   void dispose() {
     _searchController.dispose();
-    _nameController.dispose();
-    _amountController.dispose();
     super.dispose();
   }
 
   void _handlePresetSelected(RecurringPaymentPreset preset) {
-    setState(() {
-      _selectedPreset = preset;
-      _nameController.text = preset.name;
-      _selectedFrequency = preset.defaultFrequency;
-    });
+    // Show dialog with form pre-filled from preset
+    _showPaymentDialog(preset: preset);
   }
 
   void _showCustomForm() {
-    setState(() {
-      _isCreatingCustom = true;
-      _selectedPreset = null; // Clear preset selection
-      if (_nameController.text.isEmpty && _searchController.text.isNotEmpty) {
-        _nameController.text = _searchController.text;
-      }
-    });
+    // Show dialog for custom payment
+    _showPaymentDialog();
   }
 
-  Future<void> _savePayment() async {
-    if (_nameController.text.isEmpty || _amountController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
-      return;
-    }
-
-    final amount = double.tryParse(_amountController.text);
-    if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
-      );
-      return;
-    }
-
-    final payment = RecurringPayment(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: _nameController.text,
-      amount: amount,
-      frequency: _selectedFrequency,
-      startDate: _startDate,
-      iconName: _selectedPreset?.iconName,
-      category: _selectedPreset?.category,
-    );
-
-    await ref.read(financialProfileProvider.notifier).addRecurringPayment(payment);
+  void _showPaymentDialog({RecurringPaymentPreset? preset}) {
+    // Reset form fields
+    final nameController = TextEditingController();
+    final amountController = TextEditingController();
+    var frequency = preset?.defaultFrequency ?? PaymentFrequency.monthly;
+    var startDate = DateTime.now();
     
-    if (mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${payment.name} added successfully'),
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        ),
-      );
+    // Pre-fill if preset selected
+    if (preset != null) {
+      nameController.text = preset.name;
+    } else if (_searchController.text.isNotEmpty) {
+      nameController.text = _searchController.text;
     }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => _PaymentFormDialog(
+        preset: preset,
+        nameController: nameController,
+        amountController: amountController,
+        initialFrequency: frequency,
+        initialStartDate: startDate,
+        onSave: (payment) async {
+          await ref.read(financialProfileProvider.notifier).addRecurringPayment(payment);
+          if (mounted) {
+            Navigator.of(dialogContext).pop();
+            Navigator.of(context).pop(); // Close main modal
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${payment.name} added successfully'),
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
-    final settingsAsync = ref.watch(settingsProvider);
-    final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
-    final formatter = NumberFormat.currency(
-      symbol: currency.name,
-      decimalDigits: 2,
-    );
-
     final filteredPresets = _searchQuery.isEmpty
         ? recurringPaymentPresets
         : recurringPaymentPresets
@@ -145,28 +119,18 @@ class _AddRecurringPaymentModalState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _isCreatingCustom ? 'Create Payment' : 'Add Recurring Payment',
+                  'Add Recurring Payment',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: context.onSurfaceColor,
                   ),
                 ),
-                if (_isCreatingCustom)
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () {
-                      setState(() {
-                        _isCreatingCustom = false;
-                      });
-                    },
-                  ),
               ],
             ),
           ),
           // Search Bar
-          if (!_isCreatingCustom)
-            Padding(
+          Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
                 controller: _searchController,
@@ -212,9 +176,7 @@ class _AddRecurringPaymentModalState
           const SizedBox(height: 16),
           // Content
           Expanded(
-            child: _isCreatingCustom
-                ? _buildCustomForm(context, formatter)
-                : _buildPresetList(context, filteredPresets),
+            child: _buildPresetList(context, filteredPresets),
           ),
         ],
       ),
@@ -245,7 +207,7 @@ class _AddRecurringPaymentModalState
         // Show matching presets
         ...presets.map((preset) => _PresetCard(
               preset: preset,
-              isSelected: _selectedPreset?.name == preset.name,
+              isSelected: false,
               onTap: () => _handlePresetSelected(preset),
             )),
         // Show create button if search query doesn't match any preset
@@ -256,432 +218,332 @@ class _AddRecurringPaymentModalState
             onTap: _showCustomForm,
           ),
         ],
-        if (_selectedPreset != null) ...[
-          const SizedBox(height: 24),
-          _buildPaymentDetails(context),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _savePayment,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Add Payment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
         SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
       ],
     );
   }
 
-  Widget _buildPaymentDetails(BuildContext context) {
-    if (_selectedPreset == null) return const SizedBox.shrink();
+}
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: context.borderColor.withOpacity(0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Payment Details',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: context.onSurfaceMutedColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              labelText: 'Name',
-              filled: true,
-              fillColor: context.backgroundColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-            ],
-            decoration: InputDecoration(
-              labelText: 'Amount',
-              prefixText: '${ref.read(settingsProvider).valueOrNull?.currency.name ?? Currency.USD.name} ',
-              filled: true,
-              fillColor: context.backgroundColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<PaymentFrequency>(
-            value: _selectedFrequency,
-            decoration: InputDecoration(
-              labelText: 'Frequency',
-              filled: true,
-              fillColor: context.backgroundColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            items: PaymentFrequency.values.map((freq) {
-              String label;
-              switch (freq) {
-                case PaymentFrequency.weekly:
-                  label = 'Weekly';
-                  break;
-                case PaymentFrequency.biWeekly:
-                  label = 'Bi-weekly';
-                  break;
-                case PaymentFrequency.monthly:
-                  label = 'Monthly';
-                  break;
-                case PaymentFrequency.quarterly:
-                  label = 'Quarterly';
-                  break;
-                case PaymentFrequency.yearly:
-                  label = 'Yearly';
-                  break;
-              }
-              return DropdownMenuItem(
-                value: freq,
-                child: Text(label),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _selectedFrequency = value;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: () async {
-              final date = await showDatePicker(
-                context: context,
-                initialDate: _startDate,
-                firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-              );
-              if (date != null) {
-                setState(() {
-                  _startDate = date;
-                });
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.backgroundColor,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Start Date',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.onSurfaceMutedColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('MMM d, y').format(_startDate),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.onSurfaceColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 20,
-                    color: context.onSurfaceMutedColor,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: context.primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _getPreviewText(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+class _PaymentFormDialog extends ConsumerStatefulWidget {
+  final RecurringPaymentPreset? preset;
+  final TextEditingController nameController;
+  final TextEditingController amountController;
+  final PaymentFrequency initialFrequency;
+  final DateTime initialStartDate;
+  final Function(RecurringPayment) onSave;
+
+  const _PaymentFormDialog({
+    this.preset,
+    required this.nameController,
+    required this.amountController,
+    required this.initialFrequency,
+    required this.initialStartDate,
+    required this.onSave,
+  });
+
+  @override
+  ConsumerState<_PaymentFormDialog> createState() => _PaymentFormDialogState();
+}
+
+class _PaymentFormDialogState extends ConsumerState<_PaymentFormDialog> {
+  late PaymentFrequency _selectedFrequency;
+  late DateTime _startDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedFrequency = widget.initialFrequency;
+    _startDate = widget.initialStartDate;
   }
 
-  Widget _buildCustomForm(BuildContext context, NumberFormat formatter) {
-    // Pre-fill name from search if empty
-    if (_nameController.text.isEmpty && _searchController.text.isNotEmpty) {
-      _nameController.text = _searchController.text;
+  Future<void> _savePayment() async {
+    if (widget.nameController.text.isEmpty || widget.amountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _nameController,
-            autofocus: _nameController.text.isEmpty,
-            decoration: InputDecoration(
-              labelText: 'Payment Name',
-              hintText: 'e.g., Gym Membership',
-              filled: true,
-              fillColor: context.surfaceColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: context.borderColor),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: context.borderColor),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: context.primaryColor,
-                  width: 2,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-            ],
-            decoration: InputDecoration(
-              labelText: 'Amount',
-              prefixText: '${ref.read(settingsProvider).valueOrNull?.currency.name ?? Currency.USD.name} ',
-              filled: true,
-              fillColor: context.surfaceColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<PaymentFrequency>(
-            value: _selectedFrequency,
-            decoration: InputDecoration(
-              labelText: 'Frequency',
-              filled: true,
-              fillColor: context.surfaceColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            items: PaymentFrequency.values.map((freq) {
-              String label;
-              switch (freq) {
-                case PaymentFrequency.weekly:
-                  label = 'Weekly';
-                  break;
-                case PaymentFrequency.biWeekly:
-                  label = 'Bi-weekly';
-                  break;
-                case PaymentFrequency.monthly:
-                  label = 'Monthly';
-                  break;
-                case PaymentFrequency.quarterly:
-                  label = 'Quarterly';
-                  break;
-                case PaymentFrequency.yearly:
-                  label = 'Yearly';
-                  break;
-              }
-              return DropdownMenuItem(
-                value: freq,
-                child: Text(label),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _selectedFrequency = value;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          InkWell(
-            onTap: () async {
-              final date = await showDatePicker(
-                context: context,
-                initialDate: _startDate,
-                firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-              );
-              if (date != null) {
-                setState(() {
-                  _startDate = date;
-                });
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.surfaceColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.borderColor),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Start Date',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.onSurfaceMutedColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('MMM d, y').format(_startDate),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.onSurfaceColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Icon(
-                    Icons.calendar_today,
-                    size: 20,
-                    color: context.onSurfaceMutedColor,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: context.primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _getPreviewText(),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.primaryColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _savePayment,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Add Payment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 16),
-        ],
-      ),
+    final amount = double.tryParse(widget.amountController.text);
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid amount')),
+      );
+      return;
+    }
+
+    final payment = RecurringPayment(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: widget.nameController.text,
+      amount: amount,
+      frequency: _selectedFrequency,
+      startDate: _startDate,
+      iconName: widget.preset?.iconName,
+      category: widget.preset?.category,
     );
+
+    widget.onSave(payment);
   }
 
   String _getPreviewText() {
     final payment = RecurringPayment(
       id: '',
-      name: _nameController.text.isEmpty ? 'Payment' : _nameController.text,
-      amount: double.tryParse(_amountController.text) ?? 0.0,
+      name: widget.nameController.text.isEmpty ? 'Payment' : widget.nameController.text,
+      amount: double.tryParse(widget.amountController.text) ?? 0.0,
       frequency: _selectedFrequency,
       startDate: _startDate,
     );
     return payment.previewText;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsAsync = ref.watch(settingsProvider);
+    final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+
+    return Dialog(
+      backgroundColor: context.backgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: 500,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.preset != null ? 'Add Payment' : 'Create Payment',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: context.onSurfaceColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                    color: context.onSurfaceMutedColor,
+                  ),
+                ],
+              ),
+            ),
+            // Form
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: widget.nameController,
+                      autofocus: widget.nameController.text.isEmpty,
+                      decoration: InputDecoration(
+                        labelText: 'Payment Name',
+                        hintText: 'e.g., Gym Membership',
+                        filled: true,
+                        fillColor: context.surfaceColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: context.borderColor),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: context.borderColor),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: context.primaryColor,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: widget.amountController,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                      ],
+                      decoration: InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '${currency.name} ',
+                        filled: true,
+                        fillColor: context.surfaceColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<PaymentFrequency>(
+                      value: _selectedFrequency,
+                      decoration: InputDecoration(
+                        labelText: 'Frequency',
+                        filled: true,
+                        fillColor: context.surfaceColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: PaymentFrequency.values.map((freq) {
+                        String label;
+                        switch (freq) {
+                          case PaymentFrequency.weekly:
+                            label = 'Weekly';
+                            break;
+                          case PaymentFrequency.biWeekly:
+                            label = 'Bi-weekly';
+                            break;
+                          case PaymentFrequency.monthly:
+                            label = 'Monthly';
+                            break;
+                          case PaymentFrequency.quarterly:
+                            label = 'Quarterly';
+                            break;
+                          case PaymentFrequency.yearly:
+                            label = 'Yearly';
+                            break;
+                        }
+                        return DropdownMenuItem(
+                          value: freq,
+                          child: Text(label),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedFrequency = value;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: _startDate,
+                          firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          setState(() {
+                            _startDate = date;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: context.surfaceColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.borderColor),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Start Date',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.onSurfaceMutedColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat('MMM d, y').format(_startDate),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: context.onSurfaceColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Icon(
+                              Icons.calendar_today,
+                              size: 20,
+                              color: context.onSurfaceMutedColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: context.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: context.primaryColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _getPreviewText(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+            // Save Button
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _savePayment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add Payment',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

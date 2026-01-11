@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/core/models/dashboard_models.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
+import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 enum Period { thisMonth, thisYear, allTime }
 
@@ -113,5 +115,65 @@ final quickStatsProvider =
     lowestExpense: lowestExpense,
     daysWithExpenses: daysWithExpenses,
     totalItems: totalItems,
+  );
+});
+
+// Widget update provider - watches receipts and updates widget automatically
+final widgetUpdateProvider = FutureProvider.autoDispose<void>((ref) async {
+  final receiptsAsync = ref.watch(receiptsStoreProvider);
+  final settingsAsync = ref.watch(settingsProvider);
+  
+  // Only update when receipts are loaded (not loading or error)
+  return receiptsAsync.when(
+    data: (receipts) async {
+      final settings = settingsAsync.valueOrNull;
+      final currencyCode = settings?.currency.name ?? 'USD';
+      final widgetSettings = settings?.widgetSettings;
+      
+      final now = DateTime.now();
+      final currentMonth = receipts
+          .where((r) => r.date.year == now.year && r.date.month == now.month)
+          .toList();
+
+      final totalThisMonth =
+          currentMonth.fold<double>(0.0, (sum, r) => sum + r.total);
+      final receiptsCount = currentMonth.length;
+      final averagePerReceipt = receiptsCount > 0 ? totalThisMonth / receiptsCount : 0.0;
+      
+      final daysWithExpenses = currentMonth
+          .map((r) => DateTime(r.date.year, r.date.month, r.date.day))
+          .toSet()
+          .length;
+      
+      final totalItems = currentMonth.fold<int>(0, (sum, r) => sum + r.items.length);
+
+      String topStore = '—';
+      double topStoreTotal = 0.0;
+      for (final r in currentMonth) {
+        final tally = currentMonth
+            .where((x) => x.store == r.store)
+            .fold<double>(0.0, (sum, x) => sum + x.total);
+        if (tally > topStoreTotal) {
+          topStoreTotal = tally;
+          topStore = r.store;
+        }
+      }
+
+      await saveAndUpdateWidgetSummary(
+        WidgetSummary(
+          totalThisMonth: totalThisMonth,
+          topStore: topStore,
+          receiptsCount: receiptsCount,
+          averagePerReceipt: averagePerReceipt,
+          daysWithExpenses: daysWithExpenses,
+          totalItems: totalItems,
+          updatedAt: DateTime.now(),
+        ),
+        currencyCode: currencyCode,
+        widgetSettings: widgetSettings?.toJson(),
+      );
+    },
+    loading: () async {},
+    error: (_, __) async {},
   );
 });

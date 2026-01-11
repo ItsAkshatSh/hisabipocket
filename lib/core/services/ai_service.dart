@@ -6,7 +6,7 @@ import 'package:hisabi/core/models/receipt_model.dart';
 class AIService {
   static const String _apiKey = 'sk-hc-v1-03edd072f4414067b3166355b70b49eb27576e2313b54bbe8ea04da7f387f8ec';
   static const String _baseUrl = 'https://ai.hackclub.com/proxy/v1';
-  static const String _defaultModel = 'openai/gpt-5.1';
+  static const String _defaultModel = 'openai/gpt-5-mini';
   
   /// Categorize receipt items using AI
   Future<Map<String, ExpenseCategory>> categorizeItems({
