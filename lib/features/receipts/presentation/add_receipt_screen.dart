@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
@@ -85,7 +87,8 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.error_outline, color: Theme.of(context).colorScheme.onError),
+                Icon(Icons.error_outline,
+                    color: Theme.of(context).colorScheme.onError),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Analysis Failed: ${next.analysisError}')),
               ],
@@ -124,10 +127,11 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
                     Expanded(
                       child: Text(
                         'New Receipt Entry',
-                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: context.onSurfaceColor,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.displayMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: context.onSurfaceColor,
+                                ),
                       ),
                     ),
                   ],
@@ -146,17 +150,16 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
                 ),
               ),
               const SizedBox(height: 32),
-
-          if (isAnalysisComplete)
-            FadeInWidget(
-              child: _ResultsSection(
-                receipt: entryState.analyzedReceipt!,
-                onSave: _startSaveReceiptFlow,
-                onClear: ref.read(receiptEntryProvider.notifier).clearResult,
-              ),
-            )
-          else
-            _buildEntryTabs(context, entryState.isAnalyzing),
+              (isAnalysisComplete
+                  ? FadeInWidget(
+                      child: _ResultsSection(
+                        receipt: entryState.analyzedReceipt!,
+                        onSave: _startSaveReceiptFlow,
+                        onClear:
+                            ref.read(receiptEntryProvider.notifier).clearResult,
+                      ),
+                    )
+                  : _buildEntryTabs(context, entryState.isAnalyzing)),
             ],
           ),
         ),
@@ -170,11 +173,12 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
   }
 
   Widget _buildEntryTabs(BuildContext context, bool isAnalyzing) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return FadeInWidget(
       delay: const Duration(milliseconds: 150),
-            child: Column(
-              children: [
-                Container(
+      child: Column(
+        children: [
+          Container(
             constraints: const BoxConstraints(minHeight: 64),
             decoration: BoxDecoration(
               color: context.surfaceColor,
@@ -251,9 +255,9 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           SizedBox(
-            height: MediaQuery.of(context).size.height * 0.65,
+            height: screenHeight * 0.75, // Increased height for better fit
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -273,9 +277,42 @@ class _UploadReceiptTab extends ConsumerWidget {
   const _UploadReceiptTab({required this.isAnalyzing});
 
   void _handleImageUpload(BuildContext context, WidgetRef ref) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Receipt image upload is not yet implemented. Please use manual entry.'),
+    final ImagePicker picker = ImagePicker();
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                if (image != null) {
+                  ref.read(receiptEntryProvider.notifier).analyzeImage(File(image.path));
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: const Text('Choose from Gallery'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  ref.read(receiptEntryProvider.notifier).analyzeImage(File(image.path));
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -285,14 +322,13 @@ class _UploadReceiptTab extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Enhanced Drag-and-Drop Area
         _UploadArea(
           onTap: () => _handleImageUpload(context, ref),
           isAnalyzing: isAnalyzing,
         ),
         const SizedBox(height: 40),
         if (isAnalyzing)
-          _AnalysisProgress()
+          const _AnalysisProgress()
         else
           _AnalyzeButton(
             onPressed: () => _handleImageUpload(context, ref),
@@ -302,12 +338,12 @@ class _UploadReceiptTab extends ConsumerWidget {
   }
 }
 
-// Enhanced Upload Area Component
 class _UploadArea extends StatefulWidget {
   final VoidCallback onTap;
   final bool isAnalyzing;
 
   const _UploadArea({
+    super.key,
     required this.onTap,
     required this.isAnalyzing,
   });
@@ -358,7 +394,6 @@ class _UploadAreaState extends State<_UploadArea>
           ),
           child: Stack(
             children: [
-              // Animated border effect
               if (_isHovered)
                 AnimatedBuilder(
                   animation: _pulseController,
@@ -376,7 +411,6 @@ class _UploadAreaState extends State<_UploadArea>
                     );
                   },
                 ),
-              // Content
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -395,12 +429,11 @@ class _UploadAreaState extends State<_UploadArea>
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Text(
+                    const Text(
                       'Drop your receipt here',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: context.onSurfaceColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -451,8 +484,8 @@ class _UploadAreaState extends State<_UploadArea>
   }
 }
 
-// Analysis Progress Component
 class _AnalysisProgress extends StatelessWidget {
+  const _AnalysisProgress({super.key});
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -474,24 +507,24 @@ class _AnalysisProgress extends StatelessWidget {
                 height: 48,
                 child: CircularProgressIndicator(
                   strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(context.primaryColor),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(context.primaryColor),
                 ),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Analyzing receipt...',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'This may take a moment',
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.onSurfaceMuted,
+                  color: context.onSurfaceMutedColor,
                 ),
               ),
             ],
@@ -502,11 +535,10 @@ class _AnalysisProgress extends StatelessWidget {
   }
 }
 
-// Analyze Button Component
 class _AnalyzeButton extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const _AnalyzeButton({required this.onPressed});
+  const _AnalyzeButton({super.key, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -535,12 +567,9 @@ class _AnalyzeButton extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Tab 2: Manual Entry
-// -----------------------------------------------------------------------------
 class _ManualEntryTab extends StatefulWidget {
   final Function(ReceiptModel) onSave;
-  const _ManualEntryTab({required this.onSave});
+  const _ManualEntryTab({super.key, required this.onSave});
 
   @override
   State<_ManualEntryTab> createState() => _ManualEntryTabState();
@@ -565,7 +594,6 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
     setState(() {
       _items.add(ReceiptItem(name: '', quantity: 1.0, price: 0.0, total: 0.0));
     });
-    // Scroll to bottom after item is added
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -607,7 +635,6 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
       total: total,
     );
 
-    // Set the resulting receipt in the provider and start the save flow
     widget.onSave(manualReceipt);
   }
 
@@ -623,19 +650,18 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Store Name
           TextFormField(
             decoration: const InputDecoration(
               labelText: 'Store Name',
               hintText: 'e.g., Walmart, Target',
               prefixIcon: Icon(Icons.store_outlined),
+              isDense: true,
             ),
             onSaved: (v) => _storeName = v ?? '',
             validator: (v) => v!.isEmpty ? 'Store name is required' : null,
-            style: const TextStyle(color: AppColors.onSurface),
+            style: TextStyle(color: context.onSurfaceColor),
           ),
-          const SizedBox(height: 20),
-          // Date Picker
+          const SizedBox(height: 16),
           InkWell(
             onTap: () async {
               final date = await showDatePicker(
@@ -646,11 +672,11 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 builder: (context, child) {
                   return Theme(
                     data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.dark(
-                        primary: AppColors.primary,
+                      colorScheme: ColorScheme.dark(
+                        primary: context.primaryColor,
                         onPrimary: Colors.white,
-                        surface: AppColors.surface,
-                        onSurface: AppColors.onSurface,
+                        surface: context.surfaceColor,
+                        onSurface: context.onSurfaceColor,
                       ),
                     ),
                     child: child!,
@@ -661,7 +687,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
             },
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
                 color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
@@ -672,69 +698,68 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_outlined,
-                    color: AppColors.primary,
-                    size: 20,
+                    color: context.primaryColor,
+                    size: 18,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Date',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.onSurfaceMuted,
+                            fontSize: 11,
+                            color: context.onSurfaceMutedColor,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           DateFormat.yMMMMd().format(_selectedDate),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: AppColors.onSurface,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: context.onSurfaceColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right,
-                    color: AppColors.onSurfaceMuted,
+                    color: context.onSurfaceMutedColor,
+                    size: 18,
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 32),
-
-          // Items Section Header
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Items',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               TextButton.icon(
                 onPressed: _addItemRow,
-                icon: const Icon(Icons.add_circle_outline, size: 18),
-                label: const Text('Add Item'),
+                icon: const Icon(Icons.add_circle_outline, size: 16),
+                label: const Text('Add Item', style: TextStyle(fontSize: 13)),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Items List
+          const SizedBox(height: 8),
           Expanded(
             child: _items.isEmpty
                 ? Center(
@@ -743,25 +768,28 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                       children: [
                         Icon(
                           Icons.receipt_long_outlined,
-                          size: 64,
-                          color: AppColors.onSurfaceMuted.withOpacity(0.5),
+                          size: 48,
+                          color: context.onSurfaceMutedColor.withOpacity(0.5),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        const SizedBox(height: 12),
+                        Text(
                           'No items added yet',
                           style: TextStyle(
-                            color: AppColors.onSurfaceMuted,
-                            fontSize: 16,
+                            color: context.onSurfaceMutedColor,
+                            fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton.icon(
                           onPressed: _addItemRow,
-                          icon: const Icon(Icons.add, size: 18),
+                          icon: const Icon(Icons.add, size: 16),
                           label: const Text('Add First Item'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
+                            visualDensity: VisualDensity.compact,
                           ),
                         ),
                       ],
@@ -770,10 +798,11 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 : ListView.builder(
                     key: const PageStorageKey('manual_items_list'),
                     controller: _scrollController,
+                    padding: const EdgeInsets.only(top: 4, bottom: 16),
                     itemCount: _items.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: _ManualItemRow(
                           key: ValueKey('manual_item_$index'),
                           item: _items[index],
@@ -789,11 +818,10 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                     },
                   ),
           ),
-
-          // Total and Save Button
+          const SizedBox(height: 12),
           if (_items.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: context.surfaceColor,
                 borderRadius: BorderRadius.circular(8),
@@ -808,31 +836,30 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                   const Text(
                     'Total',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
                     ),
                   ),
                   Text(
                     NumberFormat.currency(symbol: '\$').format(total),
-                    style: const TextStyle(
-                      fontSize: 20,
+                    style: TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _calculateAndSave,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -840,7 +867,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 child: const Text(
                   'Save Manual Entry',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -887,7 +914,6 @@ class _ManualItemRowState extends State<_ManualItemRow> {
       text: widget.item.price.toStringAsFixed(2),
     );
 
-    // Add listeners to update parent when text changes
     _nameController.addListener(_updateItem);
     _quantityController.addListener(_updateItem);
     _priceController.addListener(_updateItem);
@@ -896,7 +922,6 @@ class _ManualItemRowState extends State<_ManualItemRow> {
   @override
   void didUpdateWidget(_ManualItemRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only update controllers if the item actually changed (not from our own updates)
     if (oldWidget.item.name != widget.item.name &&
         _nameController.text != widget.item.name) {
       _nameController.text = widget.item.name;
@@ -912,9 +937,10 @@ class _ManualItemRowState extends State<_ManualItemRow> {
   }
 
   void _updateItem() {
-    final quantity = double.tryParse(_quantityController.text) ?? widget.item.quantity;
+    final quantity =
+        double.tryParse(_quantityController.text) ?? widget.item.quantity;
     final price = double.tryParse(_priceController.text) ?? widget.item.price;
-    
+
     widget.onChanged(ReceiptItem(
       name: _nameController.text,
       quantity: quantity,
@@ -936,84 +962,89 @@ class _ManualItemRowState extends State<_ManualItemRow> {
     final total = widget.item.price * widget.item.quantity;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: AppColors.border,
+          color: context.borderColor.withOpacity(0.5),
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Item Name
           TextFormField(
             controller: _nameController,
             decoration: const InputDecoration(
               labelText: 'Item Name',
               hintText: 'Enter item name',
-              prefixIcon: Icon(Icons.shopping_bag_outlined),
+              prefixIcon: Icon(Icons.shopping_bag_outlined, size: 18),
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(vertical: 8),
             ),
             validator: (v) => v!.isEmpty ? 'Required' : null,
-            style: const TextStyle(color: AppColors.onSurface),
+            style: TextStyle(color: context.onSurfaceColor, fontSize: 14),
           ),
-          const SizedBox(height: 16),
-          // Quantity and Price Row
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
+                flex: 2,
                 child: TextFormField(
                   controller: _quantityController,
                   decoration: const InputDecoration(
-                    labelText: 'Quantity',
-                    prefixIcon: Icon(Icons.numbers_outlined),
+                    labelText: 'Qty',
+                    prefixIcon: Icon(Icons.numbers_outlined, size: 18),
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  style: const TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurfaceColor, fontSize: 14),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
+                flex: 3,
                 child: TextFormField(
                   controller: _priceController,
                   decoration: const InputDecoration(
                     labelText: 'Price',
-                    prefixIcon: Icon(Icons.attach_money_outlined),
+                    prefixIcon: Icon(Icons.attach_money_outlined, size: 18),
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 8),
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   validator: (v) =>
                       (double.tryParse(v ?? '') ?? -1) < 0 ? 'Invalid' : null,
-                  style: const TextStyle(color: AppColors.onSurface),
+                  style: TextStyle(color: context.onSurfaceColor, fontSize: 14),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Total and Remove Button
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 8,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  color: context.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   'Total: ${NumberFormat.currency(symbol: '\$').format(total)}',
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: TextStyle(
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                   ),
                 ),
               ),
@@ -1022,10 +1053,12 @@ class _ManualItemRowState extends State<_ManualItemRow> {
                   icon: const Icon(
                     Icons.delete_outline,
                     color: AppColors.error,
-                    size: 20,
+                    size: 18,
                   ),
                   onPressed: widget.onRemove,
                   tooltip: 'Remove item',
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
                 ),
             ],
           ),
@@ -1035,26 +1068,26 @@ class _ManualItemRowState extends State<_ManualItemRow> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Shared: Results Section
-// -----------------------------------------------------------------------------
 class _ResultsSection extends ConsumerWidget {
   final ReceiptModel receipt;
   final Function(ReceiptModel) onSave;
   final VoidCallback onClear;
   const _ResultsSection(
-      {required this.receipt, required this.onSave, required this.onClear});
+      {super.key,
+      required this.receipt,
+      required this.onSave,
+      required this.onClear});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
-    final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
+    final formatter =
+        NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Success Header
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -1090,7 +1123,6 @@ class _ResultsSection extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
                       ),
                     ),
                     SizedBox(height: 4),
@@ -1116,18 +1148,16 @@ class _ResultsSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 24),
-
-        // Receipt Info Cards
         Row(
           children: [
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.border,
+                    color: context.borderColor,
                     width: 1,
                   ),
                 ),
@@ -1147,7 +1177,6 @@ class _ResultsSection extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
                       ),
                     ),
                   ],
@@ -1159,10 +1188,10 @@ class _ResultsSection extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.surfaceColor,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.border,
+                    color: context.borderColor,
                     width: 1,
                   ),
                 ),
@@ -1182,7 +1211,6 @@ class _ResultsSection extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onSurface,
                       ),
                     ),
                   ],
@@ -1192,14 +1220,11 @@ class _ResultsSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 24),
-
-        // Items List
-        Text(
-          'Items (${receipt.items.length})',
-          style: const TextStyle(
+        const Text(
+          'Items',
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppColors.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -1210,10 +1235,10 @@ class _ResultsSection extends ConsumerWidget {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: AppColors.border,
+                color: context.borderColor,
                 width: 1,
               ),
             ),
@@ -1223,16 +1248,16 @@ class _ResultsSection extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: context.primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: context.primaryColor,
                       ),
                     ),
                   ),
@@ -1247,7 +1272,6 @@ class _ResultsSection extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1263,10 +1287,10 @@ class _ResultsSection extends ConsumerWidget {
                 ),
                 Text(
                   formatter.format(item.total),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                   ),
                 ),
               ],
@@ -1274,15 +1298,13 @@ class _ResultsSection extends ConsumerWidget {
           );
         }),
         const SizedBox(height: 24),
-
-        // Grand Total
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: context.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
+              color: context.primaryColor.withOpacity(0.3),
               width: 1.5,
             ),
           ),
@@ -1294,23 +1316,20 @@ class _ResultsSection extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurface,
                 ),
               ),
               Text(
                 formatter.format(receipt.total),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: context.primaryColor,
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 32),
-
-        // Save Button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -1324,8 +1343,8 @@ class _ResultsSection extends ConsumerWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1338,12 +1357,9 @@ class _ResultsSection extends ConsumerWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Save Receipt Modal/Dialog
-// -----------------------------------------------------------------------------
 class _SaveReceiptModal extends ConsumerStatefulWidget {
   final ReceiptModel receipt;
-  const _SaveReceiptModal({required this.receipt});
+  const _SaveReceiptModal({super.key, required this.receipt});
 
   @override
   ConsumerState<_SaveReceiptModal> createState() => __SaveReceiptModalState();
@@ -1356,7 +1372,6 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
   @override
   void initState() {
     super.initState();
-    // Generate default name based on settings
     final settingsAsync = ref.read(settingsProvider);
     final settings = settingsAsync.valueOrNull ?? SettingsState();
     final store = widget.receipt.store;
@@ -1390,11 +1405,11 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
     return Dialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.surfaceColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(
-          color: AppColors.border,
+        side: BorderSide(
+          color: context.borderColor,
           width: 1,
         ),
       ),
@@ -1410,39 +1425,39 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: context.primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.save_outlined,
-                    color: AppColors.primary,
+                    color: context.primaryColor,
                     size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Save Receipt',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.onSurface,
+                      color: context.onSurfaceColor,
                     ),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
                   onPressed: () => Navigator.of(context).pop(false),
-                  color: AppColors.onSurfaceMuted,
+                  color: context.onSurfaceMutedColor,
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Give your receipt a name',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.onSurfaceMuted,
+                color: context.onSurfaceMutedColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -1455,33 +1470,33 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
               ),
               validator: (v) =>
                   v!.trim().isEmpty ? 'Name cannot be empty' : null,
-              style: const TextStyle(color: AppColors.onSurface),
+              style: TextStyle(color: context.onSurfaceColor),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: context.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.onSurfaceMuted,
+                      color: context.onSurfaceMutedColor,
                     ),
                   ),
                   Text(
                     NumberFormat.currency(symbol: currency.name).format(
                       widget.receipt.total,
                     ),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: context.primaryColor,
                     ),
                   ),
                 ],
@@ -1495,7 +1510,7 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: context.borderColor),
                     ),
                     child: const Text('Cancel'),
                   ),
@@ -1506,18 +1521,18 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _save,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: _isSaving
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                                Theme.of(context).colorScheme.onPrimary,
                               ),
                             ),
                           )
@@ -1538,8 +1553,8 @@ class __SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
   }
 }
 
-// Quick Add Floating Button
 class _QuickAddButton extends StatelessWidget {
+  const _QuickAddButton({super.key});
   @override
   Widget build(BuildContext context) {
     return Container(

@@ -87,7 +87,7 @@ class FirebaseStorageService {
         return [];
       }
 
-      final data = doc.data()!;
+      final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       final receiptsData = data['receipts'] as List?;
       
       if (receiptsData == null) {
@@ -133,7 +133,8 @@ class FirebaseStorageService {
             .doc('list');
         
         final doc = await transaction.get(docRef);
-        final receiptsData = doc.data()?['receipts'] as List? ?? [];
+        final Map<String, dynamic>? docData = doc.data() as Map<String, dynamic>?;
+        final receiptsData = docData?['receipts'] as List? ?? [];
         
         // Add new receipt to the list
         final receiptJson = _receiptToJson(receipt);
@@ -166,7 +167,8 @@ class FirebaseStorageService {
             .doc('list');
         
         final doc = await transaction.get(docRef);
-        final receiptsData = doc.data()?['receipts'] as List? ?? [];
+        final Map<String, dynamic>? docData = doc.data() as Map<String, dynamic>?;
+        final receiptsData = docData?['receipts'] as List? ?? [];
         
         // Remove receipt from the list
         receiptsData.removeWhere((item) {
@@ -248,7 +250,7 @@ class FirebaseStorageService {
         return SettingsState();
       }
 
-      final data = doc.data()!;
+      final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       final settingsData = data['settings'] as Map<String, dynamic>?;
       
       if (settingsData == null) {
@@ -338,7 +340,7 @@ class FirebaseStorageService {
         return FinancialProfile();
       }
 
-      final data = doc.data()!;
+      final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       final profileData = data['financialProfile'] as Map<String, dynamic>?;
 
       if (profileData == null) {
@@ -414,4 +416,3 @@ class FirebaseStorageService {
     );
   }
 }
-

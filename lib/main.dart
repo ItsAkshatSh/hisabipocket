@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/router/app_router.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
@@ -10,6 +11,7 @@ import 'package:hisabi/features/settings/providers/settings_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp();
   await StorageService.init();
 

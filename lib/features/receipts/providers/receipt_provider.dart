@@ -2,9 +2,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/services/ai_service.dart';
-import 'package:hisabi/core/widgets/widget_summary.dart';
+import 'package:hisabi/core/services/receipt_ocr_service.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
-import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 final receiptDetailsProvider = FutureProvider.autoDispose.family<ReceiptModel, String>((ref, receiptId) async {
   final receiptsAsync = ref.read(receiptsStoreProvider);
@@ -43,6 +42,7 @@ final receiptEntryProvider =
 
 class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
   final Ref _ref;
+  final ReceiptOCRService _ocrService = ReceiptOCRService();
 
   ReceiptEntryNotifier(this._ref) : super(ReceiptEntryState());
 
@@ -50,14 +50,22 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
     state = state.copyWith(isAnalyzing: true, analysisError: null);
     
     try {
-      state = state.copyWith(
-        isAnalyzing: false,
-        analysisError: 'Receipt image analysis is not yet implemented. Please use manual entry.',
-      );
+      final receipt = await _ocrService.processReceipt(imageFile);
+      if (receipt != null) {
+        state = state.copyWith(
+          analyzedReceipt: receipt,
+          isAnalyzing: false,
+        );
+      } else {
+        state = state.copyWith(
+          isAnalyzing: false,
+          analysisError: 'Failed to extract data from receipt. Please try again or enter manually.',
+        );
+      }
     } catch (e) {
       state = state.copyWith(
         isAnalyzing: false,
-        analysisError: 'AI Analysis failed. Try manual entry.',
+        analysisError: 'OCR Analysis failed: $e',
       );
     }
   }
@@ -67,21 +75,36 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
   }
 
   Future<bool> saveReceipt(String name, ReceiptModel receipt) async {
-    // Auto-categorize items if not already categorized
-    final categorizedReceipt = await _categorizeReceiptItems(receipt);
-    
-    _ref.read(receiptsStoreProvider.notifier).add(categorizedReceipt);
+    try {
+      // 1. Auto-categorize items if not already categorized
+      final categorizedReceipt = await _categorizeReceiptItems(receipt);
+      
+      // 2. Final receipt with the user-provided name
+      final finalReceipt = ReceiptModel(
+        id: receipt.id,
+        name: name, // Use the name from the modal
+        date: receipt.date,
+        store: receipt.store,
+        items: categorizedReceipt.items,
+        total: receipt.total,
+        primaryCategory: categorizedReceipt.primaryCategory,
+      );
 
-    // API call removed - data is now saved to Firebase via receiptsStoreProvider
-    // If you need to sync to a backend API, add it here
+      // 3. Add to store (which handles persistent storage and UI update)
+      await _ref.read(receiptsStoreProvider.notifier).add(finalReceipt);
 
-    state = ReceiptEntryState();
-    await _updateWidgetSummaryFromStore();
-    return true;
+      // 4. Force a refresh of dashboard providers
+      _ref.invalidate(receiptsStoreProvider);
+
+      state = ReceiptEntryState();
+      return true;
+    } catch (e) {
+      print('Error saving receipt: $e');
+      return false;
+    }
   }
   
   Future<ReceiptModel> _categorizeReceiptItems(ReceiptModel receipt) async {
-    // Check if items are already categorized
     final allCategorized = receipt.items.every((item) => item.category != null);
     if (allCategorized) return receipt;
     
@@ -109,82 +132,10 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
       );
     } catch (e) {
       print('Error categorizing items: $e');
-      // Return original receipt if categorization fails
       return receipt;
     }
   }
 
-  Future<void> _updateWidgetSummaryFromStore() async {
-    final receiptsAsync = _ref.read(receiptsStoreProvider);
-    final receipts = receiptsAsync.valueOrNull ?? [];
-    
-    // Get settings for currency and widget settings
-    final settingsAsync = _ref.read(settingsProvider);
-    final settings = settingsAsync.valueOrNull;
-    final currencyCode = settings?.currency.name ?? 'USD';
-    final widgetSettings = settings?.widgetSettings;
-    
-    if (receipts.isEmpty) {
-      await saveAndUpdateWidgetSummary(
-        WidgetSummary(
-          totalThisMonth: 0,
-          topStore: '—',
-          receiptsCount: 0,
-          averagePerReceipt: 0.0,
-          daysWithExpenses: 0,
-          totalItems: 0,
-          updatedAt: DateTime.now(),
-        ),
-        currencyCode: currencyCode,
-        widgetSettings: widgetSettings?.toJson(),
-      );
-      return;
-    }
-
-    final now = DateTime.now();
-    final currentMonth = receipts
-        .where((r) => r.date.year == now.year && r.date.month == now.month)
-        .toList();
-
-    final totalThisMonth =
-        currentMonth.fold<double>(0.0, (sum, r) => sum + r.total);
-    final receiptsCount = currentMonth.length;
-    final averagePerReceipt = receiptsCount > 0 ? totalThisMonth / receiptsCount : 0.0;
-    
-    final daysWithExpenses = currentMonth
-        .map((r) => DateTime(r.date.year, r.date.month, r.date.day))
-        .toSet()
-        .length;
-    
-    final totalItems = currentMonth.fold<int>(0, (sum, r) => sum + r.items.length);
-
-    String topStore = '—';
-    double topStoreTotal = 0.0;
-    for (final r in currentMonth) {
-      final tally = currentMonth
-          .where((x) => x.store == r.store)
-          .fold<double>(0.0, (sum, x) => sum + x.total);
-      if (tally > topStoreTotal) {
-        topStoreTotal = tally;
-        topStore = r.store;
-      }
-    }
-
-    await saveAndUpdateWidgetSummary(
-      WidgetSummary(
-        totalThisMonth: totalThisMonth,
-        topStore: topStore,
-        receiptsCount: receiptsCount,
-        averagePerReceipt: averagePerReceipt,
-        daysWithExpenses: daysWithExpenses,
-        totalItems: totalItems,
-        updatedAt: DateTime.now(),
-      ),
-      currencyCode: currencyCode,
-      widgetSettings: widgetSettings?.toJson(),
-    );
-  }
-  
   void clearResult() {
     state = ReceiptEntryState();
   }

@@ -487,14 +487,13 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                 elevation: 0,
                               ),
                               child: _isSaving
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       height: 20,
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Theme.of(context).colorScheme.onPrimary,
                                         ),
                                       ),
                                     )
@@ -752,10 +751,10 @@ class _MicrophoneButton extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
+                  child: Icon(
                   isListening ? Icons.mic : Icons.mic_none,
                   color: isListening
-                      ? Colors.white
+                      ? Theme.of(context).colorScheme.onPrimary
                       : Theme.of(context).brightness == Brightness.dark
                           ? AppColors.onSurfaceMuted
                           : LightAppColors.onSurfaceMuted,

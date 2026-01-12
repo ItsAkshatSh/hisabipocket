@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/user_model.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
 
@@ -31,7 +32,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier()
       : _googleSignIn = GoogleSignIn(
           clientId: kIsWeb
-              ? '354846083694-ol920da7pne2uuvfhs1pap3brc432rul.apps.googleusercontent.com'
+              ? dotenv.get('GOOGLE_CLIENT_ID', fallback: '')
               : null,
           scopes: const [
             'email',

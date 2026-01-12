@@ -14,7 +14,7 @@ final receiptsStoreProvider =
     }
     
     ref.listen<AuthState>(authProvider, (previous, next) {
-      if (previous?.user?.email != next.user?.email) {
+      if (previous?.user?.email != next.user?.email && next.status == AuthStatus.authenticated) {
         store.loadReceipts();
       }
     });
@@ -54,7 +54,7 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
 
   Future<void> add(ReceiptModel receipt) async {
     // Generate a unique ID if not provided
-    final receiptWithId = receipt.id.isEmpty
+    final receiptWithId = (receipt.id.isEmpty || receipt.id == '0')
         ? ReceiptModel(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             name: receipt.name,
@@ -62,13 +62,15 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
             store: receipt.store,
             items: receipt.items,
             total: receipt.total,
+            primaryCategory: receipt.primaryCategory,
           )
         : receipt;
 
     // Optimistically update UI first
     final currentReceipts = state.valueOrNull ?? [];
-    state = AsyncValue.data([...currentReceipts, receiptWithId]);
-    _cachedReceipts = [...currentReceipts, receiptWithId];
+    final updatedReceipts = [...currentReceipts, receiptWithId];
+    state = AsyncValue.data(updatedReceipts);
+    _cachedReceipts = updatedReceipts;
     _lastLoadTime = DateTime.now();
 
     // Persist to storage in background
@@ -107,14 +109,6 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
   }
 
   Future<void> refresh() async {
-    await loadReceipts();
+    await loadReceipts(forceRefresh: true);
   }
 }
-
-
-
-
-
-
-
-
