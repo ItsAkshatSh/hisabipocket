@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/wrapped/providers/wrapped_provider.dart';
 import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
 
@@ -54,7 +55,6 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
                 _animationController.reset();
                 _animationController.forward();
                 
-                // Mark as viewed when user starts viewing
                 if (index == 0) {
                   _markWrappedAsViewed();
                 }
@@ -76,25 +76,33 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
               child: _buildProgressIndicator(wrapped.cards.length),
             ),
             
-            // Back button
+            // Close button
             Positioned(
               top: 50,
               left: 20,
               child: SafeArea(
                 child: IconButton(
                   icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => context.go('/dashboard'),
                 ),
               ),
             ),
             
-            // Share button (on last card)
-            if (_currentPage == wrapped.cards.length - 1)
-              Positioned(
-                bottom: 40,
-                right: 20,
-                child: _buildShareButton(wrapped),
+            // Bottom Actions
+            Positioned(
+              bottom: 40,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentPage == wrapped.cards.length - 1)
+                    _buildShareButton(wrapped),
+                  if (_currentPage == wrapped.cards.length - 1)
+                    _buildDoneButton(),
+                ],
               ),
+            ),
           ],
         ),
         loading: () => _buildLoadingScreen(),
@@ -125,73 +133,53 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   
   Widget _buildShareButton(WeekWrapped wrapped) {
     return FloatingActionButton.extended(
+      heroTag: 'share',
       onPressed: () {
-        // TODO: Implement share functionality
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Share feature coming soon!'),
-            backgroundColor: Colors.black87,
-          ),
+          const SnackBar(content: Text('Share feature coming soon!')),
         );
       },
       backgroundColor: Colors.white,
+      label: const Text('Share', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       icon: const Icon(Icons.share, color: Colors.black),
-      label: const Text(
-        'Share',
-        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-      ),
+    );
+  }
+
+  Widget _buildDoneButton() {
+    return FloatingActionButton.extended(
+      heroTag: 'done',
+      onPressed: () => context.go('/dashboard'),
+      backgroundColor: Colors.white,
+      label: const Text('Finish', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+      icon: const Icon(Icons.check, color: Colors.black),
     );
   }
   
   Widget _buildLoadingScreen() {
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1DB954)),
-        ),
-      ),
-    );
+    return const Center(child: CircularProgressIndicator(color: Colors.white));
   }
   
   Future<void> _markWrappedAsViewed() async {
     try {
       final box = await Hive.openBox('app_preferences');
       await box.put('last_wrapped_view', DateTime.now().toIso8601String());
-    } catch (e) {
-      // Silently fail
-    }
+    } catch (e) {}
   }
   
   Widget _buildErrorScreen(Object error) {
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 64),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading your wrapped',
-              style: const TextStyle(color: Colors.white, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1DB954),
-              ),
-              child: const Text('Go Back'),
-            ),
-          ],
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.white, size: 64),
+          const SizedBox(height: 16),
+          const Text('Error loading wrapped', style: TextStyle(color: Colors.white, fontSize: 18)),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => context.go('/dashboard'),
+            child: const Text('Go Back to Dashboard'),
+          ),
+        ],
       ),
     );
   }
@@ -201,10 +189,7 @@ class _WrappedCardWidget extends StatelessWidget {
   final WrappedCard card;
   final AnimationController animation;
   
-  const _WrappedCardWidget({
-    required this.card,
-    required this.animation,
-  });
+  const _WrappedCardWidget({required this.card, required this.animation});
 
   @override
   Widget build(BuildContext context) {
@@ -214,10 +199,7 @@ class _WrappedCardWidget extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            card.backgroundColor,
-            card.backgroundColor.withOpacity(0.8),
-          ],
+          colors: [card.backgroundColor, card.backgroundColor.withOpacity(0.8)],
         ),
       ),
       child: SafeArea(
@@ -226,102 +208,29 @@ class _WrappedCardWidget extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Emoji (if present)
               if (card.emoji != null)
-                FadeTransition(
-                  opacity: animation,
-                  child: Text(
-                    card.emoji!,
-                    style: const TextStyle(fontSize: 80),
-                  ),
-                ),
-              
+                FadeTransition(opacity: animation, child: Text(card.emoji!, style: const TextStyle(fontSize: 80))),
               const SizedBox(height: 24),
-              
-              // Title
               FadeTransition(
                 opacity: animation,
-                child: Text(
-                  card.title,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: card.textColor,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(card.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: card.textColor), textAlign: TextAlign.center),
               ),
-              
               const SizedBox(height: 32),
-              
-              // Main Value
               ScaleTransition(
-                scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutBack,
-                  ),
-                ),
-                child: Text(
-                  card.mainValue,
-                  style: TextStyle(
-                    fontSize: card.type == CardType.totalSpent ? 64 : 48,
-                    fontWeight: FontWeight.bold,
-                    color: card.textColor,
-                    letterSpacing: -2,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                scale: Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutBack)),
+                child: Text(card.mainValue, style: TextStyle(fontSize: card.type == CardType.totalSpent ? 64 : 48, fontWeight: FontWeight.bold, color: card.textColor, letterSpacing: -2), textAlign: TextAlign.center),
               ),
-              
               const SizedBox(height: 16),
-              
-              // Subtitle
               FadeTransition(
                 opacity: animation,
-                child: Text(
-                  card.subtitle,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: card.textColor.withOpacity(0.9),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(card.subtitle, style: TextStyle(fontSize: 18, color: card.textColor.withOpacity(0.9)), textAlign: TextAlign.center),
               ),
-              
-              // Secondary value
               if (card.secondaryValue != null) ...[
                 const SizedBox(height: 24),
                 FadeTransition(
                   opacity: animation,
-                  child: Text(
-                    card.secondaryValue!,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: card.textColor.withOpacity(0.8),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  child: Text(card.secondaryValue!, style: TextStyle(fontSize: 16, color: card.textColor.withOpacity(0.8)), textAlign: TextAlign.center),
                 ),
-              ],
-              
-              // Highlights
-              if (card.highlights != null) ...[
-                const SizedBox(height: 32),
-                ...card.highlights!.map((highlight) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: Text(
-                      highlight,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: card.textColor.withOpacity(0.9),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )),
               ],
             ],
           ),
@@ -330,4 +239,3 @@ class _WrappedCardWidget extends StatelessWidget {
     );
   }
 }
-

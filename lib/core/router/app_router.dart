@@ -18,7 +18,6 @@ import 'package:hisabi/features/financial_profile/presentation/financial_profile
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
     _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
   }
   late final StreamSubscription<dynamic> _subscription;
@@ -31,11 +30,8 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-
   return GoRouter(
-    initialLocation: authState.status == AuthStatus.authenticated ? '/dashboard' : '/login',
-    refreshListenable: GoRouterRefreshStream(ref.watch(authProvider.notifier).stream),
+    initialLocation: '/dashboard',
     routes: [
       GoRoute(
         path: '/login',
@@ -100,18 +96,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return '/dashboard';
         }
       }
-
-      final loggedIn = authState.status == AuthStatus.authenticated;
-      final loggingIn = state.matchedLocation == '/login';
-
-      if (!loggedIn && !loggingIn) {
-        return '/login';
-      }
-      
-      if (loggedIn && loggingIn) {
-        return '/dashboard';
-      }
-      
       return null;
     },
   );

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/router/app_router.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
@@ -12,7 +12,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp();
   await StorageService.init();
 
   runApp(
@@ -63,20 +62,43 @@ class _MyAppState extends ConsumerState<MyApp> {
     final router = ref.watch(goRouterProvider);
     final settingsAsync = ref.watch(settingsProvider);
     
-    final appThemeMode = settingsAsync.valueOrNull?.themeMode ?? AppThemeMode.dark;
-    final materialThemeMode = appThemeMode == AppThemeMode.light
-        ? ThemeMode.light
-        : appThemeMode == AppThemeMode.dark
-            ? ThemeMode.dark
-            : ThemeMode.system;
-
-    return MaterialApp.router(
-      title: 'Hisabi',
-      theme: hisabiLightTheme,
-      darkTheme: hisabiDarkTheme,
-      themeMode: materialThemeMode,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return settingsAsync.when(
+      data: (settings) {
+        return DynamicColorBuilder(
+          builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+            return MaterialApp.router(
+              title: 'Hisabi',
+              theme: AppTheme.getTheme(
+                settings.themeSelection, 
+                Brightness.light, 
+                lightDynamic,
+              ),
+              darkTheme: AppTheme.getTheme(
+                settings.themeSelection, 
+                Brightness.dark, 
+                darkDynamic,
+              ),
+              themeMode: settings.themeMode == AppThemeMode.light
+                  ? ThemeMode.light
+                  : settings.themeMode == AppThemeMode.dark
+                      ? ThemeMode.dark
+                      : ThemeMode.system,
+              routerConfig: router,
+              debugShowCheckedModeBanner: false,
+            );
+          },
+        );
+      },
+      loading: () => const MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (err, stack) => MaterialApp(
+        home: Scaffold(
+          body: Center(child: Text('Error: $err')),
+        ),
+      ),
     );
   }
 }

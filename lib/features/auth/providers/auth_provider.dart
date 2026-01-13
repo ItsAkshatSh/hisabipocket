@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/user_model.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
@@ -27,7 +26,6 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final GoogleSignIn _googleSignIn;
-  final FirebaseAuth _firebaseAuth;
 
   AuthNotifier()
       : _googleSignIn = GoogleSignIn(
@@ -39,78 +37,96 @@ class AuthNotifier extends StateNotifier<AuthState> {
             'profile',
           ],
         ),
-        _firebaseAuth = FirebaseAuth.instance,
-        super(AuthState(status: AuthStatus.unauthenticated));
+        super(AuthState(
+          status: AuthStatus.authenticated,
+          user: UserModel(
+            id: 0,
+            email: 'user@example.com',
+            name: 'Hisabi User',
+          ),
+        ));
 
   Future<void> checkAuthStatus() async {
-    final firebaseUser = _firebaseAuth.currentUser;
+    // Check if user is stored locally
+    final authData = await StorageService.loadAuthState();
     
-    if (firebaseUser != null) {
+    if (authData != null) {
       final user = UserModel(
         id: 0,
-        email: firebaseUser.email ?? '',
-        name: firebaseUser.displayName ?? firebaseUser.email ?? '',
-        pictureUrl: firebaseUser.photoURL,
+        email: authData['email'] as String? ?? 'user@example.com',
+        name: authData['name'] as String? ?? 'Hisabi User',
+        pictureUrl: authData['pictureUrl'] as String?,
       );
       
       state = AuthState(status: AuthStatus.authenticated, user: user);
       return;
     }
 
-    state = AuthState(status: AuthStatus.unauthenticated);
+    // Default to authenticated even if no local data exists to skip login
+    state = AuthState(
+      status: AuthStatus.authenticated,
+      user: UserModel(
+        id: 0,
+        email: 'user@example.com',
+        name: 'Hisabi User',
+      ),
+    );
   }
 
   Future<void> loginWithGoogle() async {
     try {
       await _googleSignIn.signOut();
-      await _firebaseAuth.signOut();
 
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         return;
       }
 
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _firebaseAuth.signInWithCredential(credential);
-      final firebaseUser = userCredential.user;
-
-      if (firebaseUser == null) {
-        state = AuthState(status: AuthStatus.unauthenticated);
-        return;
-      }
-
       final user = UserModel(
         id: 0,
-        email: firebaseUser.email ?? '',
-        name: firebaseUser.displayName ?? firebaseUser.email ?? '',
-        pictureUrl: firebaseUser.photoURL,
+        email: googleUser.email,
+        name: googleUser.displayName ?? googleUser.email,
+        pictureUrl: googleUser.photoUrl,
       );
+
+      // Save user to local storage
+      await StorageService.saveAuthState(
+        user.email,
+        user.name,
+        user.pictureUrl,
+      );
+
+      // Initialize user storage
+      await StorageService.initializeUserStorage(user.email);
 
       state = AuthState(status: AuthStatus.authenticated, user: user);
     } catch (e) {
       print('Error during Google sign in: $e');
-      state = AuthState(status: AuthStatus.unauthenticated);
     }
   }
 
   Future<void> logout() async {
     try {
-      await _firebaseAuth.signOut();
       await _googleSignIn.signOut();
       await StorageService.clearAuthState();
-      state = AuthState(status: AuthStatus.unauthenticated);
+      // Instead of unauthenticated, we just stay "authenticated" as guest for this specific request
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: UserModel(
+          id: 0,
+          email: 'user@example.com',
+          name: 'Hisabi User',
+        ),
+      );
     } catch (e) {
       print('Error during logout: $e');
-      state = AuthState(status: AuthStatus.unauthenticated);
     }
   }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier()..checkAuthStatus();
+  final notifier = AuthNotifier();
+  // Initialize auth state asynchronously without blocking
+  notifier.checkAuthStatus();
+  return notifier;
 });

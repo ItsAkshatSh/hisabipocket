@@ -13,6 +13,15 @@ enum Currency {
 enum NamingFormat { storeDate, dateStore, storeOnly, dateOnly }
 enum AppThemeMode { light, dark, system }
 
+enum AppThemeSelection {
+  classic,
+  midnight,
+  forest,
+  sunset,
+  lavender,
+  monochrome
+}
+
 enum WidgetStat {
   totalThisMonth,
   topStore,
@@ -60,12 +69,14 @@ class SettingsState {
   final Currency currency;
   final NamingFormat namingFormat;
   final AppThemeMode themeMode;
+  final AppThemeSelection themeSelection;
   final WidgetSettings widgetSettings;
   
   SettingsState({
     this.currency = Currency.USD, 
     this.namingFormat = NamingFormat.storeDate,
     this.themeMode = AppThemeMode.dark,
+    this.themeSelection = AppThemeSelection.classic,
     WidgetSettings? widgetSettings,
   }) : widgetSettings = widgetSettings ?? WidgetSettings();
 
@@ -73,36 +84,45 @@ class SettingsState {
     Currency? currency,
     NamingFormat? namingFormat,
     AppThemeMode? themeMode,
+    AppThemeSelection? themeSelection,
     WidgetSettings? widgetSettings,
   }) {
     return SettingsState(
       currency: currency ?? this.currency,
       namingFormat: namingFormat ?? this.namingFormat,
       themeMode: themeMode ?? this.themeMode,
+      themeSelection: themeSelection ?? this.themeSelection,
       widgetSettings: widgetSettings ?? this.widgetSettings,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'currency': currency.name,
+    'namingFormat': namingFormat.name,
+    'themeMode': themeMode.name,
+    'themeSelection': themeSelection.name,
+    'widgetSettings': widgetSettings.toJson(),
+  };
+
+  factory SettingsState.fromJson(Map<String, dynamic> json) {
+    return SettingsState(
+      currency: Currency.values.firstWhere((e) => e.name == json['currency'], orElse: () => Currency.USD),
+      namingFormat: NamingFormat.values.firstWhere((e) => e.name == json['namingFormat'], orElse: () => NamingFormat.storeDate),
+      themeMode: AppThemeMode.values.firstWhere((e) => e.name == json['themeMode'], orElse: () => AppThemeMode.dark),
+      themeSelection: AppThemeSelection.values.firstWhere((e) => e.name == json['themeSelection'], orElse: () => AppThemeSelection.classic),
+      widgetSettings: json['widgetSettings'] != null ? WidgetSettings.fromJson(Map<String, dynamic>.from(json['widgetSettings'])) : null,
     );
   }
 }
 
 final settingsProvider = StateNotifierProvider.autoDispose<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
-  final authState = ref.watch(authProvider);
   final notifier = SettingsNotifier();
-  
-  if (authState.status == AuthStatus.authenticated && authState.user != null) {
-    notifier.loadSettings();
-  }
-  
-  ref.listen<AuthState>(authProvider, (previous, next) {
-    if (previous?.user?.email != next.user?.email) {
-      notifier.loadSettings();
-    }
-  });
-  
+  notifier.loadSettings();
   return notifier;
 });
 
 class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
-  SettingsNotifier() : super(const AsyncValue.loading());
+  SettingsNotifier() : super(AsyncValue.data(SettingsState()));
 
   Future<void> loadSettings() async {
     state = const AsyncValue.loading();
@@ -118,75 +138,51 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     final currentSettings = state.valueOrNull ?? SettingsState();
     final updatedSettings = currentSettings.copyWith(currency: newCurrency);
     state = AsyncValue.data(updatedSettings);
-    
-    try {
-      await StorageService.saveSettings(updatedSettings);
-      // Update widget with new currency
-      await _saveWidgetSettingsToHomeWidget(
-        currentSettings.widgetSettings,
-        newCurrency,
-      );
-    } catch (e) {
-      await loadSettings();
-      rethrow;
-    }
+    await _persistSettings(updatedSettings);
   }
 
   Future<void> setNamingFormat(NamingFormat newFormat) async {
     final currentSettings = state.valueOrNull ?? SettingsState();
     final updatedSettings = currentSettings.copyWith(namingFormat: newFormat);
     state = AsyncValue.data(updatedSettings);
-    
-    try {
-      await StorageService.saveSettings(updatedSettings);
-    } catch (e) {
-      await loadSettings();
-      rethrow;
-    }
+    await _persistSettings(updatedSettings);
   }
 
   Future<void> setThemeMode(AppThemeMode newThemeMode) async {
     final currentSettings = state.valueOrNull ?? SettingsState();
     final updatedSettings = currentSettings.copyWith(themeMode: newThemeMode);
     state = AsyncValue.data(updatedSettings);
-    
-    try {
-      await StorageService.saveSettings(updatedSettings);
-    } catch (e) {
-      await loadSettings();
-      rethrow;
-    }
+    await _persistSettings(updatedSettings);
+  }
+
+  Future<void> setThemeSelection(AppThemeSelection selection) async {
+    final currentSettings = state.valueOrNull ?? SettingsState();
+    final updatedSettings = currentSettings.copyWith(themeSelection: selection);
+    state = AsyncValue.data(updatedSettings);
+    await _persistSettings(updatedSettings);
   }
 
   Future<void> setWidgetSettings(WidgetSettings newWidgetSettings) async {
     final currentSettings = state.valueOrNull ?? SettingsState();
     final updatedSettings = currentSettings.copyWith(widgetSettings: newWidgetSettings);
     state = AsyncValue.data(updatedSettings);
-    
+    await _persistSettings(updatedSettings);
+  }
+
+  Future<void> _persistSettings(SettingsState settings) async {
     try {
-      await StorageService.saveSettings(updatedSettings);
-      // Also save to HomeWidget for immediate widget update
-      await _saveWidgetSettingsToHomeWidget(newWidgetSettings, currentSettings.currency);
+      await StorageService.saveSettings(settings);
+      await _saveWidgetSettingsToHomeWidget(settings.widgetSettings, settings.currency);
     } catch (e) {
-      await loadSettings();
-      rethrow;
+      // Handle error
     }
   }
 
   Future<void> _saveWidgetSettingsToHomeWidget(WidgetSettings widgetSettings, Currency currency) async {
     try {
-      await HomeWidget.saveWidgetData<String>(
-        'widget_settings',
-        jsonEncode(widgetSettings.toJson()),
-      );
-      await HomeWidget.saveWidgetData<String>(
-        'currency_code',
-        currency.name,
-      );
+      await HomeWidget.saveWidgetData<String>('widget_settings', jsonEncode(widgetSettings.toJson()));
+      await HomeWidget.saveWidgetData<String>('currency_code', currency.name);
       await HomeWidget.updateWidget(name: 'HisabiWidgetProvider');
-    } catch (e) {
-      // Silently fail - widget will update on next receipt save
-      print('Error saving widget settings to HomeWidget: $e');
-    }
+    } catch (e) {}
   }
 }
