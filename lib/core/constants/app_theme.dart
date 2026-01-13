@@ -3,12 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class AppTheme {
-  // Expressive Shape Tokens
-  static const double shapeCornerExtraSmall = 4.0;
-  static const double shapeCornerSmall = 8.0;
-  static const double shapeCornerMedium = 12.0;
-  static const double shapeCornerLarge = 16.0;
-  static const double shapeCornerExtraLarge = 24.0; 
+  // Expressive Shape Tokens - More Rounded for Fluidity
+  static const double shapeCornerExtraSmall = 8.0;
+  static const double shapeCornerSmall = 12.0;
+  static const double shapeCornerMedium = 16.0;
+  static const double shapeCornerLarge = 20.0;
+  static const double shapeCornerExtraLarge = 28.0;
 
   static ThemeData getTheme(AppThemeSelection selection, Brightness brightness, ColorScheme? dynamicColorScheme) {
     final colorScheme = dynamicColorScheme ?? _getColorScheme(selection, brightness);
@@ -40,7 +40,7 @@ class AppTheme {
         titleLarge: GoogleFonts.plusJakartaSans(
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
-          fontSize: 22,
+          fontSize: 32,
           color: colorScheme.onSurface,
         ),
       ),
@@ -91,7 +91,7 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: GoogleFonts.plusJakartaSans(
           color: colorScheme.onSurface,
-          fontSize: 22,
+          fontSize: 48,
           fontWeight: FontWeight.w900,
           letterSpacing: -1.0,
         ),
@@ -101,8 +101,8 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colorScheme.primaryContainer,
         foregroundColor: colorScheme.onPrimaryContainer,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 6,
       ),
     );
   }
@@ -115,8 +115,10 @@ class AppTheme {
         return ColorScheme.fromSeed(
           seedColor: const Color(0xFF1E293B),
           brightness: brightness,
-          primary: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0EA5E9),
-          surface: isDark ? const Color(0xFF020617) : const Color(0xFFF8FAFC),
+          primary: isDark ? const Color(0xFF60A5FA) : const Color(0xFF3B82F6),
+          secondary: isDark ? const Color(0xFF8B5CF6) : const Color(0xFF6366F1),
+          tertiary: isDark ? const Color(0xFFEC4899) : const Color(0xFFEF4444),
+          surface: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
         );
       case AppThemeSelection.forest:
         return ColorScheme.fromSeed(
@@ -129,8 +131,10 @@ class AppTheme {
         return ColorScheme.fromSeed(
           seedColor: const Color(0xFF7C2D12),
           brightness: brightness,
-          primary: isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C),
-          surface: isDark ? const Color(0xFF1C0A00) : const Color(0xFFFFF7ED),
+          primary: isDark ? const Color(0xFFF97316) : const Color(0xFFDC2626),
+          secondary: isDark ? const Color(0xFFF59E0B) : const Color(0xFFEA580C),
+          tertiary: isDark ? const Color(0xFFFACC15) : const Color(0xFFD97706),
+          surface: isDark ? const Color(0xFF451A03) : const Color(0xFFFFFBEB),
         );
       case AppThemeSelection.lavender:
         return ColorScheme.fromSeed(

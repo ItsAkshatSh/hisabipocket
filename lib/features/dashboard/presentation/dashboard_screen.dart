@@ -23,59 +23,97 @@ class DashboardScreen extends ConsumerWidget {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          const SliverAppBar.large(
-            title: Text('Dashboard'),
-            centerTitle: false,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 1),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: SegmentedButton<Period>(
-                        segments: Period.values.map((p) => ButtonSegment(
-                          value: p,
-                          label: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                            child: Text(p.name.toUpperCase(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-                          ),
-                        )).toList(),
-                        selected: {period},
-                        onSelectionChanged: (value) => ref.read(periodProvider.notifier).state = value.first,
-                        showSelectedIcon: false,
-                        style: SegmentedButton.styleFrom(
-                          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-                          backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                          selectedBackgroundColor: Theme.of(context).colorScheme.primary,
-                          selectedForegroundColor: Theme.of(context).colorScheme.onPrimary,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(dashboardStatsProvider);
+          ref.invalidate(recentReceiptsProvider);
+        },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            SliverAppBar.large(
+              title: const Text('Dashboard'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {},
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    _buildPeriodSelector(context, ref, period),
+                    const SizedBox(height: 32),
+                    _buildWeeklyWrappedPrompt(context, ref),
+                    const SizedBox(height: 24),
+                    _buildSummaryGrid(ref, formatter, isMobile),
+                    const SizedBox(height: 40),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildSectionHeader(context, 'Recent Activity'),
+                        TextButton(
+                          onPressed: () => context.go('/saved-receipts'),
+                          child: const Text('See All'),
                         ),
-                      ),
+                      ],
                     ),
-                  ).animate().fadeIn().slideY(begin: 0.2),
-                  const SizedBox(height: 40),
-                  _buildWeeklyWrappedPrompt(context, ref),
-                  const SizedBox(height: 10), // Gap between wrapped and the 4 widgets below
-                  _buildSummaryGrid(ref, formatter, isMobile),
-                  const SizedBox(height: 1),
-                  _buildSectionHeader(context, 'Recent Activity'),
-                  const SizedBox(height: 2),
-                  _buildRecentReceipts(context, ref, formatter),
-                  const SizedBox(height: 120),
-                ],
+                    const SizedBox(height: 16),
+                    _buildRecentReceipts(context, ref, formatter),
+                    const SizedBox(height: 120),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildPeriodSelector(BuildContext context, WidgetRef ref, Period period) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: Period.values.map((p) {
+            final isSelected = period == p;
+            return GestureDetector(
+              onTap: () => ref.read(periodProvider.notifier).state = p,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  p.name.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected 
+                      ? Theme.of(context).colorScheme.onPrimary 
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    ).animate().fadeIn().slideY(begin: 0.2);
   }
 
   Widget _buildSummaryGrid(WidgetRef ref, NumberFormat formatter, bool isMobile) {
@@ -86,35 +124,35 @@ class DashboardScreen extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: isMobile ? 2 : 4,
-        mainAxisSpacing: 20,
-        crossAxisSpacing: 20,
-        childAspectRatio: 1.05,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.1,
         children: [
           _SummaryCard(
             title: 'Total Spent',
             value: formatter.format(stats.totalSpent),
-            icon: Icons.account_balance_wallet,
+            icon: Icons.account_balance_wallet_rounded,
             color: Colors.blue,
             delay: 100,
           ),
           _SummaryCard(
             title: 'Receipts',
             value: stats.receiptsCount.toString(),
-            icon: Icons.receipt_long,
+            icon: Icons.receipt_long_rounded,
             color: Colors.orange,
             delay: 200,
           ),
           _SummaryCard(
             title: 'Average',
             value: formatter.format(stats.averagePerReceipt),
-            icon: Icons.analytics,
+            icon: Icons.analytics_rounded,
             color: Colors.purple,
             delay: 300,
           ),
           _SummaryCard(
             title: 'Top Store',
             value: stats.topStore,
-            icon: Icons.store,
+            icon: Icons.store_rounded,
             color: Colors.green,
             delay: 400,
           ),
@@ -130,8 +168,7 @@ class DashboardScreen extends ConsumerWidget {
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
         fontWeight: FontWeight.w900,
-        letterSpacing: -0.8,
-        fontSize: 35,
+        letterSpacing: -0.5,
       ),
     ).animate().fadeIn().slideX();
   }
@@ -141,62 +178,43 @@ class DashboardScreen extends ConsumerWidget {
 
     return receiptsAsync.when(
       data: (receipts) => receipts.isEmpty 
-        ? Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 80.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.receipt_outlined, size: 96, color: Theme.of(context).colorScheme.outlineVariant),
-                  const SizedBox(height: 24),
-                  Text(
-                    'No receipts added yet', 
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
+        ? _buildEmptyState(context)
         : ListView.separated(
             padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: receipts.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final receipt = receipts[index];
-              return Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  leading: CircleAvatar(
-                    radius: 26,
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
-                    child: Icon(Icons.shopping_bag, color: Theme.of(context).colorScheme.primary),
-                  ),
-                  title: Text(receipt.store, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                  subtitle: Text(DateFormat.yMMMd().format(receipt.savedAt), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  trailing: Text(
-                    formatter.format(receipt.total),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  onTap: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => ReceiptDetailsModal(receiptId: receipt.id),
-                  ),
-                ),
-              ).animate().fadeIn(delay: Duration(milliseconds: 100 * index)).slideX();
+              return _ReceiptListItem(receipt: receipt, formatter: formatter);
             },
           ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Text('Error: $e'),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_outlined, size: 80, color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: 16),
+            Text(
+              'No recent activity', 
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -205,21 +223,20 @@ class DashboardScreen extends ConsumerWidget {
     return ref.watch(shouldShowWrappedPromptProvider).when(
       data: (shouldShow) => shouldShow ? Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
+          borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             colors: [
               colorScheme.primary,
               colorScheme.secondary,
-              colorScheme.tertiary,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.primary.withOpacity(0.4),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
+              color: colorScheme.primary.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -227,37 +244,37 @@ class DashboardScreen extends ConsumerWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: () => context.go('/wrapped'),
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(24),
             child: Padding(
-              padding: const EdgeInsets.all(28.0),
+              padding: const EdgeInsets.all(24.0),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.auto_awesome, color: Colors.white, size: 36),
+                    child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 28),
                   ),
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 20),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Week Wrapped Ready!', 
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24, letterSpacing: -0.5),
+                          'Week Wrapped!', 
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
-                          'Check out your spending story', 
-                          style: TextStyle(color: Colors.white.withOpacity(0.85), fontWeight: FontWeight.w700, fontSize: 16),
+                          'Your spending story is ready', 
+                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w600, fontSize: 14),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 24),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 28),
                 ],
               ),
             ),
@@ -267,6 +284,59 @@ class DashboardScreen extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );
+  }
+}
+
+class _ReceiptListItem extends StatelessWidget {
+  final ReceiptSummaryModel receipt;
+  final NumberFormat formatter;
+
+  const _ReceiptListItem({required this.receipt, required this.formatter});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.shopping_bag_outlined, color: Theme.of(context).colorScheme.primary),
+        ),
+        title: Text(
+          receipt.store, 
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          DateFormat.yMMMd().format(receipt.savedAt), 
+          style: TextStyle(
+            fontWeight: FontWeight.w500, 
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Text(
+          formatter.format(receipt.total),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        onTap: () => showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => ReceiptDetailsModal(receiptId: receipt.id),
+        ),
+      ),
+    ).animate().fadeIn().slideX(begin: 0.1);
   }
 }
 
@@ -292,25 +362,41 @@ class _SummaryCard extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 14),
-            Text(title, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            FittedBox(
-              child: Text(
-                value,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1.2,
-                  fontSize: 22,
-                ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title, 
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700, 
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  child: Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: Duration(milliseconds: delay)).scale(begin: const Offset(0.9, 0.9));
+    ).animate().fadeIn(delay: Duration(milliseconds: delay)).scale(begin: const Offset(0.95, 0.95));
   }
 }

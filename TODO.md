@@ -1,73 +1,43 @@
-# TODO
+# Widget Enhancement Implementation Plan
 
-## High Priority
+## Overview
+Add 5 new useful homescreen widgets to Hisabi following Material Design 3 expressive language:
+1. Budget Progress Widget - Visual progress bar showing spending vs monthly budget
+2. Top Categories Widget - Top 3 spending categories with amounts and emojis
+3. Expense Trend Widget - Trend indicators (up/down arrows) with percentage changes
+4. Quick Actions Widget - Fast access buttons for common actions
+5. Savings Goal Widget - Progress towards savings goals with celebratory animations
 
-### Receipt Image Analysis
-- [ ] Integrate OCR/AI service for receipt text extraction
+## Implementation Steps
 
+### Phase 1: Data Models & Enums
+- [ ] Add new WidgetStat enums for budget, categories, trends, actions, savings
+- [ ] Extend WidgetSummary model with budget data, category breakdowns, trend calculations
+- [ ] Add SavingsGoal model for tracking savings targets
 
-### Backend API Integration
-- [ ] Implement actual API calls in ApiClient (GET, POST methods)
-- [ ] Add authentication token handling
-- [ ] Implement API error handling and retry logic
-- [ ] Add network connectivity checks
-- [ ] Implement API endpoint for receipt saving
-- [ ] Implement API endpoint for user authentication
-- [ ] Add API endpoint for fetching receipt details
+### Phase 2: Providers & Logic
+- [ ] Update dashboard_provider.dart to calculate category spending and trends
+- [ ] Create budget_provider.dart for budget management
+- [ ] Create savings_provider.dart for savings goals
+- [ ] Update widgetUpdateProvider to include new widget data
 
-## Medium Priority
+### Phase 3: UI Components
+- [ ] Create BudgetProgressWidget with animated progress bar
+- [ ] Create TopCategoriesWidget with category cards and emojis
+- [ ] Create ExpenseTrendWidget with trend arrows and percentages
+- [ ] Create QuickActionsWidget with action buttons
+- [ ] Create SavingsGoalWidget with progress rings and celebrations
 
-### Features
-- [ ] Add receipt editing functionality
-- [ ] Add receipt deletion with confirmation
-- [ ] Implement receipt search/filter functionality
-- [ ] Add receipt categories/tags
-- [ ] Implement receipt image storage
-- [ ] Add receipt export in different formats (CSV, PDF)
-- [ ] Implement receipt sharing functionality
+### Phase 4: Widget Preview Updates
+- [ ] Update widget_preview.dart to display new widget types
+- [ ] Add preview configurations for each new widget
 
-### Settings
-- [ ] Add theme switching (light/dark mode)
-- [ ] Add more currency options
-- [ ] Implement data backup/restore
-- [ ] Add privacy policy page
-- [ ] Add terms of service page
+### Phase 5: Settings Integration
+- [ ] Update settings screen to allow enabling/disabling new widgets
+- [ ] Add budget and savings goal configuration options
 
-### Analytics
-- [ ] Add spending trends visualization
-- [ ] Implement category-based spending analysis
-- [ ] Add monthly/yearly comparison charts
-- [ ] Add spending predictions
-
-## Low Priority
-
-### UI/UX Improvements
-- [ ] Add receipt image preview
-- [ ] Improve loading states
-- [ ] Add pull-to-refresh functionality
-- [ ] Implement swipe actions on receipts
-- [ ] Add receipt templates
-- [ ] Improve error messages
-
-### Performance
-- [ ] Optimize image loading
-- [ ] Add caching for receipt images
-- [ ] Implement pagination for large receipt lists
-- [ ] Optimize database queries
-
-
-## Future Considerations
-
-- [ ] Multi-language support
-- [ ] Receipt OCR accuracy improvements
-- [ ] Offline mode enhancements
-- [ ] Cloud sync functionality
-- [ ] Receipt templates library
-- [ ] Integration with accounting software
-- [ ] Receipt validation and fraud detection
-
-
-
-
-
-
+### Phase 6: Testing & Polish
+- [ ] Test all widgets on different screen sizes
+- [ ] Ensure Material Design 3 compliance with expressive shapes
+- [ ] Add micro-animations and haptic feedback
+- [ ] Optimize performance for homescreen widget updates

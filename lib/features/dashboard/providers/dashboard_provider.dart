@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/core/models/dashboard_models.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
@@ -159,6 +161,14 @@ final widgetUpdateProvider = FutureProvider.autoDispose<void>((ref) async {
         }
       }
 
+      // Calculate Trend
+      final lastMonth = receipts
+          .where((r) => r.date.year == (now.month == 1 ? now.year - 1 : now.year) && 
+                        r.date.month == (now.month == 1 ? 12 : now.month - 1))
+          .toList();
+      final totalLastMonth = lastMonth.fold<double>(0.0, (sum, r) => sum + r.total);
+      final monthlyChange = totalLastMonth == 0 ? 0.0 : ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100;
+
       await saveAndUpdateWidgetSummary(
         WidgetSummary(
           totalThisMonth: totalThisMonth,
@@ -168,6 +178,17 @@ final widgetUpdateProvider = FutureProvider.autoDispose<void>((ref) async {
           daysWithExpenses: daysWithExpenses,
           totalItems: totalItems,
           updatedAt: DateTime.now(),
+          expenseTrend: ExpenseTrend(
+            weeklyChange: 0, // Simplified
+            monthlyChange: monthlyChange,
+            isUp: totalThisMonth > totalLastMonth,
+          ),
+          savingsGoal: SavingsGoal(
+            title: 'Monthly Limit',
+            targetAmount: 2000, // Example hardcoded
+            currentAmount: 1200, // Example hardcoded
+            targetDate: DateTime.now(),
+          ),
         ),
         currencyCode: currencyCode,
         widgetSettings: widgetSettings?.toJson(),

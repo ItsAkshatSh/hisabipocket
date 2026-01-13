@@ -29,6 +29,8 @@ enum WidgetStat {
   averagePerReceipt,
   daysWithExpenses,
   totalItems,
+  expenseTrend,
+  savingsGoal,
 }
 
 class WidgetSettings {
