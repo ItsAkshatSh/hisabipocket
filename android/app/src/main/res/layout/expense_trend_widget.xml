@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="#212834"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Spending Trend"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.7" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp"
+        android:gravity="bottom">
+
+        <TextView
+            android:id="@+id/tvTrendValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+12.5%"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#EF4444" />
+
+        <ImageView
+            android:id="@+id/ivTrendIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="4dp"
+            android:src="@android:drawable/arrow_up_float"
+            android:tint="#EF4444" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvComparison"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="vs last month"
+        android:textSize="11sp"
+        android:textColor="@android:color/white"
+        android:alpha="0.5" />
+
+</LinearLayout>
