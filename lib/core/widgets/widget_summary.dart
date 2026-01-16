@@ -184,3 +184,4 @@ Future<void> saveAndUpdateWidgetSummary(
     iOSName: iosProvider,
   );
 }
+

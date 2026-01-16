@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 class WidgetPreview extends StatelessWidget {
   final Set<WidgetStat> enabledStats;

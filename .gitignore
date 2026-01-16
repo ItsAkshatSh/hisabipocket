@@ -63,3 +63,7 @@ web/generated_plugin_registrant.dart
 .vscode/
 *.sublime-workspace
 .env.local
+
+google-services.json
+
+.env

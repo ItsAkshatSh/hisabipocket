@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/features/insights/providers/insights_provider.dart';
 import 'package:hisabi/features/insights/providers/spending_alerts_provider.dart';
 import 'package:hisabi/features/insights/providers/period_comparison_provider.dart';
-import 'package:hisabi/features/insights/providers/recurring_expenses_provider.dart';
 import 'package:hisabi/features/insights/widgets/quick_stats_header.dart';
 import 'package:hisabi/features/insights/widgets/spending_alerts_card.dart';
 import 'package:hisabi/features/insights/widgets/period_comparison_card.dart';
-import 'package:hisabi/features/insights/widgets/recurring_expenses_card.dart';
 import 'package:hisabi/features/insights/widgets/budget_planner_card.dart';
 import 'package:hisabi/features/insights/widgets/ai_insights_card.dart';
 import 'package:hisabi/features/insights/widgets/spending_analysis_card.dart';

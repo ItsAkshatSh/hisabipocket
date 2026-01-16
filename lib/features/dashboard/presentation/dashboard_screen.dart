@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/features/dashboard/providers/dashboard_provider.dart';
 import 'package:hisabi/features/dashboard/providers/wrapped_prompt_provider.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
-import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
 

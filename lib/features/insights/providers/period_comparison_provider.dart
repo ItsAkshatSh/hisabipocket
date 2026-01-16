@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/insights/models/period_comparison.dart';

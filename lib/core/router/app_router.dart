@@ -7,7 +7,6 @@ import 'package:hisabi/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:hisabi/features/receipts/presentation/add_receipt_screen.dart';
 import 'package:hisabi/features/receipts/presentation/voice_quick_add_screen.dart';
 import 'package:hisabi/features/receipts/presentation/saved_receipts_screen.dart';
-import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/features/shell/presentation/main_shell.dart';
 import 'package:hisabi/features/settings/presentation/settings_screen.dart';
 import 'package:hisabi/features/settings/presentation/privacy_policy_screen.dart';

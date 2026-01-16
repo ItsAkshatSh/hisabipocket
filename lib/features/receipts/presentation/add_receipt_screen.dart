@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
-import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class AddReceiptScreen extends ConsumerStatefulWidget {
   const AddReceiptScreen({super.key});

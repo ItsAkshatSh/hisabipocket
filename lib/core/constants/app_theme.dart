@@ -151,7 +151,6 @@ class AppTheme {
           surface: isDark ? const Color(0xFF121212) : Colors.white,
         );
       case AppThemeSelection.classic:
-      default:
         return ColorScheme.fromSeed(
           seedColor: const Color(0xFF6366F1),
           brightness: brightness,
@@ -167,11 +166,14 @@ class AppColors {
   static const success = Color(0xFF10B981);
   static const error = Color(0xFFEF4444);
   static const warning = Color(0xFFF59E0B);
+  static const onSurface = Color(0xFFE2E8F0);
   static const onSurfaceMuted = Color(0xFFB0B8C1);
   static const onSurfaceSubtle = Color(0xFF9B9A97);
   static const hover = Color(0xFF2A3342);
   static const hoverSubtle = Color(0xFF212834);
   static const borderFocus = Color(0xFF6366F1);
+  static const border = Color(0xFF334155);
+  static const background = Color(0xFF212834);
   static const surface = Color(0xFF212834);
 }
 
@@ -180,10 +182,13 @@ class LightAppColors {
   static const success = Color(0xFF10B981);
   static const error = Color(0xFFEF4444);
   static const warning = Color(0xFFF59E0B);
+  static const onSurface = Color(0xFF1E293B);
   static const onSurfaceMuted = Color(0xFF5A5F6F);
   static const onSurfaceSubtle = Color(0xFF8B8F9C);
   static const hover = Color(0xFFF0F2F5);
   static const hoverSubtle = Color(0xFFF5F7FA);
   static const borderFocus = Color(0xFF6366F1);
+  static const border = Color(0xFFE2E8F0);
+  static const background = Color(0xFFF5F7FA);
   static const surface = Color(0xFFF5F7FA);
 }

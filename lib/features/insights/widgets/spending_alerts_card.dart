@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/insights/models/spending_alert.dart';
-import 'package:hisabi/core/models/category_model.dart';
 import 'package:intl/intl.dart';
 
 class SpendingAlertsCard extends ConsumerWidget {

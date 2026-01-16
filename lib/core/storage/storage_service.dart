@@ -1,65 +1,66 @@
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
-import 'package:hisabi/core/storage/local_storage_service.dart';
+import 'package:hisabi/core/storage/firebase_storage_service.dart' as firebase;
 
 class StorageService {
   static Future<void> init() async {
-    await LocalStorageService.init();
+    await firebase.FirebaseStorageService.init();
     print('Storage initialized successfully');
   }
-  
+
   static Future<void> initializeUserStorage(String userEmail) async {
-    print('User storage initialized for: $userEmail');
+    print(
+        'User storage initialized for: $userEmail (Firebase handles isolation automatically)');
   }
 
   static Future<void> saveReceipts(List<ReceiptModel> receipts) async {
-    await LocalStorageService.saveReceipts(receipts);
+    await firebase.FirebaseStorageService.saveReceipts(receipts);
   }
 
   static Future<List<ReceiptModel>> loadReceipts() async {
-    return await LocalStorageService.loadReceipts();
+    return await firebase.FirebaseStorageService.loadReceipts();
   }
 
   static Future<void> addReceipt(ReceiptModel receipt) async {
-    await LocalStorageService.addReceipt(receipt);
+    await firebase.FirebaseStorageService.addReceipt(receipt);
   }
 
   static Future<void> deleteReceipt(String receiptId) async {
-    await LocalStorageService.deleteReceipt(receiptId);
+    await firebase.FirebaseStorageService.deleteReceipt(receiptId);
   }
 
   static Future<void> saveSettings(SettingsState settings) async {
-    await LocalStorageService.saveSettings(settings);
+    await firebase.FirebaseStorageService.saveSettings(settings);
   }
 
   static Future<SettingsState> loadSettings() async {
-    return await LocalStorageService.loadSettings();
+    return await firebase.FirebaseStorageService.loadSettings();
   }
 
-  static Future<void> saveAuthState(String email, String name, String? pictureUrl) async {
-    await LocalStorageService.saveAuthState(email, name, pictureUrl);
+  static Future<void> saveAuthState(
+      String email, String name, String? pictureUrl) async {
+    print('Auth state saved (Firebase Auth handles this automatically)');
   }
 
   static Future<Map<String, dynamic>?> loadAuthState() async {
-    return await LocalStorageService.loadAuthState();
+    return null;
   }
 
   static Future<void> clearAuthState() async {
-    await LocalStorageService.clearAuthState();
+    print('Auth state cleared (user data preserved in Firebase)');
   }
 
   static Future<void> saveFinancialProfile(FinancialProfile profile) async {
-    await LocalStorageService.saveFinancialProfile(profile);
+    await firebase.FirebaseStorageService.saveFinancialProfile(profile);
   }
 
   static Future<FinancialProfile> loadFinancialProfile() async {
-    return await LocalStorageService.loadFinancialProfile();
+    return await firebase.FirebaseStorageService.loadFinancialProfile();
   }
 
   static Future<void> clearAll() async {
-    await LocalStorageService.clearAll();
+    await firebase.FirebaseStorageService.clearAll();
     print('All data cleared');
   }
 }
-

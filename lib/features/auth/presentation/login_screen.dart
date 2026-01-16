@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/core/constants/app_theme.dart';
@@ -16,6 +17,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
   bool _isLoading = false;
+  String? _errorMessage;
   late final AnimationController _backgroundController;
   late final AnimationController _fadeController;
 
@@ -41,9 +43,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _handleLogin() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
     try {
       await ref.read(authProvider.notifier).loginWithGoogle();
+      
+      if (mounted) {
+        final authState = ref.read(authProvider);
+        if (authState.status == AuthStatus.authenticated) {
+          context.go('/dashboard');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String errorMsg = 'Failed to sign in with Google.';
+        
+        final errorString = e.toString().toLowerCase();
+        print('Google Sign-In Error Details: $e');
+        
+        if (errorString.contains('network') || errorString.contains('connection')) {
+          errorMsg = 'Network error. Please check your internet connection.';
+        } else if (errorString.contains('cancelled') || errorString.contains('canceled')) {
+          errorMsg = 'Sign-in was cancelled.';
+          return;
+        } else if (errorString.contains('oauth') || errorString.contains('client') || errorString.contains('configuration')) {
+          errorMsg = 'Google Sign-In not configured. Please ensure:\n1. Google Sign-In is enabled in Firebase Console\n2. SHA-1 fingerprint is added to Firebase\n3. OAuth client is configured for Android';
+        } else if (errorString.contains('firebase') || errorString.contains('auth')) {
+          errorMsg = 'Firebase authentication error. Please try again.';
+        } else if (errorString.contains('sign_in_failed') || errorString.contains('platform_exception')) {
+          errorMsg = 'Google Sign-In failed. Check Firebase configuration.';
+        }
+        
+        setState(() {
+          _errorMessage = errorMsg;
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -102,6 +139,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                         ),
                         const SizedBox(height: 48),
+
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.error.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: AppColors.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
 
                         SizedBox(
                           width: double.infinity,

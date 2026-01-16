@@ -1,4 +1,4 @@
-package com.example.hisabi
+package com.example.hisabipocket
 
 import android.app.Activity
 import android.content.ActivityNotFoundException

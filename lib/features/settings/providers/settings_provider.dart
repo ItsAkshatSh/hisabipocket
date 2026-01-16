@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
-import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
 enum Currency { 
   USD, EUR, GBP, JPY, CNY, INR, AUD, CAD, 

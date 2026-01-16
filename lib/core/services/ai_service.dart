@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/category_model.dart';
-import 'package:hisabi/core/models/receipt_model.dart';
 
 class AIService {
   static String get _apiKey => dotenv.get('AI_API_KEY', fallback: '');
@@ -295,7 +294,6 @@ Return JSON format:
     Map<ExpenseCategory, double> spending,
     double income,
   ) {
-    final totalSpending = spending.values.fold<double>(0.0, (sum, val) => sum + val);
     final savingsGoal = income * 0.2; // 20% savings goal
     
     final budgets = <String, double>{};

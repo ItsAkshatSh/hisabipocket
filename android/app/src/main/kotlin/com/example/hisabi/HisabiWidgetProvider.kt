@@ -1,4 +1,4 @@
-package com.example.hisabi
+package com.example.hisabipocket
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -11,6 +11,7 @@ import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
+import com.example.hisabipocket.R
 
 class HisabiWidgetProvider : AppWidgetProvider() {
 
@@ -138,15 +139,3 @@ class HisabiWidgetProvider : AppWidgetProvider() {
         return "$symbol${String.format("%,.2f", value)}"
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

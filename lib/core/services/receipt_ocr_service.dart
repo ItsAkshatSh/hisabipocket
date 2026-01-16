@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
-import 'package:hisabi/core/models/category_model.dart';
 
 class ReceiptOCRService {
   static String get _clientId => dotenv.get('VERYFI_CLIENT_ID', fallback: '');
