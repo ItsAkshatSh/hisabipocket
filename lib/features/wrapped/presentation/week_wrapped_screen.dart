@@ -90,17 +90,19 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
             
             // Bottom Actions
             Positioned(
-              bottom: 40,
+              bottom: 100,
               left: 20,
               right: 20,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (_currentPage == wrapped.cards.length - 1)
-                    _buildShareButton(wrapped),
-                  if (_currentPage == wrapped.cards.length - 1)
-                    _buildDoneButton(),
-                ],
+              child: SafeArea(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (_currentPage == wrapped.cards.length - 1)
+                      _buildShareButton(wrapped),
+                    if (_currentPage == wrapped.cards.length - 1)
+                      _buildDoneButton(),
+                  ],
+                ),
               ),
             ),
           ],

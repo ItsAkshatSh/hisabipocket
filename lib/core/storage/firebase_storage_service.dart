@@ -113,7 +113,8 @@ class FirebaseStorageService {
   static Future<void> saveSettings(SettingsState settings) async {
     final userId = currentUserId;
     if (userId == null) {
-      throw Exception('User not authenticated');
+      print('⚠️ Cannot save settings: User not authenticated');
+      return;
     }
 
     try {
@@ -125,30 +126,32 @@ class FirebaseStorageService {
               'currency': settings.currency.name,
               'namingFormat': settings.namingFormat.name,
               'themeMode': settings.themeMode.name,
+              'themeSelection': settings.themeSelection.name,
               'widgetSettings': settings.widgetSettings.toJson(),
             }
-          }, SetOptions(merge: true));
+          }, SetOptions(merge: true))
+          .timeout(const Duration(seconds: 10));
       
       print('✅ Settings saved to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving settings to Firebase: $e');
       print('Stack trace: $stackTrace');
-      rethrow;
     }
   }
 
   static Future<SettingsState> loadSettings() async {
-    final userId = currentUserId;
-    if (userId == null) {
-      print('User not authenticated. Returning default settings.');
-      return SettingsState();
-    }
-
     try {
+      final userId = currentUserId;
+      if (userId == null) {
+        print('User not authenticated. Returning default settings.');
+        return SettingsState();
+      }
+
       final doc = await _firestore
           .collection('users')
           .doc(userId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 10));
 
       if (!doc.exists || doc.data() == null) {
         print('No settings found in Firebase');
@@ -165,6 +168,7 @@ class FirebaseStorageService {
       final currencyName = settingsData['currency'] as String?;
       final namingFormatName = settingsData['namingFormat'] as String?;
       final themeModeName = settingsData['themeMode'] as String?;
+      final themeSelectionName = settingsData['themeSelection'] as String?;
 
       final currency = currencyName != null
           ? Currency.values.firstWhere(
@@ -187,6 +191,13 @@ class FirebaseStorageService {
             )
           : AppThemeMode.dark;
 
+      final themeSelection = themeSelectionName != null
+          ? AppThemeSelection.values.firstWhere(
+              (t) => t.name == themeSelectionName,
+              orElse: () => AppThemeSelection.classic,
+            )
+          : AppThemeSelection.classic;
+
       final widgetSettingsData = settingsData['widgetSettings'];
       final widgetSettings = widgetSettingsData != null
           ? WidgetSettings.fromJson(Map<String, dynamic>.from(widgetSettingsData))
@@ -197,10 +208,12 @@ class FirebaseStorageService {
         currency: currency,
         namingFormat: namingFormat,
         themeMode: themeMode,
+        themeSelection: themeSelection,
         widgetSettings: widgetSettings,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error loading settings from Firebase: $e');
+      print('Stack trace: $stackTrace');
       return SettingsState();
     }
   }
@@ -321,4 +334,5 @@ class FirebaseStorageService {
     );
   }
 }
+
 

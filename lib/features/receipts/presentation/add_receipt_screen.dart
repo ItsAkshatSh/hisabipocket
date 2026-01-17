@@ -18,6 +18,7 @@ class AddReceiptScreen extends ConsumerStatefulWidget {
 class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  final GlobalKey<_ManualEntryTabState> _manualEntryKey = GlobalKey<_ManualEntryTabState>();
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
           ),
         );
         ref.read(receiptEntryProvider.notifier).clearResult();
+        _manualEntryKey.currentState?.resetFields();
       }
     });
   }
@@ -87,10 +89,13 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
       ),
       floatingActionButton: isAnalysisComplete 
           ? null 
-          : FloatingActionButton.large(
-              onPressed: () => context.push('/voice-add'),
-              child: const Icon(Icons.mic_rounded, size: 32),
-            ).animate().scale(delay: 400.ms),
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: FloatingActionButton.large(
+                onPressed: () => context.push('/voice-add'),
+                child: const Icon(Icons.mic_rounded, size: 32),
+              ).animate().scale(delay: 400.ms),
+            ),
     );
   }
 
@@ -128,7 +133,10 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
             controller: _tabController,
             children: [
               _UploadReceiptTab(isAnalyzing: isAnalyzing),
-              _ManualEntryTab(onSave: (r) => _startSaveReceiptFlow(r)),
+              _ManualEntryTab(
+                key: _manualEntryKey,
+                onSave: _startSaveReceiptFlow,
+              ),
             ],
           ),
         ),
@@ -246,7 +254,7 @@ class _UploadReceiptTab extends ConsumerWidget {
 
 class _ManualEntryTab extends StatefulWidget {
   final Function(ReceiptModel) onSave;
-  const _ManualEntryTab({required this.onSave});
+  const _ManualEntryTab({super.key, required this.onSave});
 
   @override
   State<_ManualEntryTab> createState() => _ManualEntryTabState();
@@ -256,6 +264,14 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
   final _storeController = TextEditingController();
   final _totalController = TextEditingController();
   DateTime _date = DateTime.now();
+
+  void resetFields() {
+    setState(() {
+      _storeController.clear();
+      _totalController.clear();
+      _date = DateTime.now();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -321,23 +337,27 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
           ),
         ),
         const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              widget.onSave(ReceiptModel(
-                id: '',
-                name: '',
-                date: _date,
-                store: _storeController.text,
-                items: [],
-                total: double.tryParse(_totalController.text) ?? 0,
-              ));
-            },
-            child: const Text('Confirm Entry'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 100),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                widget.onSave(
+                  ReceiptModel(
+                    id: '',
+                    name: '',
+                    date: _date,
+                    store: _storeController.text,
+                    items: [],
+                    total: double.tryParse(_totalController.text) ?? 0,
+                  ),
+                );
+              },
+              child: const Text('Confirm Entry'),
+            ),
           ),
         ),
-        const SizedBox(height: 20),
       ],
     ).animate().fadeIn();
   }
@@ -377,22 +397,25 @@ class _ResultsSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 40),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: onClear,
-                child: const Text('Discard'),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 100),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onClear,
+                  child: const Text('Discard'),
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => onSave(receipt),
-                child: const Text('Save Receipt'),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => onSave(receipt),
+                  child: const Text('Save Receipt'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     ).animate().fadeIn().slideY(begin: 0.1);

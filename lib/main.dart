@@ -12,10 +12,26 @@ import 'package:hisabi/features/settings/providers/settings_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully');
+  } catch (e, stackTrace) {
+    print('❌ Error initializing Firebase: $e');
+    print('Stack trace: $stackTrace');
+  }
   
-  await dotenv.load(fileName: ".env");
-  await StorageService.init();
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('⚠️ Warning: Could not load .env file: $e');
+  }
+  
+  try {
+    await StorageService.init();
+  } catch (e, stackTrace) {
+    print('❌ Error initializing storage: $e');
+    print('Stack trace: $stackTrace');
+  }
 
   runApp(
     const ProviderScope(
