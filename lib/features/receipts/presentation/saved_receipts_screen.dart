@@ -17,23 +17,33 @@ class SavedReceiptsScreen extends ConsumerWidget {
     final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
 
     return Scaffold(
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        slivers: [
-          SliverAppBar.large(
-            title: const Text('Saved Receipts'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search_rounded),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: const Icon(Icons.filter_list_rounded),
-                onPressed: () {},
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(receiptsStoreProvider.notifier).refresh();
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar.large(
+              title: const Text('Saved Receipts'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  onPressed: () async {
+                    await ref.read(receiptsStoreProvider.notifier).refresh();
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search_rounded),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: const Icon(Icons.filter_list_rounded),
+                  onPressed: () {},
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
             sliver: receiptsAsync.when(
@@ -97,7 +107,8 @@ class SavedReceiptsScreen extends ConsumerWidget {
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -137,7 +137,7 @@ class SpendingAnalysisCard extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: percentage / 100,
+                          value: (percentage / 100).clamp(0.0, 1.0),
                           minHeight: 6,
                           backgroundColor: context.borderColor.withOpacity(0.2),
                           valueColor: AlwaysStoppedAnimation<Color>(

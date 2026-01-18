@@ -11,13 +11,40 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(settingsProvider);
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(
-            title: Text('Settings'),
+          SliverAppBar.large(
+            title: const Text('Settings'),
             centerTitle: false,
+            actions: [
+              if (user?.pictureUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: CircleAvatar(
+                    backgroundImage: NetworkImage(user!.pictureUrl!),
+                    radius: 18,
+                  ),
+                )
+              else if (user != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    radius: 18,
+                    child: Text(
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),

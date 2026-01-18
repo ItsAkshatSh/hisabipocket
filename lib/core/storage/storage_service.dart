@@ -1,17 +1,16 @@
 import 'package:hisabi/core/models/receipt_model.dart';
+import 'package:hisabi/core/storage/firebase_storage_service.dart' as firebase;
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
-import 'package:hisabi/core/storage/firebase_storage_service.dart' as firebase;
 
 class StorageService {
   static Future<void> init() async {
     await firebase.FirebaseStorageService.init();
-    print('Storage initialized successfully');
   }
 
-  static Future<void> initializeUserStorage(String userEmail) async {
-    print(
-        'User storage initialized for: $userEmail (Firebase handles isolation automatically)');
+  static Future<void> initializeUserStorage() async {
+    // Firebase handles user isolation automatically
+    print('Firebase handles user data isolation automatically');
   }
 
   static Future<void> saveReceipts(List<ReceiptModel> receipts) async {
@@ -38,19 +37,6 @@ class StorageService {
     return await firebase.FirebaseStorageService.loadSettings();
   }
 
-  static Future<void> saveAuthState(
-      String email, String name, String? pictureUrl) async {
-    print('Auth state saved (Firebase Auth handles this automatically)');
-  }
-
-  static Future<Map<String, dynamic>?> loadAuthState() async {
-    return null;
-  }
-
-  static Future<void> clearAuthState() async {
-    print('Auth state cleared (user data preserved in Firebase)');
-  }
-
   static Future<void> saveFinancialProfile(FinancialProfile profile) async {
     await firebase.FirebaseStorageService.saveFinancialProfile(profile);
   }
@@ -59,8 +45,19 @@ class StorageService {
     return await firebase.FirebaseStorageService.loadFinancialProfile();
   }
 
-  static Future<void> clearAll() async {
-    await firebase.FirebaseStorageService.clearAll();
-    print('All data cleared');
+  static Future<void> saveAuthState(String email) async {
+    // Firebase Auth handles auth state
+    print('Firebase Auth handles authentication state');
+  }
+
+  static String? loadAuthState() {
+    // Firebase Auth manages auth state
+    return null;
+  }
+
+  static Future<void> clearAuthState() async {
+    // Don't clear user data on logout, just sign out
+    // Firebase Auth handles sign out separately
+    print('Firebase Auth handles sign out');
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/features/auth/presentation/login_screen.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 import 'package:hisabi/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:hisabi/features/receipts/presentation/add_receipt_screen.dart';
 import 'package:hisabi/features/receipts/presentation/voice_quick_add_screen.dart';
@@ -29,6 +30,9 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
+  // Watch authProvider to rebuild router when auth state changes
+  ref.watch(authProvider);
+  
   return GoRouter(
     initialLocation: '/dashboard',
     routes: [
@@ -86,7 +90,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    redirect: (context, state) {
+    redirect: (BuildContext context, GoRouterState state) {
+      final authState = ref.read(authProvider);
+      final authStatus = authState.status;
+      final isAuthenticated = authStatus == AuthStatus.authenticated;
+      final isUnauthenticated = authStatus == AuthStatus.unauthenticated;
+      final isLoginPage = state.uri.path == '/login';
+      
+      // Wait for auth check to complete (unknown status means still checking)
+      if (authStatus == AuthStatus.unknown) {
+        return null;
+      }
+      
+      // Handle home widget redirects
       if (state.uri.scheme == 'homewidget') {
         if (state.uri.host == 'quick_voice_add') {
           return '/voice-add';
@@ -95,6 +111,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return '/dashboard';
         }
       }
+      
+      // If not authenticated and not on login page, redirect to login
+      if (isUnauthenticated && !isLoginPage) {
+        return '/login';
+      }
+      
+      // If authenticated and on login page, redirect to dashboard
+      if (isAuthenticated && isLoginPage) {
+        return '/dashboard';
+      }
+      
       return null;
     },
   );

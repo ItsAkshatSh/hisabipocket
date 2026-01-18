@@ -128,6 +128,10 @@ class WidgetSummary {
         'daysWithExpenses': daysWithExpenses,
         'totalItems': totalItems,
         'updatedAt': updatedAt.toIso8601String(),
+        'monthlyBudget': monthlyBudget,
+        'topCategories': topCategories.map((c) => c.toJson()).toList(),
+        'expenseTrend': expenseTrend?.toJson(),
+        'savingsGoal': savingsGoal?.toJson(),
       };
 
   static WidgetSummary fromJson(Map<String, dynamic> json) {
@@ -184,6 +188,9 @@ Future<void> saveAndUpdateWidgetSummary(
     iOSName: iosProvider,
   );
 }
+
+
+
 
 
 

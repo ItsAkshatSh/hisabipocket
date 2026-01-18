@@ -5,6 +5,8 @@ import 'package:hisabi/core/models/receipt_summary_model.dart';
 import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/features/insights/providers/insights_provider.dart';
+import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
 
 enum Period { thisMonth, thisYear, allTime }
 
@@ -159,13 +161,47 @@ final widgetUpdateProvider = FutureProvider.autoDispose<void>((ref) async {
         }
       }
 
-      // Calculate Trend
+      // Calculate Monthly Trend
       final lastMonth = receipts
           .where((r) => r.date.year == (now.month == 1 ? now.year - 1 : now.year) && 
                         r.date.month == (now.month == 1 ? 12 : now.month - 1))
           .toList();
       final totalLastMonth = lastMonth.fold<double>(0.0, (sum, r) => sum + r.total);
       final monthlyChange = totalLastMonth == 0 ? 0.0 : ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100;
+
+      // Calculate Weekly Trend
+      final weekAgo = now.subtract(const Duration(days: 7));
+      final lastWeek = currentMonth
+          .where((r) => r.date.isAfter(weekAgo))
+          .toList();
+      final totalLastWeek = lastWeek.fold<double>(0.0, (sum, r) => sum + r.total);
+      final previousWeek = currentMonth
+          .where((r) => r.date.isBefore(weekAgo) && r.date.isAfter(weekAgo.subtract(const Duration(days: 7))))
+          .toList();
+      final totalPreviousWeek = previousWeek.fold<double>(0.0, (sum, r) => sum + r.total);
+      final weeklyChange = totalPreviousWeek == 0 ? 0.0 : ((totalLastWeek - totalPreviousWeek) / totalPreviousWeek) * 100;
+
+      // Calculate Monthly Budget for Savings Goal
+      final insightsAsync = ref.read(insightsProvider);
+      final insights = insightsAsync.valueOrNull;
+      final profileAsync = ref.read(financialProfileProvider);
+      final profile = profileAsync.valueOrNull;
+      
+      double monthlyBudget = 0.0;
+      if (insights != null && insights.suggestedBudgets != null) {
+        // Sum all suggested budgets
+        monthlyBudget = insights.suggestedBudgets!.values.fold<double>(0.0, (sum, budget) => sum + budget);
+      } else if (profile != null && profile.totalMonthlyIncome > 0) {
+        // Use income minus savings goal if available
+        final savingsPercentage = profile.savingsGoalPercentage ?? 20.0;
+        monthlyBudget = profile.totalMonthlyIncome * (1 - savingsPercentage / 100);
+      } else if (insights != null && insights.estimatedIncome > 0) {
+        // Fallback: use estimated income minus 20% savings
+        monthlyBudget = insights.estimatedIncome * 0.8;
+      } else {
+        // Last resort: use 1.5x of current spending as budget estimate
+        monthlyBudget = totalThisMonth > 0 ? totalThisMonth * 1.5 : 0.0;
+      }
 
       await saveAndUpdateWidgetSummary(
         WidgetSummary(
@@ -177,16 +213,16 @@ final widgetUpdateProvider = FutureProvider.autoDispose<void>((ref) async {
           totalItems: totalItems,
           updatedAt: DateTime.now(),
           expenseTrend: ExpenseTrend(
-            weeklyChange: 0, // Simplified
+            weeklyChange: weeklyChange,
             monthlyChange: monthlyChange,
             isUp: totalThisMonth > totalLastMonth,
           ),
-          savingsGoal: SavingsGoal(
+          savingsGoal: monthlyBudget > 0 ? SavingsGoal(
             title: 'Monthly Limit',
-            targetAmount: 2000, // Example hardcoded
-            currentAmount: 1200, // Example hardcoded
-            targetDate: DateTime.now(),
-          ),
+            targetAmount: monthlyBudget,
+            currentAmount: totalThisMonth,
+            targetDate: DateTime(now.year, now.month + 1, 1),
+          ) : null,
         ),
         currencyCode: currencyCode,
         widgetSettings: widgetSettings?.toJson(),

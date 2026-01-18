@@ -99,15 +99,37 @@ class FirebaseStorageService {
   }
 
   static Future<void> addReceipt(ReceiptModel receipt) async {
-    final receipts = await loadReceipts();
-    receipts.add(receipt);
-    await saveReceipts(receipts);
+    final userId = currentUserId;
+    if (userId == null) {
+      print('⚠️ Cannot add receipt: User not authenticated');
+      return;
+    }
+
+    try {
+      final receipts = await loadReceipts();
+      receipts.add(receipt);
+      await saveReceipts(receipts);
+    } catch (e) {
+      print('❌ Error adding receipt: $e');
+      rethrow;
+    }
   }
 
   static Future<void> deleteReceipt(String receiptId) async {
-    final receipts = await loadReceipts();
-    receipts.removeWhere((r) => r.id == receiptId);
-    await saveReceipts(receipts);
+    final userId = currentUserId;
+    if (userId == null) {
+      print('⚠️ Cannot delete receipt: User not authenticated');
+      return;
+    }
+
+    try {
+      final receipts = await loadReceipts();
+      receipts.removeWhere((r) => r.id == receiptId);
+      await saveReceipts(receipts);
+    } catch (e) {
+      print('❌ Error deleting receipt: $e');
+      rethrow;
+    }
   }
 
   static Future<void> saveSettings(SettingsState settings) async {

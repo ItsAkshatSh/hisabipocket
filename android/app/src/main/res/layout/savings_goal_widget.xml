@@ -1,62 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="12dp"
-    android:background="#212834">
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#1A1F2E"
+    android:gravity="center_vertical">
 
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Savings Goal"
-        android:textSize="12sp"
-        android:textColor="@android:color/white"
-        android:alpha="0.7" />
+        android:text="Monthly Limit"
+        android:textSize="10sp"
+        android:textColor="#A0A0A0"
+        android:textStyle="normal"
+        android:letterSpacing="0.5" />
 
     <TextView
         android:id="@+id/tvGoalTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/tvTitle"
-        android:text="Monthly Limit"
+        android:layout_marginTop="4dp"
+        android:text="Budget Progress"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:paddingTop="2dp" />
+        android:textColor="#FFFFFF" />
 
-    <ProgressBar
-        android:id="@+id/pbGoal"
-        style="?android:attr/progressBarStyleHorizontal"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:layout_centerInParent="true"
-        android:max="100"
-        android:progress="60"
-        android:progressDrawable="@android:drawable/progress_horizontal" />
-
-    <TextView
-        android:id="@+id/tvProgress"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/pbGoal"
-        android:layout_marginTop="4dp"
-        android:text="60%"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:textColor="#6366F1" />
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical">
+
+        <ProgressBar
+            android:id="@+id/pbGoal"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="6dp"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="60"
+            android:progressTint="#6366F1"
+            android:progressBackgroundTint="#2A2F3E"
+            android:scaleY="2" />
+
+        <TextView
+            android:id="@+id/tvProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="60%"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#6366F1"
+            android:minWidth="40dp"
+            android:gravity="end" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvAmount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/pbGoal"
-        android:layout_alignParentEnd="true"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="10dp"
         android:text="$1,200 / $2,000"
-        android:textSize="10sp"
-        android:textColor="@android:color/white"
-        android:alpha="0.6" />
+        android:textSize="11sp"
+        android:textColor="#9CA3AF"
+        android:alpha="0.9" />
 
-</RelativeLayout>
+</LinearLayout>

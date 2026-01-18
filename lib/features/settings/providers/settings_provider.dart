@@ -116,7 +116,7 @@ class SettingsState {
   }
 }
 
-final settingsProvider = StateNotifierProvider.autoDispose<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
+final settingsProvider = StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
   final notifier = SettingsNotifier();
   notifier.loadSettings();
   return notifier;

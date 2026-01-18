@@ -56,9 +56,29 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   // Calculate spending by category
   final categorySpending = <ExpenseCategory, double>{};
   for (final receipt in receipts) {
-    for (final item in receipt.items) {
-      final category = item.category ?? ExpenseCategory.other;
-      categorySpending[category] = (categorySpending[category] ?? 0.0) + item.total;
+    if (receipt.items.isEmpty) {
+      // Receipt has no items (manual entry), use primaryCategory or 'other'
+      final category = receipt.primaryCategory ?? 
+                      receipt.calculatedPrimaryCategory ?? 
+                      ExpenseCategory.other;
+      categorySpending[category] = (categorySpending[category] ?? 0.0) + receipt.total;
+    } else {
+      // Receipt has items, sum item totals
+      double itemsTotal = 0.0;
+      for (final item in receipt.items) {
+        final category = item.category ?? ExpenseCategory.other;
+        categorySpending[category] = (categorySpending[category] ?? 0.0) + item.total;
+        itemsTotal += item.total;
+      }
+      // If items don't sum to receipt total (tax, rounding, etc.), 
+      // add difference to primary category or 'other'
+      if ((receipt.total - itemsTotal).abs() > 0.01) {
+        final diff = receipt.total - itemsTotal;
+        final category = receipt.primaryCategory ?? 
+                        receipt.calculatedPrimaryCategory ?? 
+                        ExpenseCategory.other;
+        categorySpending[category] = (categorySpending[category] ?? 0.0) + diff;
+      }
     }
   }
   

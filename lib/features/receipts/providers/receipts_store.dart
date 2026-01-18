@@ -29,7 +29,7 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
   // Cache to avoid redundant loads
   List<ReceiptModel>? _cachedReceipts;
   DateTime? _lastLoadTime;
-  static const _cacheValidDuration = Duration(seconds: 5);
+  static const _cacheValidDuration = Duration(minutes: 1);
 
   Future<void> loadReceipts({bool forceRefresh = false}) async {
     // Use cache if available and not expired

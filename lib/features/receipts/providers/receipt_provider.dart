@@ -93,8 +93,9 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
       // 3. Add to store (which handles persistent storage and UI update)
       await _ref.read(receiptsStoreProvider.notifier).add(finalReceipt);
 
-      // 4. Force a refresh of dashboard providers
+      // 4. Force a refresh of dashboard providers and receipts
       _ref.invalidate(receiptsStoreProvider);
+      await _ref.read(receiptsStoreProvider.notifier).refresh();
 
       state = ReceiptEntryState();
       return true;

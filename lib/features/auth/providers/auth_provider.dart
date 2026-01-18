@@ -42,7 +42,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
               : '534192209348-gg7nnp03rn0aibq4h69bh7or3d70nvnf.apps.googleusercontent.com',
         ),
         _firebaseAuth = FirebaseAuth.instance,
-        super(AuthState(status: AuthStatus.unauthenticated));
+        super(AuthState(status: AuthStatus.unknown));
 
   Future<void> checkAuthStatus() async {
     final firebaseUser = _firebaseAuth.currentUser;

@@ -110,6 +110,7 @@ class BudgetPlannerCard extends StatelessWidget {
                 final currentSpending = insights.categorySpending[category] ?? 0.0;
                 final budget = entry.value;
                 final percentage = budget > 0 ? (currentSpending / budget * 100) : 0;
+                final progressValue = percentage / 100;
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -148,10 +149,10 @@ class BudgetPlannerCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       LinearProgressIndicator(
-                        value: percentage > 1 ? 1.0 : percentage.toDouble(),
+                        value: progressValue > 1.0 ? 1.0 : (progressValue < 0.0 ? 0.0 : progressValue),
                         backgroundColor: context.borderColor.withOpacity(0.2),
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          percentage > 1
+                          percentage > 100
                               ? context.errorColor
                               : context.onSurfaceColor,
                         ),

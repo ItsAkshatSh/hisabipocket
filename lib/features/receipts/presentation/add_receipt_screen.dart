@@ -275,90 +275,97 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextField(
-          controller: _storeController,
-          decoration: const InputDecoration(
-            labelText: 'Store Name', 
-            prefixIcon: Icon(Icons.store_rounded),
-          ),
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height - 300,
         ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _totalController,
-          decoration: const InputDecoration(
-            labelText: 'Total Amount', 
-            prefixIcon: Icon(Icons.attach_money_rounded),
-          ),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        ),
-        const SizedBox(height: 16),
-        InkWell(
-          onTap: () async {
-            final d = await showDatePicker(
-              context: context,
-              initialDate: _date,
-              firstDate: DateTime(2020),
-              lastDate: DateTime.now(),
-            );
-            if (d != null) setState(() => _date = d);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Date', 
-                      style: TextStyle(
-                        fontSize: 12, 
-                        fontWeight: FontWeight.w700, 
-                        color: Theme.of(context).colorScheme.onSurfaceVariant
-                      ),
-                    ),
-                    Text(
-                      DateFormat.yMMMd().format(_date), 
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                    ),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 120),
+          child: Column(
+            children: [
+              TextField(
+                controller: _storeController,
+                decoration: const InputDecoration(
+                  labelText: 'Store Name', 
+                  prefixIcon: Icon(Icons.store_rounded),
                 ),
-              ],
-            ),
-          ),
-        ),
-        const Spacer(),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 100),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onSave(
-                  ReceiptModel(
-                    id: '',
-                    name: '',
-                    date: _date,
-                    store: _storeController.text,
-                    items: [],
-                    total: double.tryParse(_totalController.text) ?? 0,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _totalController,
+                decoration: const InputDecoration(
+                  labelText: 'Total Amount', 
+                  prefixIcon: Icon(Icons.attach_money_rounded),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  final d = await showDatePicker(
+                    context: context,
+                    initialDate: _date,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime.now(),
+                  );
+                  if (d != null) setState(() => _date = d);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                );
-              },
-              child: const Text('Confirm Entry'),
-            ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Date', 
+                            style: TextStyle(
+                              fontSize: 12, 
+                              fontWeight: FontWeight.w700, 
+                              color: Theme.of(context).colorScheme.onSurfaceVariant
+                            ),
+                          ),
+                          Text(
+                            DateFormat.yMMMd().format(_date), 
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    widget.onSave(
+                      ReceiptModel(
+                        id: '',
+                        name: '',
+                        date: _date,
+                        store: _storeController.text,
+                        items: [],
+                        total: double.tryParse(_totalController.text) ?? 0,
+                      ),
+                    );
+                  },
+                  child: const Text('Confirm Entry'),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     ).animate().fadeIn();
   }
 }
@@ -457,7 +464,14 @@ class _SaveReceiptModalState extends ConsumerState<_SaveReceiptModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      padding: EdgeInsets.fromLTRB(
+        24, 
+        24, 
+        24, 
+        MediaQuery.of(context).viewInsets.bottom + 
+        MediaQuery.of(context).padding.bottom + 
+        120
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
