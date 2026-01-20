@@ -101,7 +101,7 @@ class BudgetPlannerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              ...insights.suggestedBudgets!.entries.take(5).map((entry) {
+              ...insights.suggestedBudgets!.entries.map((entry) {
                 final category = ExpenseCategory.values.firstWhere(
                   (c) => c.name == entry.key,
                   orElse: () => ExpenseCategory.other,
@@ -289,4 +289,3 @@ class BudgetPlannerCard extends StatelessWidget {
     );
   }
 }
-

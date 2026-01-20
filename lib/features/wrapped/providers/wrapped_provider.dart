@@ -238,24 +238,24 @@ List<FunFact> _generateFunFacts(List<ReceiptModel> receipts, WrappedStats stats)
   
   if (receipts.isEmpty) return facts;
   
-  // Coffee vs groceries
+  // Coffee vs food
   double coffeeTotal = 0.0;
-  double groceriesTotal = 0.0;
+  double foodTotal = 0.0;
   for (final r in receipts) {
     for (final item in r.items) {
       final name = item.name.toLowerCase();
       if (name.contains('coffee') || name.contains('latte') || name.contains('cappuccino')) {
         coffeeTotal += item.total;
       }
-      if (r.items.any((i) => i.category == ExpenseCategory.groceries)) {
-        groceriesTotal += r.total;
+      if (r.items.any((i) => i.category == ExpenseCategory.food)) {
+        foodTotal += r.total;
       }
     }
   }
   
-  if (coffeeTotal > groceriesTotal && coffeeTotal > 0) {
+  if (coffeeTotal > foodTotal && coffeeTotal > 0) {
     facts.add(FunFact(
-      fact: 'You spent more on coffee (\$${coffeeTotal.toStringAsFixed(2)}) than groceries (\$${groceriesTotal.toStringAsFixed(2)})',
+      fact: 'You spent more on coffee (\$${coffeeTotal.toStringAsFixed(2)}) than general food (\$${foodTotal.toStringAsFixed(2)})',
       context: 'That\'s a lot of caffeine!',
       emoji: '☕',
     ));
@@ -423,4 +423,3 @@ WrappedCard _createClosingCard() {
     emoji: '🎉',
   );
 }
-

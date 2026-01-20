@@ -1,35 +1,14 @@
 import 'package:flutter/material.dart';
 
 enum ExpenseCategory {
-  // Essential
-  groceries,
-  utilities,
-  rent,
-  transportation,
-  healthcare,
-  insurance,
-  
-  // Lifestyle
-  dining,
-  entertainment,
-  shopping,
-  clothing,
-  personalCare,
-  subscriptions,
-  
-  // Financial
-  savings,
-  investments,
-  debt,
-  education,
-  gifts,
-  charity,
-  
-  // Other
-  travel,
-  homeImprovement,
-  petCare,
-  business,
+  housing,        // Rent, Utilities, Insurance
+  food,           // Groceries, Dining
+  transport,      // Commute, Fuel, Uber
+  health,         // Medical, Pharmacy
+  lifestyle,      // Shopping, Clothes, Grooming, Gifts
+  subscriptions,  // Entertainment, Netflix, Gym, Memberships
+  education,      // Learning, Books
+  travel,         // Trips, Hotels
   other,
 }
 
@@ -49,110 +28,61 @@ class CategoryInfo {
   });
   
   static const Map<ExpenseCategory, CategoryInfo> categories = {
-    ExpenseCategory.groceries: CategoryInfo(
-      category: ExpenseCategory.groceries,
-      name: 'Groceries',
-      emoji: '🛒',
-      color: Color(0xFF4CAF50),
-      keywords: ['grocery', 'supermarket', 'food', 'walmart', 'target', 'kroger', 'safeway', 'whole foods', 'aldi', 'costco'],
-    ),
-    ExpenseCategory.dining: CategoryInfo(
-      category: ExpenseCategory.dining,
-      name: 'Dining',
-      emoji: '🍽️',
-      color: Color(0xFFFF9800),
-      keywords: ['restaurant', 'cafe', 'food', 'dining', 'mcdonalds', 'starbucks', 'pizza', 'burger', 'coffee', 'lunch', 'dinner', 'breakfast'],
-    ),
-    ExpenseCategory.transportation: CategoryInfo(
-      category: ExpenseCategory.transportation,
-      name: 'Transportation',
-      emoji: '🚗',
-      color: Color(0xFF2196F3),
-      keywords: ['gas', 'fuel', 'uber', 'lyft', 'taxi', 'parking', 'metro', 'bus', 'train', 'airline', 'flight'],
-    ),
-    ExpenseCategory.utilities: CategoryInfo(
-      category: ExpenseCategory.utilities,
-      name: 'Utilities',
-      emoji: '💡',
-      color: Color(0xFFFFC107),
-      keywords: ['electric', 'water', 'gas', 'internet', 'phone', 'utility', 'power', 'cable', 'wifi'],
-    ),
-    ExpenseCategory.rent: CategoryInfo(
-      category: ExpenseCategory.rent,
-      name: 'Rent',
+    ExpenseCategory.housing: CategoryInfo(
+      category: ExpenseCategory.housing,
+      name: 'Housing & Bills',
       emoji: '🏠',
       color: Color(0xFF9C27B0),
-      keywords: ['rent', 'housing', 'apartment', 'mortgage'],
+      keywords: ['rent', 'housing', 'apartment', 'mortgage', 'electric', 'water', 'gas', 'utility', 'power', 'insurance', 'premium', 'coverage', 'bill', 'home'],
     ),
-    ExpenseCategory.healthcare: CategoryInfo(
-      category: ExpenseCategory.healthcare,
-      name: 'Healthcare',
+    ExpenseCategory.food: CategoryInfo(
+      category: ExpenseCategory.food,
+      name: 'Food & Dining',
+      emoji: '🍽️',
+      color: Color(0xFF4CAF50),
+      keywords: ['grocery', 'supermarket', 'food', 'walmart', 'target', 'kroger', 'safeway', 'whole foods', 'aldi', 'costco', 'restaurant', 'cafe', 'mcdonalds', 'starbucks', 'pizza', 'burger', 'coffee', 'lunch', 'dinner', 'breakfast', 'bakery'],
+    ),
+    ExpenseCategory.transport: CategoryInfo(
+      category: ExpenseCategory.transport,
+      name: 'Transport',
+      emoji: '🚗',
+      color: Color(0xFF2196F3),
+      keywords: ['gas', 'fuel', 'uber', 'lyft', 'taxi', 'parking', 'metro', 'bus', 'train', 'airline', 'flight', 'commute', 'petrol'],
+    ),
+    ExpenseCategory.health: CategoryInfo(
+      category: ExpenseCategory.health,
+      name: 'Health',
       emoji: '🏥',
       color: Color(0xFFE91E63),
-      keywords: ['pharmacy', 'drug', 'medicine', 'doctor', 'hospital', 'clinic', 'medical', 'health'],
+      keywords: ['pharmacy', 'drug', 'medicine', 'doctor', 'hospital', 'clinic', 'medical', 'health', 'dentist', 'vision'],
     ),
-    ExpenseCategory.insurance: CategoryInfo(
-      category: ExpenseCategory.insurance,
-      name: 'Insurance',
-      emoji: '🛡️',
-      color: Color(0xFF607D8B),
-      keywords: ['insurance', 'premium', 'coverage'],
-    ),
-    ExpenseCategory.entertainment: CategoryInfo(
-      category: ExpenseCategory.entertainment,
-      name: 'Entertainment',
-      emoji: '🎬',
-      color: Color(0xFFE91E63),
-      keywords: ['movie', 'cinema', 'netflix', 'spotify', 'game', 'concert', 'theater', 'ticket'],
-    ),
-    ExpenseCategory.shopping: CategoryInfo(
-      category: ExpenseCategory.shopping,
-      name: 'Shopping',
+    ExpenseCategory.lifestyle: CategoryInfo(
+      category: ExpenseCategory.lifestyle,
+      name: 'Lifestyle',
       emoji: '🛍️',
       color: Color(0xFF00BCD4),
-      keywords: ['amazon', 'store', 'mall', 'purchase', 'buy'],
-    ),
-    ExpenseCategory.clothing: CategoryInfo(
-      category: ExpenseCategory.clothing,
-      name: 'Clothing',
-      emoji: '👕',
-      color: Color(0xFF795548),
-      keywords: ['clothes', 'shirt', 'pants', 'shoes', 'fashion', 'apparel'],
-    ),
-    ExpenseCategory.personalCare: CategoryInfo(
-      category: ExpenseCategory.personalCare,
-      name: 'Personal Care',
-      emoji: '💅',
-      color: Color(0xFFFF6B9D),
-      keywords: ['salon', 'barber', 'spa', 'beauty', 'cosmetic', 'gym', 'fitness'],
+      keywords: ['amazon', 'store', 'mall', 'purchase', 'buy', 'clothes', 'shirt', 'pants', 'shoes', 'fashion', 'apparel', 'salon', 'barber', 'spa', 'beauty', 'cosmetic', 'gift', 'present', 'shopping'],
     ),
     ExpenseCategory.subscriptions: CategoryInfo(
       category: ExpenseCategory.subscriptions,
-      name: 'Subscriptions',
-      emoji: '📱',
+      name: 'Subscriptions & Fun',
+      emoji: '🎬',
       color: Color(0xFF673AB7),
-      keywords: ['subscription', 'membership', 'premium', 'plan'],
-    ),
-    ExpenseCategory.travel: CategoryInfo(
-      category: ExpenseCategory.travel,
-      name: 'Travel',
-      emoji: '✈️',
-      color: Color(0xFF009688),
-      keywords: ['hotel', 'travel', 'vacation', 'trip', 'booking', 'airbnb'],
+      keywords: ['subscription', 'membership', 'premium', 'plan', 'movie', 'cinema', 'netflix', 'spotify', 'game', 'concert', 'theater', 'ticket', 'gym', 'fitness', 'apple', 'google play', 'entertainment'],
     ),
     ExpenseCategory.education: CategoryInfo(
       category: ExpenseCategory.education,
       name: 'Education',
       emoji: '📚',
       color: Color(0xFF3F51B5),
-      keywords: ['school', 'tuition', 'course', 'book', 'education', 'learning'],
+      keywords: ['school', 'tuition', 'course', 'book', 'education', 'learning', 'university', 'college'],
     ),
-    ExpenseCategory.gifts: CategoryInfo(
-      category: ExpenseCategory.gifts,
-      name: 'Gifts',
-      emoji: '🎁',
-      color: Color(0xFFFF5722),
-      keywords: ['gift', 'present', 'donation'],
+    ExpenseCategory.travel: CategoryInfo(
+      category: ExpenseCategory.travel,
+      name: 'Travel',
+      emoji: '✈️',
+      color: Color(0xFF009688),
+      keywords: ['hotel', 'travel', 'vacation', 'trip', 'booking', 'airbnb', 'flight', 'resort'],
     ),
     ExpenseCategory.other: CategoryInfo(
       category: ExpenseCategory.other,
@@ -166,5 +96,51 @@ class CategoryInfo {
   static CategoryInfo getInfo(ExpenseCategory category) {
     return categories[category] ?? categories[ExpenseCategory.other]!;
   }
-}
 
+  /// Maps an old category string or any string to the current ExpenseCategory enum
+  static ExpenseCategory mapStringToCategory(String? name) {
+    if (name == null || name.isEmpty) return ExpenseCategory.other;
+    
+    final normalized = name.toLowerCase().trim();
+    
+    // Exact enum name match
+    for (final value in ExpenseCategory.values) {
+      if (value.name == normalized) return value;
+    }
+
+    // Legacy/Old Category Mapping
+    final mapping = {
+      'groceries': ExpenseCategory.food,
+      'dining': ExpenseCategory.food,
+      'restaurants': ExpenseCategory.food,
+      'utilities': ExpenseCategory.housing,
+      'rent': ExpenseCategory.housing,
+      'insurance': ExpenseCategory.housing,
+      'housing': ExpenseCategory.housing,
+      'transportation': ExpenseCategory.transport,
+      'healthcare': ExpenseCategory.health,
+      'medical': ExpenseCategory.health,
+      'shopping': ExpenseCategory.lifestyle,
+      'clothing': ExpenseCategory.lifestyle,
+      'personalcare': ExpenseCategory.lifestyle,
+      'gifts': ExpenseCategory.lifestyle,
+      'entertainment': ExpenseCategory.subscriptions,
+      'subscriptions': ExpenseCategory.subscriptions,
+      'travel': ExpenseCategory.travel,
+      'education': ExpenseCategory.education,
+    };
+
+    if (mapping.containsKey(normalized)) {
+      return mapping[normalized]!;
+    }
+
+    // Keyword based search as a fallback
+    for (final entry in categories.entries) {
+      if (entry.value.keywords.any((k) => normalized.contains(k))) {
+        return entry.key;
+      }
+    }
+
+    return ExpenseCategory.other;
+  }
+}

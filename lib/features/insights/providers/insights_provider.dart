@@ -5,6 +5,7 @@ import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/insights/models/insights_models.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
+import 'package:hisabi/features/financial_profile/models/recurring_payment_model.dart';
 
 // Cache for insights data and the receipt count when it was generated
 class InsightsCache {
@@ -30,6 +31,7 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   // Watch financial profile to refresh when it changes
   final profileAsync = ref.watch(financialProfileProvider);
+  final profile = profileAsync.valueOrNull;
   
   // Get current receipt count
   final currentReceiptCount = receipts.length;
@@ -39,8 +41,7 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   final hasNewReceipts = cachedInsights == null || 
       currentReceiptCount > cachedInsights.receiptCount;
   
-  // Check if financial profile changed (income update)
-  final profile = profileAsync.valueOrNull;
+  // Check if financial profile changed (income or recurring payments update)
   final currentIncome = profile?.totalMonthlyIncome ?? 0.0;
   final cachedIncome = cachedInsights?.data.estimatedIncome ?? 0.0;
   final incomeChanged = (currentIncome > 0 && currentIncome != cachedIncome);
@@ -55,83 +56,110 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   // Calculate spending by category
   final categorySpending = <ExpenseCategory, double>{};
+  
+  // 1. Add spending from receipts
   for (final receipt in receipts) {
+    // Map existing receipt category to the new simplified system
+    final mappedCategory = CategoryInfo.mapStringToCategory(
+      receipt.primaryCategory?.name ?? receipt.store
+    );
+
     if (receipt.items.isEmpty) {
-      // Receipt has no items (manual entry), use primaryCategory or 'other'
-      final category = receipt.primaryCategory ?? 
-                      receipt.calculatedPrimaryCategory ?? 
-                      ExpenseCategory.other;
-      categorySpending[category] = (categorySpending[category] ?? 0.0) + receipt.total;
+      categorySpending[mappedCategory] = (categorySpending[mappedCategory] ?? 0.0) + receipt.total;
     } else {
-      // Receipt has items, sum item totals
       double itemsTotal = 0.0;
       for (final item in receipt.items) {
-        final category = item.category ?? ExpenseCategory.other;
-        categorySpending[category] = (categorySpending[category] ?? 0.0) + item.total;
+        final itemCategory = CategoryInfo.mapStringToCategory(item.category?.name ?? item.name);
+        categorySpending[itemCategory] = (categorySpending[itemCategory] ?? 0.0) + item.total;
         itemsTotal += item.total;
       }
-      // If items don't sum to receipt total (tax, rounding, etc.), 
-      // add difference to primary category or 'other'
       if ((receipt.total - itemsTotal).abs() > 0.01) {
         final diff = receipt.total - itemsTotal;
-        final category = receipt.primaryCategory ?? 
-                        receipt.calculatedPrimaryCategory ?? 
-                        ExpenseCategory.other;
-        categorySpending[category] = (categorySpending[category] ?? 0.0) + diff;
+        categorySpending[mappedCategory] = (categorySpending[mappedCategory] ?? 0.0) + diff;
       }
     }
   }
+
+  // 2. Add spending from recurring payments (normalized to monthly)
+  if (profile != null) {
+    for (final payment in profile.recurringPayments) {
+      double monthlyAmount = 0.0;
+      switch (payment.frequency) {
+        case PaymentFrequency.weekly:
+          monthlyAmount = payment.amount * 4.33;
+          break;
+        case PaymentFrequency.biWeekly:
+          monthlyAmount = payment.amount * 2.17;
+          break;
+        case PaymentFrequency.monthly:
+          monthlyAmount = payment.amount;
+          break;
+        case PaymentFrequency.quarterly:
+          monthlyAmount = payment.amount / 3;
+          break;
+        case PaymentFrequency.yearly:
+          monthlyAmount = payment.amount / 12;
+          break;
+      }
+
+      final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
+      categorySpending[category] = (categorySpending[category] ?? 0.0) + monthlyAmount;
+    }
+  }
   
-  // Get current month spending
   final now = DateTime.now();
   final currentMonthReceipts = receipts.where((r) =>
     r.date.year == now.year && r.date.month == now.month
   ).toList();
   
-  final monthlySpending = currentMonthReceipts.fold<double>(
+  final receiptsSpending = currentMonthReceipts.fold<double>(
     0.0,
     (sum, r) => sum + r.total,
   );
+
+  final recurringSpending = profile?.totalMonthlyRecurringPayments ?? 0.0;
+  final totalMonthlySpending = receiptsSpending + recurringSpending;
   
-  // Get income from financial profile, or estimate if not set
   final estimatedIncome = profile?.totalMonthlyIncome ??
-      (monthlySpending > 0 ? monthlySpending * 1.5 : 0.0);
+      (totalMonthlySpending > 0 ? totalMonthlySpending * 1.5 : 0.0);
   
-  // Only generate budget plan using AI if new receipt was added (count increased) or income changed
-  // If receipt was deleted, we'll use cached budget plan to save credits
+  // Prepare recurring expenses for AI
+  final List<Map<String, dynamic>> recurringExpensesJson = profile?.recurringPayments.map((p) => {
+    'name': p.name,
+    'amount': p.amount,
+    'frequency': p.frequency.name,
+    'category': p.category ?? 'Other',
+  }).toList() ?? [];
+
   Map<String, dynamic> budgetPlan;
-  if (hasNewReceipts || incomeChanged) {
-    // New receipt added, generate AI insights
+  if (hasNewReceipts || incomeChanged || cachedInsights == null) {
     final aiService = AIService();
     budgetPlan = await aiService.generateBudgetPlan(
       spendingHistory: categorySpending,
       monthlyIncome: estimatedIncome,
-      monthsOfData: 1, // Can be improved to calculate actual months
+      monthsOfData: 1,
+      recurringExpenses: recurringExpensesJson,
     );
   } else {
-    // Receipt deleted or currency changed, use cached budget plan to save AI credits
-    // cachedInsights is guaranteed to be non-null here (we'd be in if branch if it was null)
     budgetPlan = cachedInsights.data.budgetPlan;
   }
   
-  // Generate insights (non-AI, always regenerated)
   final insights = _generateInsights(
     categorySpending,
-    monthlySpending,
+    totalMonthlySpending,
     estimatedIncome,
     currentMonthReceipts.length,
   );
   
   final insightsData = InsightsData(
     categorySpending: categorySpending,
-    monthlySpending: monthlySpending,
+    monthlySpending: totalMonthlySpending,
     estimatedIncome: estimatedIncome,
     budgetPlan: budgetPlan,
     insights: insights,
     currency: currency,
   );
   
-  // Cache the insights with current receipt count
   ref.read(_insightsCacheProvider.notifier).state = InsightsCache(
     data: insightsData,
     receiptCount: currentReceiptCount,
@@ -149,7 +177,6 @@ List<String> _generateInsights(
 ) {
   final insights = <String>[];
   
-  // Find top spending category
   if (categorySpending.isNotEmpty) {
     final topCategory = categorySpending.entries.reduce(
       (a, b) => a.value > b.value ? a : b,
@@ -161,7 +188,6 @@ List<String> _generateInsights(
     );
   }
   
-  // Savings rate
   final savingsRate = estimatedIncome > 0
       ? ((estimatedIncome - monthlySpending) / estimatedIncome * 100)
       : 0;
@@ -177,7 +203,6 @@ List<String> _generateInsights(
     );
   }
   
-  // Receipt frequency
   if (receiptsCount > 30) {
     insights.add(
       'You\'ve made $receiptsCount purchases this month. '
@@ -187,4 +212,3 @@ List<String> _generateInsights(
   
   return insights;
 }
-

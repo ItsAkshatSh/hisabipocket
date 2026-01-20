@@ -31,7 +31,7 @@ class AIService {
             {
               'role': 'system',
               'content':
-                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: groceries, dining, transportation, utilities, rent, healthcare, insurance, entertainment, shopping, clothing, personalCare, subscriptions, travel, education, gifts, other.',
+                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.',
             },
             {
               'role': 'user',
@@ -70,7 +70,7 @@ Categorize these receipt items into expense categories. Return JSON format:
   }
 }
 
-Available categories: groceries, dining, transportation, utilities, rent, healthcare, insurance, entertainment, shopping, clothing, personalCare, subscriptions, travel, education, gifts, other
+Available categories: housing, food, transport, health, lifestyle, subscriptions, education, travel, other
 
 Items: ${items.join(', ')}
 Store: $store
@@ -125,28 +125,12 @@ Return only the JSON object, no other text.
       final itemLower = item.toLowerCase();
       ExpenseCategory? category;
 
-      // Check store-based categorization first
-      if (storeLower.contains('grocery') ||
-          storeLower.contains('market') ||
-          storeLower.contains('walmart') ||
-          storeLower.contains('target') ||
-          storeLower.contains('costco') ||
-          storeLower.contains('safeway')) {
-        category = ExpenseCategory.groceries;
-      } else if (storeLower.contains('restaurant') ||
-          storeLower.contains('cafe') ||
-          storeLower.contains('mcdonalds') ||
-          storeLower.contains('starbucks') ||
-          storeLower.contains('pizza') ||
-          storeLower.contains('burger')) {
-        category = ExpenseCategory.dining;
-      } else {
-        // Check item keywords
-        for (final catInfo in CategoryInfo.categories.values) {
-          if (catInfo.keywords.any((keyword) => itemLower.contains(keyword))) {
-            category = catInfo.category;
-            break;
-          }
+      // Use the updated CategoryInfo keywords
+      for (final catEntry in CategoryInfo.categories.entries) {
+        if (catEntry.value.keywords.any((keyword) => 
+            itemLower.contains(keyword) || storeLower.contains(keyword))) {
+          category = catEntry.key;
+          break;
         }
       }
 
@@ -154,6 +138,117 @@ Return only the JSON object, no other text.
     }
 
     return result;
+  }
+
+  /// Generate budget recommendations
+  Future<Map<String, dynamic>> generateBudgetPlan({
+    required Map<ExpenseCategory, double> spendingHistory,
+    required double monthlyIncome,
+    required int monthsOfData,
+    List<Map<String, dynamic>>? recurringExpenses,
+  }) async {
+    try {
+      final prompt =
+          _buildBudgetPrompt(spendingHistory, monthlyIncome, monthsOfData, recurringExpenses);
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/chat/completions'),
+        headers: {
+          'Authorization': 'Bearer $_apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'model': _defaultModel,
+          'messages': [
+            {
+              'role': 'system',
+              'content':
+                  'You are a financial planning assistant. Return only valid JSON with budget recommendations. Ensure each category appears only once in the results.',
+            },
+            {
+              'role': 'user',
+              'content': prompt,
+            },
+          ],
+          'response_format': {'type': 'json_object'},
+          'temperature': 0.5,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return jsonDecode(data['choices'][0]['message']['content']);
+      }
+    } catch (e) {
+      print('AI budget generation error: $e');
+    }
+
+    return _defaultBudgetPlan(spendingHistory, monthlyIncome);
+  }
+
+  String _buildBudgetPrompt(
+    Map<ExpenseCategory, double> spending,
+    double income,
+    int months,
+    List<Map<String, dynamic>>? recurring,
+  ) {
+    final spendingText = spending.entries
+        .map((e) => '${e.key.name}: ${e.value.toStringAsFixed(2)}')
+        .join('\n');
+    
+    final recurringText = recurring != null && recurring.isNotEmpty
+        ? recurring.map((r) => '${r['name']}: ${r['amount']} (${r['frequency']})').join('\n')
+        : 'None';
+
+    return '''
+Analyze spending patterns and suggest a monthly budget plan.
+
+Monthly Income: \$${income.toStringAsFixed(2)}
+Months of Data: $months
+
+Current Spending by Category:
+$spendingText
+
+Recurring Expenses (Fixed Costs):
+$recurringText
+
+Return JSON format:
+{
+  "budgets": {
+    "category_name": budgeted_amount,
+    ...
+  },
+  "savingsGoal": amount,
+  "recommendations": ["tip1", "tip2", ...]
+}
+
+IMPORTANT:
+1. Ensure category names in "budgets" are unique and MUST be exactly one of these: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.
+2. Incorporate the recurring expenses into these categories (e.g., Netflix -> subscriptions, Rent -> housing).
+3. Do not create sub-categories. Only use the 9 categories listed above.
+''';
+  }
+
+  Map<String, dynamic> _defaultBudgetPlan(
+    Map<ExpenseCategory, double> spending,
+    double income,
+  ) {
+    final savingsGoal = income * 0.2; // 20% savings goal
+
+    final budgets = <String, double>{};
+    for (final entry in spending.entries) {
+      budgets[entry.key.name] = entry.value;
+    }
+
+    return {
+      'budgets': budgets,
+      'savingsGoal': savingsGoal,
+      'recommendations': [
+        'Try to save 20% of your income',
+        'Review your subscriptions regularly',
+        'Consider these 9 simplified categories for better tracking',
+      ],
+    };
   }
 
   /// Generate weekly wrapped insights
@@ -229,102 +324,5 @@ Create a short, engaging narrative (2-3 sentences) that makes spending tracking 
     final topStore = stats['topStore'] ?? 'various stores';
 
     return 'You spent \$$totalSpent across $receiptsCount ${receiptsCount == 1 ? 'receipt' : 'receipts'} this week! Your top spending was at $topStore. $personality';
-  }
-
-  /// Generate budget recommendations
-  Future<Map<String, dynamic>> generateBudgetPlan({
-    required Map<ExpenseCategory, double> spendingHistory,
-    required double monthlyIncome,
-    required int monthsOfData,
-  }) async {
-    try {
-      final prompt =
-          _buildBudgetPrompt(spendingHistory, monthlyIncome, monthsOfData);
-
-      final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
-        headers: {
-          'Authorization': 'Bearer $_apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'model': _defaultModel,
-          'messages': [
-            {
-              'role': 'system',
-              'content':
-                  'You are a financial planning assistant. Return only valid JSON with budget recommendations.',
-            },
-            {
-              'role': 'user',
-              'content': prompt,
-            },
-          ],
-          'response_format': {'type': 'json_object'},
-          'temperature': 0.5,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return jsonDecode(data['choices'][0]['message']['content']);
-      }
-    } catch (e) {
-      print('AI budget generation error: $e');
-    }
-
-    return _defaultBudgetPlan(spendingHistory, monthlyIncome);
-  }
-
-  String _buildBudgetPrompt(
-    Map<ExpenseCategory, double> spending,
-    double income,
-    int months,
-  ) {
-    final spendingText = spending.entries
-        .map((e) => '${e.key.name}: ${e.value.toStringAsFixed(2)}')
-        .join('\n');
-
-    return '''
-Analyze spending patterns and suggest a monthly budget plan.
-
-Monthly Income: \$${income.toStringAsFixed(2)}
-Months of Data: $months
-
-Current Spending by Category:
-$spendingText
-
-Return JSON format:
-{
-  "budgets": {
-    "category_name": budgeted_amount,
-    ...
-  },
-  "savingsGoal": amount,
-  "recommendations": ["tip1", "tip2", ...]
-}
-''';
-  }
-
-  Map<String, dynamic> _defaultBudgetPlan(
-    Map<ExpenseCategory, double> spending,
-    double income,
-  ) {
-    final savingsGoal = income * 0.2; // 20% savings goal
-
-    final budgets = <String, double>{};
-    for (final entry in spending.entries) {
-      budgets[entry.key.name] = entry.value;
-    }
-
-    return {
-      'budgets': budgets,
-      'savingsGoal': savingsGoal,
-      'recommendations': [
-        'Try to save 20% of your income',
-        'Review subscriptions regularly',
-        'Set spending limits for dining out',
-      ],
-    };
   }
 }
