@@ -67,3 +67,5 @@ web/generated_plugin_registrant.dart
 google-services.json
 
 .env
+
+CODE_DOCUMENTATION.md

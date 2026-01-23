@@ -47,7 +47,6 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
       body: wrappedAsync.when(
         data: (wrapped) => Stack(
           children: [
-            // Full-screen card viewer
             PageView.builder(
               controller: _pageController,
               onPageChanged: (index) {
@@ -68,7 +67,6 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
               },
             ),
             
-            // Progress indicator
             Positioned(
               top: 50,
               left: 0,
@@ -76,7 +74,6 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
               child: _buildProgressIndicator(wrapped.cards.length),
             ),
             
-            // Close button
             Positioned(
               top: 50,
               left: 20,
@@ -88,7 +85,6 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
               ),
             ),
             
-            // Bottom Actions
             Positioned(
               bottom: 100,
               left: 20,
@@ -164,7 +160,16 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   Future<void> _markWrappedAsViewed() async {
     try {
       final box = await Hive.openBox('app_preferences');
-      await box.put('last_wrapped_view', DateTime.now().toIso8601String());
+      final now = DateTime.now();
+      
+      final daysToSubtract = now.weekday == 7 ? 0 : now.weekday;
+      final sunday = now.subtract(Duration(days: daysToSubtract));
+      final sundayStart = DateTime(sunday.year, sunday.month, sunday.day);
+      
+      final weekId = '${sundayStart.year}-${sundayStart.month.toString().padLeft(2, '0')}-${sundayStart.day.toString().padLeft(2, '0')}';
+      
+      await box.put('last_wrapped_week_id', weekId);
+      await box.put('last_wrapped_view', now.toIso8601String());
     } catch (e) {}
   }
   

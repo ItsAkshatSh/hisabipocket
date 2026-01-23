@@ -60,6 +60,10 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _buildPreferenceCard(context, ref, settings),
                   const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Widget'),
+                  const SizedBox(height: 16),
+                  _buildWidgetCard(context, ref, settings),
+                  const SizedBox(height: 32),
                   _buildSectionHeader(context, 'Account'),
                   const SizedBox(height: 16),
                   _buildAccountCard(context, ref),
@@ -136,6 +140,20 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ],
     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildWidgetCard(BuildContext context, WidgetRef ref, SettingsState settings) {
+    final enabledCount = settings.widgetSettings.enabledStats.length;
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.widgets_outlined,
+          title: 'Widget Settings',
+          subtitle: '$enabledCount ${enabledCount == 1 ? 'stat' : 'stats'} enabled',
+          onTap: () => context.push('/widget-settings'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
   }
 
   Widget _buildAccountCard(BuildContext context, WidgetRef ref) {

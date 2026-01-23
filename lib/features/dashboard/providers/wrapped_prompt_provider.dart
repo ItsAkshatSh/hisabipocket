@@ -1,25 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+DateTime _getWeekSunday(DateTime date) {
+  final daysToSubtract = date.weekday == 7 ? 0 : date.weekday;
+  final sunday = date.subtract(Duration(days: daysToSubtract));
+  return DateTime(sunday.year, sunday.month, sunday.day);
+}
+
+String _getWeekIdentifier(DateTime date) {
+  final sunday = _getWeekSunday(date);
+  return '${sunday.year}-${sunday.month.toString().padLeft(2, '0')}-${sunday.day.toString().padLeft(2, '0')}';
+}
+
 final shouldShowWrappedPromptProvider = FutureProvider.autoDispose<bool>((ref) async {
   try {
+    final now = DateTime.now();
+    
+    if (now.weekday != 7) {
+      return false;
+    }
+    
+    final currentWeekId = _getWeekIdentifier(now);
+    
     final box = await Hive.openBox('app_preferences');
-    final lastWrappedView = box.get('last_wrapped_view') as String?;
+    final lastViewedWeekId = box.get('last_wrapped_week_id') as String?;
     
-    if (lastWrappedView == null) {
-      return true; // Show if never viewed
-    }
-    
-    final lastViewDate = DateTime.tryParse(lastWrappedView);
-    if (lastViewDate == null) {
-      return true;
-    }
-    
-    // Show if it's been more than 6 days since last view
-    final daysSince = DateTime.now().difference(lastViewDate).inDays;
-    return daysSince >= 6;
+    return lastViewedWeekId != currentWeekId;
   } catch (e) {
-    return true; // Show on error
+    return false;
   }
 });
 

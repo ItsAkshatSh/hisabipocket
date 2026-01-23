@@ -109,33 +109,6 @@ class HisabiWidgetProvider : AppWidgetProvider() {
     }
 
     private fun formatCurrency(value: Double, currencyCode: String = "USD"): String {
-        val symbol = when (currencyCode) {
-            "USD" -> "$"
-            "EUR" -> "€"
-            "GBP" -> "£"
-            "JPY" -> "¥"
-            "CNY" -> "¥"
-            "INR" -> "₹"
-            "AUD" -> "A$"
-            "CAD" -> "C$"
-            "AED" -> "د.إ"
-            "SAR" -> "ر.س"
-            "ZAR" -> "R"
-            "BRL" -> "R$"
-            "MXN" -> "$"
-            "KRW" -> "₩"
-            "SGD" -> "S$"
-            "HKD" -> "HK$"
-            "CHF" -> "CHF"
-            "SEK" -> "kr"
-            "NOK" -> "kr"
-            "DKK" -> "kr"
-            "PLN" -> "zł"
-            "TRY" -> "₺"
-            "RUB" -> "₽"
-            "NZD" -> "NZ$"
-            else -> currencyCode
-        }
-        return "$symbol${String.format("%,.2f", value)}"
+        return "${currencyCode} ${String.format("%,.2f", value)}"
     }
 }

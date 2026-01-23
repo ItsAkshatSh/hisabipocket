@@ -13,10 +13,13 @@ class WidgetPreview extends StatelessWidget {
     required this.currency,
   });
 
+  String _formatCurrency(double value) {
+    final formatted = NumberFormat('#,##0.00').format(value);
+    return '${currency.name} $formatted';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
-    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -42,7 +45,7 @@ class WidgetPreview extends StatelessWidget {
           if (enabledStats.contains(WidgetStat.totalThisMonth)) ...[
             const SizedBox(height: 4),
             Text(
-              formatter.format(1234.56),
+              _formatCurrency(1234.56),
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -73,7 +76,7 @@ class WidgetPreview extends StatelessWidget {
           if (enabledStats.contains(WidgetStat.averagePerReceipt)) ...[
             const SizedBox(height: 4),
             Text(
-              'Avg: ${formatter.format(102.88)}',
+              'Avg: ${_formatCurrency(102.88)}',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.white.withOpacity(0.8),

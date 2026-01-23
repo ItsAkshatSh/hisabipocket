@@ -10,6 +10,7 @@ import 'package:hisabi/features/receipts/presentation/voice_quick_add_screen.dar
 import 'package:hisabi/features/receipts/presentation/saved_receipts_screen.dart';
 import 'package:hisabi/features/shell/presentation/main_shell.dart';
 import 'package:hisabi/features/settings/presentation/settings_screen.dart';
+import 'package:hisabi/features/settings/presentation/widget_settings_screen.dart';
 import 'package:hisabi/features/settings/presentation/privacy_policy_screen.dart';
 import 'package:hisabi/features/settings/presentation/terms_of_service_screen.dart';
 import 'package:hisabi/features/wrapped/presentation/week_wrapped_screen.dart';
@@ -74,6 +75,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/widget-settings',
+            builder: (context, state) => const WidgetSettingsScreen(),
           ),
           GoRoute(
             path: '/financial-profile',
