@@ -64,6 +64,18 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _buildWidgetCard(context, ref, settings),
                   const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Budget'),
+                  const SizedBox(height: 16),
+                  _buildBudgetCard(context, ref),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Categorization'),
+                  const SizedBox(height: 16),
+                  _buildCategorizationCard(context, ref),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Data'),
+                  const SizedBox(height: 16),
+                  _buildDataCard(context, ref),
+                  const SizedBox(height: 32),
                   _buildSectionHeader(context, 'Account'),
                   const SizedBox(height: 16),
                   _buildAccountCard(context, ref),
@@ -154,6 +166,52 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ],
     ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildBudgetCard(BuildContext context, WidgetRef ref) {
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'Budget Overview',
+          subtitle: 'View and manage your budget',
+          onTap: () => context.push('/budget-overview'),
+        ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.edit_outlined,
+          title: 'Set Budget',
+          subtitle: 'Configure monthly budget',
+          onTap: () => context.push('/budget-setup'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildCategorizationCard(BuildContext context, WidgetRef ref) {
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.rule_outlined,
+          title: 'Categorization Rules',
+          subtitle: 'Auto-categorize receipts',
+          onTap: () => context.push('/categorization-rules'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildDataCard(BuildContext context, WidgetRef ref) {
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.download_outlined,
+          title: 'Export Data',
+          subtitle: 'Export receipts to CSV or PDF',
+          onTap: () => context.push('/export'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1);
   }
 
   Widget _buildAccountCard(BuildContext context, WidgetRef ref) {

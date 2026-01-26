@@ -32,7 +32,7 @@ class InsightsScreen extends ConsumerWidget {
                   QuickStatsHeader(insights: insights),
                   const SizedBox(height: 24),
                   
-                  // Alerts
+                  // Alerts - Spending Alerts are perfect here
                   ref.watch(spendingAlertsProvider).maybeWhen(
                     data: (alerts) => alerts.isEmpty ? const SizedBox.shrink() : Column(
                       children: [
@@ -63,7 +63,7 @@ class InsightsScreen extends ConsumerWidget {
                 ]),
               ),
               loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (err, stack) => SliverFillRemaining(child: Center(child: Text('Error loading insights'))),
+              error: (err, stack) => const SliverFillRemaining(child: Center(child: Text('Error loading insights'))),
             ),
           ),
         ],

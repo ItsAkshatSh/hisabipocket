@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/features/dashboard/providers/dashboard_provider.dart';
 import 'package:hisabi/features/dashboard/providers/wrapped_prompt_provider.dart';
+import 'package:hisabi/features/dashboard/presentation/widgets/budget_card.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
@@ -50,6 +51,8 @@ class DashboardScreen extends ConsumerWidget {
                     _buildPeriodSelector(context, ref, period),
                     const SizedBox(height: 32),
                     _buildWeeklyWrappedPrompt(context, ref),
+                    const SizedBox(height: 24),
+                    const BudgetCard(),
                     const SizedBox(height: 24),
                     _buildSummaryGrid(ref, formatter, isMobile),
                     const SizedBox(height: 40),

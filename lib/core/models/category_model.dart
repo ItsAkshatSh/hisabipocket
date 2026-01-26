@@ -40,7 +40,7 @@ class CategoryInfo {
       name: 'Food & Dining',
       emoji: '🍽️',
       color: Color(0xFF4CAF50),
-      keywords: ['grocery', 'supermarket', 'food', 'walmart', 'target', 'kroger', 'safeway', 'whole foods', 'aldi', 'costco', 'restaurant', 'cafe', 'mcdonalds', 'starbucks', 'pizza', 'burger', 'coffee', 'lunch', 'dinner', 'breakfast', 'bakery'],
+      keywords: ['grocery', 'supermarket', 'food', 'walmart', 'target', 'kroger', 'safeway', 'whole foods', 'aldi', 'costco', 'restaurant', 'cafe', 'mcdonalds', 'starbucks', 'pizza', 'burger', 'coffee', 'lunch', 'dinner', 'breakfast', 'bakery', 'apple', 'banana', 'orange', 'fruit', 'vegetable', 'produce'],
     ),
     ExpenseCategory.transport: CategoryInfo(
       category: ExpenseCategory.transport,
@@ -61,14 +61,14 @@ class CategoryInfo {
       name: 'Lifestyle',
       emoji: '🛍️',
       color: Color(0xFF00BCD4),
-      keywords: ['amazon', 'store', 'mall', 'purchase', 'buy', 'clothes', 'shirt', 'pants', 'shoes', 'fashion', 'apparel', 'salon', 'barber', 'spa', 'beauty', 'cosmetic', 'gift', 'present', 'shopping'],
+      keywords: ['amazon', 'store', 'mall', 'purchase', 'buy', 'clothes', 'shirt', 'pants', 'shoes', 'fashion', 'apparel', 'salon', 'barber', 'spa', 'beauty', 'cosmetic', 'gift', 'present', 'shopping', 'electronics', 'phone', 'laptop', 'computer', 'device', 'hardware'],
     ),
     ExpenseCategory.subscriptions: CategoryInfo(
       category: ExpenseCategory.subscriptions,
       name: 'Subscriptions & Fun',
       emoji: '🎬',
       color: Color(0xFF673AB7),
-      keywords: ['subscription', 'membership', 'premium', 'plan', 'movie', 'cinema', 'netflix', 'spotify', 'game', 'concert', 'theater', 'ticket', 'gym', 'fitness', 'apple', 'google play', 'entertainment'],
+      keywords: ['subscription', 'membership', 'premium', 'plan', 'movie', 'cinema', 'netflix', 'spotify', 'game', 'concert', 'theater', 'ticket', 'gym', 'fitness', 'apple music', 'apple tv', 'app store', 'itunes', 'google play', 'entertainment'],
     ),
     ExpenseCategory.education: CategoryInfo(
       category: ExpenseCategory.education,

@@ -63,6 +63,8 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
             items: receipt.items,
             total: receipt.total,
             primaryCategory: receipt.primaryCategory,
+            currency: receipt.currency,
+            splits: receipt.splits,
           )
         : receipt;
 
@@ -78,6 +80,35 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
       await StorageService.addReceipt(receiptWithId);
     } catch (e) {
       print('Error adding receipt to storage: $e');
+      // Revert on error
+      state = AsyncValue.data(currentReceipts);
+      _cachedReceipts = currentReceipts;
+      await loadReceipts(forceRefresh: true);
+      rethrow;
+    }
+  }
+
+  Future<void> update(ReceiptModel updatedReceipt) async {
+    final currentReceipts = state.valueOrNull ?? [];
+    final updatedReceipts = currentReceipts.map((r) => 
+      r.id == updatedReceipt.id ? updatedReceipt : r
+    ).toList();
+    
+    // Optimistically update UI first
+    state = AsyncValue.data(updatedReceipts);
+    _cachedReceipts = updatedReceipts;
+    _lastLoadTime = DateTime.now();
+
+    // Persist to storage in background
+    try {
+      final allReceipts = await StorageService.loadReceipts();
+      final index = allReceipts.indexWhere((r) => r.id == updatedReceipt.id);
+      if (index != -1) {
+        allReceipts[index] = updatedReceipt;
+        await StorageService.saveReceipts(allReceipts);
+      }
+    } catch (e) {
+      print('Error updating receipt in storage: $e');
       // Revert on error
       state = AsyncValue.data(currentReceipts);
       _cachedReceipts = currentReceipts;

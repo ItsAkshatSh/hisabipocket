@@ -2,6 +2,9 @@ import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/storage/firebase_storage_service.dart' as firebase;
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
+import 'package:hisabi/features/budgets/models/budget_model.dart';
+import 'package:hisabi/features/settings/models/categorization_rule_model.dart';
+import 'package:hisabi/core/widgets/widget_summary.dart';
 
 class StorageService {
   static Future<void> init() async {
@@ -59,5 +62,33 @@ class StorageService {
     // Don't clear user data on logout, just sign out
     // Firebase Auth handles sign out separately
     print('Firebase Auth handles sign out');
+  }
+
+  static Future<void> saveBudget(Budget budget) async {
+    await firebase.FirebaseStorageService.saveBudget(budget);
+  }
+
+  static Future<Budget?> loadBudget() async {
+    return await firebase.FirebaseStorageService.loadBudget();
+  }
+
+  static Future<void> deleteBudget() async {
+    await firebase.FirebaseStorageService.deleteBudget();
+  }
+
+  static Future<void> saveCategorizationRules(List<CategorizationRule> rules) async {
+    await firebase.FirebaseStorageService.saveCategorizationRules(rules);
+  }
+
+  static Future<List<CategorizationRule>> loadCategorizationRules() async {
+    return await firebase.FirebaseStorageService.loadCategorizationRules();
+  }
+
+  static Future<void> saveSavingsGoals(List<SavingsGoal> goals) async {
+    await firebase.FirebaseStorageService.saveSavingsGoals(goals);
+  }
+
+  static Future<List<SavingsGoal>> loadSavingsGoals() async {
+    return await firebase.FirebaseStorageService.loadSavingsGoals();
   }
 }

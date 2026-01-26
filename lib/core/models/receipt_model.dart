@@ -1,4 +1,6 @@
 import 'package:hisabi/core/models/category_model.dart';
+import 'package:hisabi/features/receipts/models/receipt_split_model.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class ReceiptItem {
   final String name;
@@ -63,6 +65,8 @@ class ReceiptModel {
   final List<ReceiptItem> items;
   final double total;
   final ExpenseCategory? primaryCategory;
+  final List<ReceiptSplit> splits;
+  final Currency currency;
 
   ReceiptModel({
     required this.id,
@@ -72,7 +76,16 @@ class ReceiptModel {
     required this.items,
     required this.total,
     this.primaryCategory,
-  });
+    List<ReceiptSplit>? splits,
+    Currency? currency,
+  })  : splits = splits ?? [],
+        currency = currency ?? Currency.USD;
+
+  bool get isSplit => splits.isNotEmpty;
+  
+  double get splitTotal => splits.fold(0.0, (sum, split) => sum + split.amount);
+  
+  double get remainingAmount => total - splitTotal;
   
   // Calculate primary category from items
   ExpenseCategory? get calculatedPrimaryCategory {

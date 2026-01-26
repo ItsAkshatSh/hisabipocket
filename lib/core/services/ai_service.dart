@@ -31,7 +31,7 @@ class AIService {
             {
               'role': 'system',
               'content':
-                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.',
+                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: housing, food, transport, health, lifestyle, subscriptions, education, travel, other. IMPORTANT RULES: 1) "apple" (fruit) -> food. 2) PHYSICAL PRODUCTS (hardware, devices, electronics, phones, laptops) -> lifestyle. 3) SERVICES/SUBSCRIPTIONS (monthly plans, streaming services, cloud storage, app subscriptions) -> subscriptions. Distinguish based on whether it is a physical product (lifestyle) or a service/subscription (subscriptions). Use item description and store context to determine.',
             },
             {
               'role': 'user',
@@ -71,6 +71,17 @@ Categorize these receipt items into expense categories. Return JSON format:
 }
 
 Available categories: housing, food, transport, health, lifestyle, subscriptions, education, travel, other
+
+IMPORTANT CONTEXT RULES:
+- "apple" (the fruit) should be categorized as "food", not "subscriptions"
+- PHYSICAL PRODUCTS (hardware, devices, electronics) from any store should be "lifestyle", not "subscriptions"
+- SERVICES and SUBSCRIPTIONS (monthly plans, streaming, cloud storage, app subscriptions) should be "subscriptions"
+- Consider the store name: Electronics/tech stores typically sell physical products = "lifestyle"
+- Consider item description: Words like "subscription", "monthly", "plan", "premium", "streaming" indicate "subscriptions"
+- Consider item description: Words like "device", "hardware", "phone", "laptop", "watch" indicate physical products = "lifestyle"
+- Grocery stores/supermarkets indicate food items
+- Subscriptions are recurring services, not physical products
+- Physical electronics and devices are "lifestyle", not "subscriptions"
 
 Items: ${items.join(', ')}
 Store: $store
@@ -120,17 +131,88 @@ Return only the JSON object, no other text.
   ) {
     final result = <String, ExpenseCategory>{};
     final storeLower = store.toLowerCase();
+    final isGroceryStore = storeLower.contains('grocery') || 
+                          storeLower.contains('supermarket') ||
+                          storeLower.contains('walmart') ||
+                          storeLower.contains('target') ||
+                          storeLower.contains('kroger') ||
+                          storeLower.contains('safeway') ||
+                          storeLower.contains('whole foods') ||
+                          storeLower.contains('aldi') ||
+                          storeLower.contains('costco');
 
     for (final item in items) {
       final itemLower = item.toLowerCase();
       ExpenseCategory? category;
 
-      // Use the updated CategoryInfo keywords
-      for (final catEntry in CategoryInfo.categories.entries) {
-        if (catEntry.value.keywords.any((keyword) => 
-            itemLower.contains(keyword) || storeLower.contains(keyword))) {
-          category = catEntry.key;
-          break;
+      // Special handling for "apple" - check context
+      if (itemLower == 'apple' || itemLower.startsWith('apple ')) {
+        // If it's a grocery store, it's likely the fruit
+        if (isGroceryStore) {
+          category = ExpenseCategory.food;
+        } else {
+          // Check if it's a service/subscription vs physical product
+          final isService = itemLower.contains('music') ||
+                           itemLower.contains('tv') ||
+                           itemLower.contains('streaming') ||
+                           itemLower.contains('subscription') ||
+                           itemLower.contains('plan') ||
+                           itemLower.contains('premium') ||
+                           itemLower.contains('cloud') ||
+                           itemLower.contains('storage');
+          
+          final isPhysicalProduct = itemLower.contains('device') ||
+                                   itemLower.contains('hardware') ||
+                                   itemLower.contains('phone') ||
+                                   itemLower.contains('laptop') ||
+                                   itemLower.contains('watch') ||
+                                   itemLower.contains('tablet') ||
+                                   itemLower.contains('computer') ||
+                                   storeLower.contains('store') && !storeLower.contains('subscription');
+          
+          if (isService) {
+            category = ExpenseCategory.subscriptions;
+          } else if (isPhysicalProduct) {
+            category = ExpenseCategory.lifestyle;
+          } else {
+            // Default to food if uncertain (safer assumption for fruit)
+            category = ExpenseCategory.food;
+          }
+        }
+      } else {
+        // Check if item is a service/subscription vs physical product
+        final isService = itemLower.contains('subscription') ||
+                         itemLower.contains('monthly') ||
+                         itemLower.contains('plan') ||
+                         itemLower.contains('premium') ||
+                         itemLower.contains('streaming') ||
+                         itemLower.contains('music service') ||
+                         itemLower.contains('tv service') ||
+                         itemLower.contains('cloud storage');
+        
+        final isPhysicalProduct = itemLower.contains('device') ||
+                                 itemLower.contains('hardware') ||
+                                 itemLower.contains('phone') ||
+                                 itemLower.contains('laptop') ||
+                                 itemLower.contains('watch') ||
+                                 itemLower.contains('tablet') ||
+                                 itemLower.contains('computer') ||
+                                 itemLower.contains('electronics');
+        
+        // Prioritize service/product detection over keyword matching
+        if (isService && !isPhysicalProduct) {
+          category = ExpenseCategory.subscriptions;
+        } else if (isPhysicalProduct && !isService) {
+          category = ExpenseCategory.lifestyle;
+        } else {
+          // Use the updated CategoryInfo keywords
+          for (final catEntry in CategoryInfo.categories.entries) {
+            if (catEntry.value.keywords.any((keyword) => 
+                itemLower.contains(keyword) || storeLower.contains(keyword))) {
+              category = catEntry.key;
+              break;
+            }
+          }
         }
       }
 

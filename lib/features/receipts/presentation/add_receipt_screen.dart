@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class AddReceiptScreen extends ConsumerStatefulWidget {
   const AddReceiptScreen({super.key});
@@ -252,24 +253,37 @@ class _UploadReceiptTab extends ConsumerWidget {
   }
 }
 
-class _ManualEntryTab extends StatefulWidget {
+class _ManualEntryTab extends ConsumerStatefulWidget {
   final Function(ReceiptModel) onSave;
   const _ManualEntryTab({super.key, required this.onSave});
 
   @override
-  State<_ManualEntryTab> createState() => _ManualEntryTabState();
+  ConsumerState<_ManualEntryTab> createState() => _ManualEntryTabState();
 }
 
-class _ManualEntryTabState extends State<_ManualEntryTab> {
+class _ManualEntryTabState extends ConsumerState<_ManualEntryTab> {
   final _storeController = TextEditingController();
   final _totalController = TextEditingController();
   DateTime _date = DateTime.now();
+  Currency _selectedCurrency = Currency.USD;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settingsAsync = ref.read(settingsProvider);
+      final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+      setState(() => _selectedCurrency = currency);
+    });
+  }
 
   void resetFields() {
     setState(() {
       _storeController.clear();
       _totalController.clear();
       _date = DateTime.now();
+      final settingsAsync = ref.read(settingsProvider);
+      _selectedCurrency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
     });
   }
 
@@ -292,13 +306,42 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _totalController,
-                decoration: const InputDecoration(
-                  labelText: 'Total Amount', 
-                  prefixIcon: Icon(Icons.attach_money_rounded),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextField(
+                      controller: _totalController,
+                      decoration: InputDecoration(
+                        labelText: 'Total Amount',
+                        prefixText: '${_selectedCurrency.name} ',
+                        prefixIcon: const Icon(Icons.attach_money_rounded),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<Currency>(
+                      value: _selectedCurrency,
+                      decoration: const InputDecoration(
+                        labelText: 'Currency',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: Currency.values.map((currency) {
+                        return DropdownMenuItem(
+                          value: currency,
+                          child: Text(currency.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _selectedCurrency = value);
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               InkWell(
@@ -356,6 +399,7 @@ class _ManualEntryTabState extends State<_ManualEntryTab> {
                         store: _storeController.text,
                         items: [],
                         total: double.tryParse(_totalController.text) ?? 0,
+                        currency: _selectedCurrency,
                       ),
                     );
                   },

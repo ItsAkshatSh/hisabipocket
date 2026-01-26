@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class ReceiptOCRService {
   static String get _clientId => dotenv.get('VERYFI_CLIENT_ID', fallback: '');
   static String get _apiKey => dotenv.get('VERYFI_API_KEY', fallback: '');
   static const String _baseUrl = 'https://api.veryfi.com/api/v8/partner/documents';
 
-  Future<ReceiptModel?> processReceipt(File imageFile) async {
+  Future<ReceiptModel?> processReceipt(File imageFile, {Currency currency = Currency.USD}) async {
     try {
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
@@ -35,7 +36,7 @@ class ReceiptOCRService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return _mapVeryfiToReceipt(data);
+        return _mapVeryfiToReceipt(data, currency);
       } else {
         print('Veryfi error: ${response.statusCode} - ${response.body}');
       }
@@ -45,7 +46,7 @@ class ReceiptOCRService {
     return null;
   }
 
-  ReceiptModel _mapVeryfiToReceipt(Map<String, dynamic> data) {
+  ReceiptModel _mapVeryfiToReceipt(Map<String, dynamic> data, Currency currency) {
     final items = (data['line_items'] as List? ?? []).map((item) {
       return ReceiptItem(
         name: item['description'] ?? 'Unknown Item',
@@ -62,6 +63,7 @@ class ReceiptOCRService {
       store: data['vendor']?['name'] ?? 'Unknown Store',
       items: items,
       total: (data['total'] ?? 0.0).toDouble(),
+      currency: currency,
     );
   }
 }

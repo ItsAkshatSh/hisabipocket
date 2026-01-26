@@ -11,11 +11,20 @@ import 'package:hisabi/features/receipts/presentation/saved_receipts_screen.dart
 import 'package:hisabi/features/shell/presentation/main_shell.dart';
 import 'package:hisabi/features/settings/presentation/settings_screen.dart';
 import 'package:hisabi/features/settings/presentation/widget_settings_screen.dart';
+import 'package:hisabi/features/settings/presentation/categorization_rules_screen.dart';
 import 'package:hisabi/features/settings/presentation/privacy_policy_screen.dart';
 import 'package:hisabi/features/settings/presentation/terms_of_service_screen.dart';
+import 'package:hisabi/features/budgets/presentation/budget_setup_screen.dart';
+import 'package:hisabi/features/budgets/presentation/budget_overview_screen.dart';
+import 'package:hisabi/features/reports/presentation/export_screen.dart';
+import 'package:hisabi/features/financial_profile/presentation/savings_goals_screen.dart';
+import 'package:hisabi/features/financial_profile/presentation/create_goal_screen.dart';
+import 'package:hisabi/features/financial_profile/presentation/recurring_bills_screen.dart';
 import 'package:hisabi/features/wrapped/presentation/week_wrapped_screen.dart';
 import 'package:hisabi/features/insights/presentation/insights_screen.dart';
 import 'package:hisabi/features/financial_profile/presentation/financial_profile_screen.dart';
+import 'package:hisabi/core/widgets/widget_summary.dart';
+import 'package:hisabi/core/models/category_model.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -79,6 +88,40 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/widget-settings',
             builder: (context, state) => const WidgetSettingsScreen(),
+          ),
+          GoRoute(
+            path: '/categorization-rules',
+            builder: (context, state) => const CategorizationRulesScreen(),
+          ),
+          GoRoute(
+            path: '/budget-setup',
+            builder: (context, state) {
+              final initialBudgets = state.extra as Map<ExpenseCategory, double>?;
+              return BudgetSetupScreen(initialBudgets: initialBudgets);
+            },
+          ),
+          GoRoute(
+            path: '/budget-overview',
+            builder: (context, state) => const BudgetOverviewScreen(),
+          ),
+          GoRoute(
+            path: '/export',
+            builder: (context, state) => const ExportScreen(),
+          ),
+          GoRoute(
+            path: '/savings-goals',
+            builder: (context, state) => const SavingsGoalsScreen(),
+          ),
+          GoRoute(
+            path: '/create-goal',
+            builder: (context, state) {
+              final goal = state.extra as SavingsGoal?;
+              return CreateGoalScreen(existingGoal: goal);
+            },
+          ),
+          GoRoute(
+            path: '/recurring-bills',
+            builder: (context, state) => const RecurringBillsScreen(),
           ),
           GoRoute(
             path: '/financial-profile',

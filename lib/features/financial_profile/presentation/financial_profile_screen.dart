@@ -6,6 +6,8 @@ import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
 import 'package:hisabi/features/financial_profile/presentation/widgets/recurring_payments_section.dart';
+import 'package:hisabi/features/financial_profile/presentation/savings_goals_screen.dart';
+import 'package:hisabi/features/financial_profile/presentation/recurring_bills_screen.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class FinancialProfileScreen extends ConsumerStatefulWidget {
@@ -339,8 +341,103 @@ class _FinancialProfileScreenState
                       const SizedBox(height: 24),
 
                       // Recurring Payments Section
-                      RecurringPaymentsSection(
-                        payments: profile.recurringPayments,
+                      Container(
+                        decoration: BoxDecoration(
+                          color: context.surfaceColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: context.borderColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Recurring Bills',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.onSurfaceColor,
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () => context.push('/recurring-bills'),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text('Manage'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Divider(height: 1),
+                            RecurringPaymentsSection(
+                              payments: profile.recurringPayments,
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: TextButton(
+                                onPressed: () => context.push('/recurring-bills'),
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 48),
+                                ),
+                                child: const Text('View All Recurring Bills'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Savings Goals Section
+                      Container(
+                        decoration: BoxDecoration(
+                          color: context.surfaceColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: context.borderColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Savings Goals',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.onSurfaceColor,
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () => context.push('/savings-goals'),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text('Manage'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Divider(height: 1),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: TextButton(
+                                onPressed: () => context.push('/savings-goals'),
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 48),
+                                ),
+                                child: const Text('View All Savings Goals'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 24),
 

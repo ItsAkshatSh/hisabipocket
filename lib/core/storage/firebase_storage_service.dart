@@ -4,6 +4,10 @@ import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
+import 'package:hisabi/features/budgets/models/budget_model.dart';
+import 'package:hisabi/features/settings/models/categorization_rule_model.dart';
+import 'package:hisabi/features/receipts/models/receipt_split_model.dart';
+import 'package:hisabi/core/widgets/widget_summary.dart';
 
 class FirebaseStorageService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -295,6 +299,197 @@ class FirebaseStorageService {
     }
   }
 
+  static Future<void> saveBudget(Budget budget) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set({
+            'budget': budget.toJson(),
+          }, SetOptions(merge: true));
+      
+      print('✅ Budget saved to Firebase for user: $userId');
+    } catch (e, stackTrace) {
+      print('❌ Error saving budget to Firebase: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  static Future<Budget?> loadBudget() async {
+    final userId = currentUserId;
+    if (userId == null) {
+      print('User not authenticated. Returning null budget.');
+      return null;
+    }
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!doc.exists || doc.data() == null) {
+        print('No budget found in Firebase');
+        return null;
+      }
+
+      final data = doc.data()!;
+      final budgetData = data['budget'] as Map<String, dynamic>?;
+
+      if (budgetData == null) {
+        return null;
+      }
+
+      print('Budget loaded from Firebase for user: $userId');
+      return Budget.fromJson(budgetData);
+    } catch (e) {
+      print('Error loading budget from Firebase: $e');
+      return null;
+    }
+  }
+
+  static Future<void> deleteBudget() async {
+    final userId = currentUserId;
+    if (userId == null) {
+      print('⚠️ Cannot delete budget: User not authenticated');
+      return;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .update({
+            'budget': FieldValue.delete(),
+          });
+      
+      print('✅ Budget deleted from Firebase for user: $userId');
+    } catch (e) {
+      print('❌ Error deleting budget: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> saveCategorizationRules(List<CategorizationRule> rules) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set({
+            'categorizationRules': rules.map((r) => r.toJson()).toList(),
+          }, SetOptions(merge: true));
+      
+      print('✅ Categorization rules saved to Firebase for user: $userId');
+    } catch (e, stackTrace) {
+      print('❌ Error saving categorization rules to Firebase: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  static Future<List<CategorizationRule>> loadCategorizationRules() async {
+    final userId = currentUserId;
+    if (userId == null) {
+      print('User not authenticated. Returning empty rules.');
+      return [];
+    }
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!doc.exists || doc.data() == null) {
+        print('No categorization rules found in Firebase');
+        return [];
+      }
+
+      final data = doc.data()!;
+      final rulesData = data['categorizationRules'] as List?;
+
+      if (rulesData == null) {
+        return [];
+      }
+
+      print('Categorization rules loaded from Firebase for user: $userId');
+      return rulesData
+          .map((item) => CategorizationRule.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      print('Error loading categorization rules from Firebase: $e');
+      return [];
+    }
+  }
+
+  static Future<void> saveSavingsGoals(List<SavingsGoal> goals) async {
+    final userId = currentUserId;
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .set({
+            'savingsGoals': goals.map((g) => g.toJson()).toList(),
+          }, SetOptions(merge: true));
+      
+      print('✅ Savings goals saved to Firebase for user: $userId');
+    } catch (e, stackTrace) {
+      print('❌ Error saving savings goals to Firebase: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  static Future<List<SavingsGoal>> loadSavingsGoals() async {
+    final userId = currentUserId;
+    if (userId == null) {
+      print('User not authenticated. Returning empty goals.');
+      return [];
+    }
+
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!doc.exists || doc.data() == null) {
+        print('No savings goals found in Firebase');
+        return [];
+      }
+
+      final data = doc.data()!;
+      final goalsData = data['savingsGoals'] as List?;
+
+      if (goalsData == null) {
+        return [];
+      }
+
+      print('Savings goals loaded from Firebase for user: $userId');
+      return goalsData
+          .map((item) => SavingsGoal.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (e) {
+      print('Error loading savings goals from Firebase: $e');
+      return [];
+    }
+  }
+
   static Future<void> clearAll() async {
     final userId = currentUserId;
     if (userId == null) {
@@ -324,10 +519,20 @@ class FirebaseStorageService {
       'store': receipt.store,
       'items': receipt.items.map((item) => item.toJson()).toList(),
       'total': receipt.total,
+      'splits': receipt.splits.map((split) => split.toJson()).toList(),
+      'currency': receipt.currency.name,
     };
   }
 
   static ReceiptModel _receiptFromJson(Map<String, dynamic> json) {
+    final currencyName = json['currency'] as String?;
+    final currency = currencyName != null
+        ? Currency.values.firstWhere(
+            (c) => c.name == currencyName,
+            orElse: () => Currency.USD,
+          )
+        : Currency.USD;
+
     return ReceiptModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
@@ -353,6 +558,11 @@ class FirebaseStorageService {
               .toList() ??
           [],
       total: (json['total'] as num?)?.toDouble() ?? 0.0,
+      splits: (json['splits'] as List?)
+              ?.map((split) => ReceiptSplit.fromJson(Map<String, dynamic>.from(split)))
+              .toList() ??
+          [],
+      currency: currency,
     );
   }
 }

@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/insights/models/insights_models.dart';
 import 'package:intl/intl.dart';
 
-class BudgetPlannerCard extends StatelessWidget {
+class BudgetPlannerCard extends StatefulWidget {
   final InsightsData insights;
   
   const BudgetPlannerCard({super.key, required this.insights});
 
   @override
+  State<BudgetPlannerCard> createState() => _BudgetPlannerCardState();
+}
+
+class _BudgetPlannerCardState extends State<BudgetPlannerCard> {
+  bool _showAllCategories = false;
+
+  @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat.currency(
-      symbol: insights.currency.name,
+      symbol: widget.insights.currency.name,
       decimalDigits: 2,
     );
     
@@ -60,6 +68,11 @@ class BudgetPlannerCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Edit Budgets',
+                  onPressed: () => _navigateToBudgetSetup(context),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -72,17 +85,17 @@ class BudgetPlannerCard extends StatelessWidget {
                 _buildStatRow(
                   context,
                   'Estimated Income',
-                  formatter.format(insights.estimatedIncome),
+                  formatter.format(widget.insights.estimatedIncome),
                 ),
                 _buildStatRow(
                   context,
                   'Current Spending',
-                  formatter.format(insights.monthlySpending),
+                  formatter.format(widget.insights.monthlySpending),
                 ),
                 _buildStatRow(
                   context,
                   'Savings Rate',
-                  '${insights.savingsRate.toStringAsFixed(1)}%',
+                  '${widget.insights.savingsRate.toStringAsFixed(1)}%',
                   isHighlight: true,
                 ),
               ],
@@ -91,7 +104,7 @@ class BudgetPlannerCard extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Suggested Budgets
-            if (insights.suggestedBudgets != null) ...[
+            if (widget.insights.suggestedBudgets != null) ...[
               Text(
                 'Suggested Budgets by Category',
                 style: TextStyle(
@@ -101,78 +114,11 @@ class BudgetPlannerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              ...insights.suggestedBudgets!.entries.map((entry) {
-                final category = ExpenseCategory.values.firstWhere(
-                  (c) => c.name == entry.key,
-                  orElse: () => ExpenseCategory.other,
-                );
-                final categoryInfo = CategoryInfo.getInfo(category);
-                final currentSpending = insights.categorySpending[category] ?? 0.0;
-                final budget = entry.value;
-                final percentage = budget > 0 ? (currentSpending / budget * 100) : 0;
-                final progressValue = percentage / 100;
-                
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                categoryInfo.emoji,
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                categoryInfo.name,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.onSurfaceColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            formatter.format(budget),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: context.onSurfaceColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: progressValue > 1.0 ? 1.0 : (progressValue < 0.0 ? 0.0 : progressValue),
-                        backgroundColor: context.borderColor.withOpacity(0.2),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          percentage > 100
-                              ? context.errorColor
-                              : context.onSurfaceColor,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Spent: ${formatter.format(currentSpending)} (${percentage.toStringAsFixed(0)}%)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.onSurfaceMutedColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+              _buildCategoryBudgets(context, formatter),
             ],
             
             // Recommendations
-            if (insights.recommendations != null && insights.recommendations!.isNotEmpty) ...[
+            if (widget.insights.recommendations != null && widget.insights.recommendations!.isNotEmpty) ...[
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -206,7 +152,7 @@ class BudgetPlannerCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...insights.recommendations!.map((rec) => Padding(
+                    ...widget.insights.recommendations!.map((rec) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,6 +184,136 @@ class BudgetPlannerCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildCategoryBudgets(BuildContext context, NumberFormat formatter) {
+    final budgets = widget.insights.suggestedBudgets!;
+    final budgetEntries = budgets.entries.toList();
+    final visibleCount = _showAllCategories ? budgetEntries.length : 3;
+    final visibleEntries = budgetEntries.take(visibleCount).toList();
+    final hasMore = budgetEntries.length > visibleCount;
+
+    return Column(
+      children: [
+        ...visibleEntries.map((entry) => _buildCategoryBudgetItem(context, formatter, entry)),
+        if (hasMore)
+          InkWell(
+            onTap: () {
+              setState(() {
+                _showAllCategories = !_showAllCategories;
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _showAllCategories ? 'Show Less' : 'Show More',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: context.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _showAllCategories ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                    color: context.primaryColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryBudgetItem(BuildContext context, NumberFormat formatter, MapEntry<String, double> entry) {
+    final category = ExpenseCategory.values.firstWhere(
+      (c) => c.name == entry.key,
+      orElse: () => ExpenseCategory.other,
+    );
+    final categoryInfo = CategoryInfo.getInfo(category);
+    final currentSpending = widget.insights.categorySpending[category] ?? 0.0;
+    final budget = entry.value;
+    final percentage = budget > 0 ? (currentSpending / budget * 100) : 0;
+    final progressValue = percentage / 100;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    categoryInfo.emoji,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    categoryInfo.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: context.onSurfaceColor,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                formatter.format(budget),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: context.onSurfaceColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: progressValue > 1.0 ? 1.0 : (progressValue < 0.0 ? 0.0 : progressValue),
+            backgroundColor: context.borderColor.withOpacity(0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              percentage > 100
+                  ? context.errorColor
+                  : context.onSurfaceColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Spent: ${formatter.format(currentSpending)} (${percentage.toStringAsFixed(0)}%)',
+            style: TextStyle(
+              fontSize: 12,
+              color: context.onSurfaceMutedColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToBudgetSetup(BuildContext context) {
+    final budgets = widget.insights.suggestedBudgets;
+    if (budgets != null) {
+      final categoryBudgets = <ExpenseCategory, double>{};
+      for (final entry in budgets.entries) {
+        final category = ExpenseCategory.values.firstWhere(
+          (c) => c.name == entry.key,
+          orElse: () => ExpenseCategory.other,
+        );
+        categoryBudgets[category] = entry.value;
+      }
+      context.push('/budget-setup', extra: categoryBudgets);
+    } else {
+      context.push('/budget-setup');
+    }
   }
   
   Widget _buildSection(BuildContext context, String title, List<Widget> children) {

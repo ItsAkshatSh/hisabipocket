@@ -4,6 +4,7 @@ import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/services/ai_service.dart';
 import 'package:hisabi/core/services/receipt_ocr_service.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 final receiptDetailsProvider = FutureProvider.autoDispose.family<ReceiptModel, String>((ref, receiptId) async {
   final receiptsAsync = ref.read(receiptsStoreProvider);
@@ -50,7 +51,9 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
     state = state.copyWith(isAnalyzing: true, analysisError: null);
     
     try {
-      final receipt = await _ocrService.processReceipt(imageFile);
+      final settingsAsync = _ref.read(settingsProvider);
+      final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+      final receipt = await _ocrService.processReceipt(imageFile, currency: currency);
       if (receipt != null) {
         state = state.copyWith(
           analyzedReceipt: receipt,
@@ -88,6 +91,8 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
         items: categorizedReceipt.items,
         total: receipt.total,
         primaryCategory: categorizedReceipt.primaryCategory,
+        currency: receipt.currency,
+        splits: receipt.splits,
       );
 
       // 3. Add to store (which handles persistent storage and UI update)
@@ -130,6 +135,8 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
         store: receipt.store,
         items: categorizedItems,
         total: receipt.total,
+        currency: receipt.currency,
+        splits: receipt.splits,
       );
     } catch (e) {
       print('Error categorizing items: $e');
@@ -139,5 +146,21 @@ class ReceiptEntryNotifier extends StateNotifier<ReceiptEntryState> {
 
   void clearResult() {
     state = ReceiptEntryState();
+  }
+}
+
+final receiptProvider = StateNotifierProvider<ReceiptNotifier, void>((ref) {
+  return ReceiptNotifier(ref);
+});
+
+class ReceiptNotifier extends StateNotifier<void> {
+  final Ref _ref;
+  
+  ReceiptNotifier(this._ref) : super(null);
+
+  Future<void> updateReceipt(ReceiptModel receipt) async {
+    await _ref.read(receiptsStoreProvider.notifier).update(receipt);
+    _ref.invalidate(receiptsStoreProvider);
+    await _ref.read(receiptsStoreProvider.notifier).refresh();
   }
 }
