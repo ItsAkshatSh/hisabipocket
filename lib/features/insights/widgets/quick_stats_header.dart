@@ -24,59 +24,42 @@ class QuickStatsHeader extends ConsumerWidget {
           );
     
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: context.borderColor.withOpacity(0.5)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _buildStatItem(
-                context,
-                'Total Spending',
-                formatter.format(insights.monthlySpending),
-                Icons.account_balance_wallet_outlined,
-              ),
+            _buildFlexibleStat(
+              context,
+              'Spending',
+              formatter.format(insights.monthlySpending),
+              Icons.account_balance_wallet_outlined,
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: context.borderColor.withOpacity(0.3),
+            _buildDivider(context),
+            _buildFlexibleStat(
+              context,
+              'Categories',
+              insights.categorySpending.length.toString(),
+              Icons.category_outlined,
             ),
-            Expanded(
-              child: _buildStatItem(
-                context,
-                'Categories',
-                insights.categorySpending.length.toString(),
-                Icons.category_outlined,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: context.borderColor.withOpacity(0.3),
-            ),
-            Expanded(
-              child: _buildStatItem(
-                context,
-                'Savings Rate',
-                '${insights.savingsRate.toStringAsFixed(1)}%',
-                Icons.trending_up_outlined,
-              ),
+            _buildDivider(context),
+            _buildFlexibleStat(
+              context,
+              'Savings',
+              '${insights.savingsRate.toStringAsFixed(1)}%',
+              Icons.trending_up_outlined,
             ),
             if (topCategory != null) ...[
-              Container(
-                width: 1,
-                height: 40,
-                color: context.borderColor.withOpacity(0.3),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  context,
-                  'Top Category',
-                  CategoryInfo.getInfo(topCategory.key).emoji,
-                  Icons.star_outline,
-                ),
+              _buildDivider(context),
+              _buildFlexibleStat(
+                context,
+                'Top',
+                CategoryInfo.getInfo(topCategory.key).emoji,
+                Icons.star_outline,
               ),
             ],
           ],
@@ -84,45 +67,48 @@ class QuickStatsHeader extends ConsumerWidget {
       ),
     );
   }
-  
-  Widget _buildStatItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 24,
-          color: context.onSurfaceMutedColor,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: context.onSurfaceColor,
+
+  Widget _buildFlexibleStat(BuildContext context, String label, String value, IconData icon) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: context.onSurfaceMutedColor),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: context.onSurfaceColor,
+              ),
+            ),
           ),
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: context.onSurfaceMutedColor,
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: context.onSurfaceMutedColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 30,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: context.borderColor.withOpacity(0.3),
     );
   }
 }

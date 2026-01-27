@@ -31,7 +31,7 @@ class AIService {
             {
               'role': 'system',
               'content':
-                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: housing, food, transport, health, lifestyle, subscriptions, education, travel, other. IMPORTANT RULES: 1) "apple" (fruit) -> food. 2) PHYSICAL PRODUCTS (hardware, devices, electronics, phones, laptops) -> lifestyle. 3) SERVICES/SUBSCRIPTIONS (monthly plans, streaming services, cloud storage, app subscriptions) -> subscriptions. Distinguish based on whether it is a physical product (lifestyle) or a service/subscription (subscriptions). Use item description and store context to determine.',
+                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.',
             },
             {
               'role': 'user',
@@ -71,17 +71,6 @@ Categorize these receipt items into expense categories. Return JSON format:
 }
 
 Available categories: housing, food, transport, health, lifestyle, subscriptions, education, travel, other
-
-IMPORTANT CONTEXT RULES:
-- "apple" (the fruit) should be categorized as "food", not "subscriptions"
-- PHYSICAL PRODUCTS (hardware, devices, electronics) from any store should be "lifestyle", not "subscriptions"
-- SERVICES and SUBSCRIPTIONS (monthly plans, streaming, cloud storage, app subscriptions) should be "subscriptions"
-- Consider the store name: Electronics/tech stores typically sell physical products = "lifestyle"
-- Consider item description: Words like "subscription", "monthly", "plan", "premium", "streaming" indicate "subscriptions"
-- Consider item description: Words like "device", "hardware", "phone", "laptop", "watch" indicate physical products = "lifestyle"
-- Grocery stores/supermarkets indicate food items
-- Subscriptions are recurring services, not physical products
-- Physical electronics and devices are "lifestyle", not "subscriptions"
 
 Items: ${items.join(', ')}
 Store: $store
@@ -131,88 +120,17 @@ Return only the JSON object, no other text.
   ) {
     final result = <String, ExpenseCategory>{};
     final storeLower = store.toLowerCase();
-    final isGroceryStore = storeLower.contains('grocery') || 
-                          storeLower.contains('supermarket') ||
-                          storeLower.contains('walmart') ||
-                          storeLower.contains('target') ||
-                          storeLower.contains('kroger') ||
-                          storeLower.contains('safeway') ||
-                          storeLower.contains('whole foods') ||
-                          storeLower.contains('aldi') ||
-                          storeLower.contains('costco');
 
     for (final item in items) {
       final itemLower = item.toLowerCase();
       ExpenseCategory? category;
 
-      // Special handling for "apple" - check context
-      if (itemLower == 'apple' || itemLower.startsWith('apple ')) {
-        // If it's a grocery store, it's likely the fruit
-        if (isGroceryStore) {
-          category = ExpenseCategory.food;
-        } else {
-          // Check if it's a service/subscription vs physical product
-          final isService = itemLower.contains('music') ||
-                           itemLower.contains('tv') ||
-                           itemLower.contains('streaming') ||
-                           itemLower.contains('subscription') ||
-                           itemLower.contains('plan') ||
-                           itemLower.contains('premium') ||
-                           itemLower.contains('cloud') ||
-                           itemLower.contains('storage');
-          
-          final isPhysicalProduct = itemLower.contains('device') ||
-                                   itemLower.contains('hardware') ||
-                                   itemLower.contains('phone') ||
-                                   itemLower.contains('laptop') ||
-                                   itemLower.contains('watch') ||
-                                   itemLower.contains('tablet') ||
-                                   itemLower.contains('computer') ||
-                                   storeLower.contains('store') && !storeLower.contains('subscription');
-          
-          if (isService) {
-            category = ExpenseCategory.subscriptions;
-          } else if (isPhysicalProduct) {
-            category = ExpenseCategory.lifestyle;
-          } else {
-            // Default to food if uncertain (safer assumption for fruit)
-            category = ExpenseCategory.food;
-          }
-        }
-      } else {
-        // Check if item is a service/subscription vs physical product
-        final isService = itemLower.contains('subscription') ||
-                         itemLower.contains('monthly') ||
-                         itemLower.contains('plan') ||
-                         itemLower.contains('premium') ||
-                         itemLower.contains('streaming') ||
-                         itemLower.contains('music service') ||
-                         itemLower.contains('tv service') ||
-                         itemLower.contains('cloud storage');
-        
-        final isPhysicalProduct = itemLower.contains('device') ||
-                                 itemLower.contains('hardware') ||
-                                 itemLower.contains('phone') ||
-                                 itemLower.contains('laptop') ||
-                                 itemLower.contains('watch') ||
-                                 itemLower.contains('tablet') ||
-                                 itemLower.contains('computer') ||
-                                 itemLower.contains('electronics');
-        
-        // Prioritize service/product detection over keyword matching
-        if (isService && !isPhysicalProduct) {
-          category = ExpenseCategory.subscriptions;
-        } else if (isPhysicalProduct && !isService) {
-          category = ExpenseCategory.lifestyle;
-        } else {
-          // Use the updated CategoryInfo keywords
-          for (final catEntry in CategoryInfo.categories.entries) {
-            if (catEntry.value.keywords.any((keyword) => 
-                itemLower.contains(keyword) || storeLower.contains(keyword))) {
-              category = catEntry.key;
-              break;
-            }
-          }
+      // Use the updated CategoryInfo keywords
+      for (final catEntry in CategoryInfo.categories.entries) {
+        if (catEntry.value.keywords.any((keyword) => 
+            itemLower.contains(keyword) || storeLower.contains(keyword))) {
+          category = catEntry.key;
+          break;
         }
       }
 
@@ -227,11 +145,12 @@ Return only the JSON object, no other text.
     required Map<ExpenseCategory, double> spendingHistory,
     required double monthlyIncome,
     required int monthsOfData,
+    required String currencyCode,
     List<Map<String, dynamic>>? recurringExpenses,
   }) async {
     try {
       final prompt =
-          _buildBudgetPrompt(spendingHistory, monthlyIncome, monthsOfData, recurringExpenses);
+          _buildBudgetPrompt(spendingHistory, monthlyIncome, monthsOfData, recurringExpenses, currencyCode);
 
       final response = await http.post(
         Uri.parse('$_baseUrl/chat/completions'),
@@ -245,7 +164,7 @@ Return only the JSON object, no other text.
             {
               'role': 'system',
               'content':
-                  'You are a financial planning assistant. Return only valid JSON with budget recommendations. Ensure each category appears only once in the results.',
+                  'You are a financial planning assistant. Return only valid JSON with budget recommendations. Provide practical, realistic budget suggestions based on common financial wisdom (like the 50/30/20 rule) and the user\'s specific data.',
             },
             {
               'role': 'user',
@@ -273,6 +192,7 @@ Return only the JSON object, no other text.
     double income,
     int months,
     List<Map<String, dynamic>>? recurring,
+    String currency,
   ) {
     final spendingText = spending.entries
         .map((e) => '${e.key.name}: ${e.value.toStringAsFixed(2)}')
@@ -283,12 +203,12 @@ Return only the JSON object, no other text.
         : 'None';
 
     return '''
-Analyze spending patterns and suggest a monthly budget plan.
+Analyze spending patterns and suggest a practical, realistic monthly budget plan.
 
-Monthly Income: \$${income.toStringAsFixed(2)}
+Monthly Income: $currency ${income.toStringAsFixed(2)}
 Months of Data: $months
 
-Current Spending by Category:
+Current Spending by Category (Variable Expenses):
 $spendingText
 
 Recurring Expenses (Fixed Costs):
@@ -297,17 +217,29 @@ $recurringText
 Return JSON format:
 {
   "budgets": {
-    "category_name": budgeted_amount,
-    ...
+    "housing": amount,
+    "food": amount,
+    "transport": amount,
+    "health": amount,
+    "lifestyle": amount,
+    "subscriptions": amount,
+    "education": amount,
+    "travel": amount,
+    "other": amount
   },
   "savingsGoal": amount,
   "recommendations": ["tip1", "tip2", ...]
 }
 
-IMPORTANT:
-1. Ensure category names in "budgets" are unique and MUST be exactly one of these: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.
-2. Incorporate the recurring expenses into these categories (e.g., Netflix -> subscriptions, Rent -> housing).
-3. Do not create sub-categories. Only use the 9 categories listed above.
+CRITICAL INSTRUCTIONS:
+1. CURRENCY: All amounts in your response (budgets, savingsGoal) MUST be in $currency.
+2. Suggested Budgets for ALL Categories: You MUST provide a unique budget amount for EVERY ONE of the 9 categories. Do not skip any.
+3. Be Practical, Not Equal: Do NOT just divide the money equally. Allocate more to essentials (housing, food) and less to discretionary categories. 
+4. Budget Optimization: If the user is overspending in a category, suggest a budget that is challenging but realistic, not just their current spending.
+5. Baseline for Empty Categories: If current spending is zero, provide a small baseline buffer for that category.
+6. Fixed Costs First: Ensure Housing and Subscriptions budgets are at least enough to cover the Recurring Expenses provided.
+7. 50/30/20 Rule: Generally aim for 50% Essentials (Housing, Food, Transport, Health), 30% Lifestyle/Fun (Lifestyle, Subscriptions, Travel, Other, Education), and 20% Savings.
+8. Balance the Books: Total of all budgets + savingsGoal MUST equal the Monthly Income.
 ''';
   }
 
@@ -316,14 +248,22 @@ IMPORTANT:
     double income,
   ) {
     final savingsGoal = income * 0.2; // 20% savings goal
-
-    final budgets = <String, double>{};
-    for (final entry in spending.entries) {
-      budgets[entry.key.name] = entry.value;
-    }
+    final remaining = income - savingsGoal;
+    
+    final allocations = {
+      'housing': 0.35 * remaining,
+      'food': 0.15 * remaining,
+      'transport': 0.10 * remaining,
+      'health': 0.05 * remaining,
+      'lifestyle': 0.10 * remaining,
+      'subscriptions': 0.05 * remaining,
+      'education': 0.05 * remaining,
+      'travel': 0.10 * remaining,
+      'other': 0.05 * remaining,
+    };
 
     return {
-      'budgets': budgets,
+      'budgets': allocations,
       'savingsGoal': savingsGoal,
       'recommendations': [
         'Try to save 20% of your income',
@@ -338,9 +278,10 @@ IMPORTANT:
     required Map<String, dynamic> stats,
     required String personality,
     required List<String> funFacts,
+    required String currencyCode,
   }) async {
     try {
-      final prompt = _buildWrappedPrompt(stats, personality, funFacts);
+      final prompt = _buildWrappedPrompt(stats, personality, funFacts, currencyCode);
 
       final response = await http.post(
         Uri.parse('$_baseUrl/chat/completions'),
@@ -354,7 +295,7 @@ IMPORTANT:
             {
               'role': 'system',
               'content':
-                  'You are a creative financial storyteller. Generate engaging, fun narratives about spending patterns in a Spotify Wrapped style. Be concise, friendly, and use emojis.',
+                  'You are a creative financial storyteller. Generate engaging, fun narratives about spending patterns in a Spotify Wrapped style. Be concise, friendly, and use emojis. Use the correct currency code provided.',
             },
             {
               'role': 'user',
@@ -373,38 +314,41 @@ IMPORTANT:
       print('AI narrative generation error: $e');
     }
 
-    return _defaultNarrative(stats, personality);
+    return _defaultNarrative(stats, personality, currencyCode);
   }
 
   String _buildWrappedPrompt(
     Map<String, dynamic> stats,
     String personality,
     List<String> funFacts,
+    String currency,
   ) {
     return '''
 Generate a fun, engaging narrative for a weekly spending wrap-up in Spotify Wrapped style.
 
+Currency: $currency
+
 Stats:
-- Total spent: \$${stats['totalSpent']?.toStringAsFixed(2) ?? '0'}
+- Total spent: $currency ${stats['totalSpent']?.toStringAsFixed(2) ?? '0'}
 - Receipts: ${stats['receiptsCount'] ?? 0}
 - Top store: ${stats['topStore'] ?? 'N/A'}
 - Top category: ${stats['topCategory'] ?? 'N/A'}
-- Biggest purchase: \$${stats['biggestPurchaseAmount']?.toStringAsFixed(2) ?? '0'}
+- Biggest purchase: $currency ${stats['biggestPurchaseAmount']?.toStringAsFixed(2) ?? '0'}
 - Busiest day: ${stats['busiestDay'] ?? 'N/A'}
 
 Personality: $personality
 
 Fun facts: ${funFacts.join(', ')}
 
-Create a short, engaging narrative (2-3 sentences) that makes spending tracking fun and interesting. Use emojis and be conversational.
+Create a short, engaging narrative (2-3 sentences) that makes spending tracking fun and interesting. Use emojis and be conversational. USE $currency FOR ALL MONETARY VALUES.
 ''';
   }
 
-  String _defaultNarrative(Map<String, dynamic> stats, String personality) {
+  String _defaultNarrative(Map<String, dynamic> stats, String personality, String currency) {
     final totalSpent = stats['totalSpent']?.toStringAsFixed(2) ?? '0';
     final receiptsCount = stats['receiptsCount'] ?? 0;
     final topStore = stats['topStore'] ?? 'various stores';
 
-    return 'You spent \$$totalSpent across $receiptsCount ${receiptsCount == 1 ? 'receipt' : 'receipts'} this week! Your top spending was at $topStore. $personality';
+    return 'You spent $currency $totalSpent across $receiptsCount ${receiptsCount == 1 ? 'receipt' : 'receipts'} this week! Your top spending was at $topStore. $personality';
   }
 }

@@ -38,19 +38,17 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   // Check if we have cached insights and if receipt count matches
   final cachedInsights = ref.read(_insightsCacheProvider);
-  final hasNewReceipts = cachedInsights == null || 
-      currentReceiptCount > cachedInsights.receiptCount;
   
   // Check if financial profile changed (income or recurring payments update)
   final currentIncome = profile?.totalMonthlyIncome ?? 0.0;
   final cachedIncome = cachedInsights?.data.estimatedIncome ?? 0.0;
   final incomeChanged = (currentIncome > 0 && currentIncome != cachedIncome);
   
+  // Check if anything significant changed to warrant a re-generation
   if (cachedInsights != null && 
       cachedInsights.receiptCount == currentReceiptCount &&
       cachedInsights.data.currency == currency &&
       !incomeChanged) {
-    // Return cached insights if receipt count hasn't changed and income hasn't changed
     return cachedInsights.data;
   }
   
@@ -59,7 +57,6 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   // 1. Add spending from receipts
   for (final receipt in receipts) {
-    // Map existing receipt category to the new simplified system
     final mappedCategory = CategoryInfo.mapStringToCategory(
       receipt.primaryCategory?.name ?? receipt.store
     );
@@ -132,13 +129,18 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   }).toList() ?? [];
 
   Map<String, dynamic> budgetPlan;
-  if (hasNewReceipts || incomeChanged || cachedInsights == null) {
+  
+  // Only call AI if we don't have a cache or if something meaningful changed
+  if (cachedInsights == null || 
+      currentReceiptCount != cachedInsights.receiptCount || 
+      incomeChanged) {
     final aiService = AIService();
     budgetPlan = await aiService.generateBudgetPlan(
       spendingHistory: categorySpending,
       monthlyIncome: estimatedIncome,
       monthsOfData: 1,
       recurringExpenses: recurringExpensesJson,
+      currencyCode: currency.name,
     );
   } else {
     budgetPlan = cachedInsights.data.budgetPlan;

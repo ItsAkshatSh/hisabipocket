@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/insights/models/spending_alert.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:intl/intl.dart';
 
 class SpendingAlertsCard extends ConsumerWidget {
@@ -14,6 +15,10 @@ class SpendingAlertsCard extends ConsumerWidget {
     if (alerts.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final settingsAsync = ref.watch(settingsProvider);
+    final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+    final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
     
     return Card(
       child: Padding(
@@ -62,16 +67,15 @@ class SpendingAlertsCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 24),
-            ...alerts.take(5).map((alert) => _buildAlertItem(context, alert)),
+            ...alerts.take(5).map((alert) => _buildAlertItem(context, alert, formatter)),
           ],
         ),
       ),
     );
   }
   
-  Widget _buildAlertItem(BuildContext context, SpendingAlert alert) {
+  Widget _buildAlertItem(BuildContext context, SpendingAlert alert, NumberFormat formatter) {
     final severityColor = _getSeverityColor(context, alert.severity);
-    final formatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
