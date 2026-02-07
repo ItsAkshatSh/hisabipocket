@@ -117,7 +117,11 @@ class MainShell extends ConsumerWidget {
               ),
             ],
           ),
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+          child: Icon(
+            Icons.add_rounded, 
+            color: theme.colorScheme.onPrimary, 
+            size: 30,
+          ),
         ),
       ),
       label: 'Add',

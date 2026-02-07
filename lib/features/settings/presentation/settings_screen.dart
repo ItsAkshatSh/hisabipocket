@@ -150,6 +150,20 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: settings.namingFormat.name.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[0]}').toUpperCase(),
           onTap: () => _showNamingFormatPicker(context, ref, settings.namingFormat),
         ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.help_outline,
+          title: 'Help & Tips',
+          subtitle: 'Learn how to get the most from Hisabi',
+          onTap: () => context.push('/help'),
+        ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.school_outlined,
+          title: 'Take the tour again',
+          subtitle: 'Replay the quick Hisabi walkthrough',
+          onTap: () => context.push('/onboarding'),
+        ),
       ],
     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
   }
@@ -241,27 +255,31 @@ class SettingsScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.only(bottom: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: AppThemeSelection.values.map((selection) => ListTile(
-            title: Text(selection.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-            leading: Container(
-              width: 24, 
-              height: 24, 
-              decoration: BoxDecoration(
-                shape: BoxShape.circle, 
-                color: _getThemeColor(selection),
-                border: Border.all(color: Colors.white24, width: 2),
-              )
-            ),
-            selected: selection == current,
-            onTap: () {
-              ref.read(settingsProvider.notifier).setThemeSelection(selection);
-              Navigator.pop(context);
-            },
-          )).toList(),
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.only(bottom: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: AppThemeSelection.values.map((selection) => ListTile(
+              title: Text(selection.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              leading: Container(
+                width: 24, 
+                height: 24, 
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle, 
+                  color: _getThemeColor(selection),
+                  border: Border.all(color: Colors.white24, width: 2),
+                )
+              ),
+              selected: selection == current,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setThemeSelection(selection);
+                Navigator.pop(context);
+              },
+            )).toList(),
+          ),
         ),
       ),
     );
@@ -269,7 +287,7 @@ class SettingsScreen extends ConsumerWidget {
 
   Color _getThemeColor(AppThemeSelection selection) {
     switch (selection) {
-      case AppThemeSelection.classic: return const Color(0xFF6366F1);
+      case AppThemeSelection.classic: return Colors.grey.shade700;
       case AppThemeSelection.midnight: return const Color(0xFF1E293B);
       case AppThemeSelection.forest: return const Color(0xFF064E3B);
       case AppThemeSelection.sunset: return const Color(0xFF7C2D12);
@@ -281,22 +299,14 @@ class SettingsScreen extends ConsumerWidget {
   void _showCurrencyPicker(BuildContext context, WidgetRef ref, Currency current) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      enableDrag: true, // Enables swipe to close
       showDragHandle: true,
-      builder: (context) => ListView.builder(
-        shrinkWrap: true,
-        itemCount: Currency.values.length,
-        itemBuilder: (context, index) {
-          final currency = Currency.values[index];
-          return ListTile(
-            title: Text(currency.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-            selected: currency == current,
-            onTap: () {
-              ref.read(settingsProvider.notifier).setCurrency(currency);
-              Navigator.pop(context);
-            },
-          );
-        },
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (context) => _CurrencyPickerSheet(current: current),
     );
   }
 
@@ -304,16 +314,116 @@ class SettingsScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: NamingFormat.values.map((f) => ListTile(
-          title: Text(f.name.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[0]}').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800)),
-          selected: f == current,
-          onTap: () {
-            ref.read(settingsProvider.notifier).setNamingFormat(f);
-            Navigator.pop(context);
-          },
-        )).toList(),
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: NamingFormat.values.map((f) => ListTile(
+            title: Text(f.name.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[0]}').toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800)),
+            selected: f == current,
+            onTap: () {
+              ref.read(settingsProvider.notifier).setNamingFormat(f);
+              Navigator.pop(context);
+            },
+          )).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrencyPickerSheet extends StatefulWidget {
+  final Currency current;
+  const _CurrencyPickerSheet({required this.current});
+
+  @override
+  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
+}
+
+class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Currency> _filteredCurrencies = Currency.values;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_filterCurrencies);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterCurrencies);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterCurrencies() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredCurrencies = Currency.values.where((c) {
+        return c.name.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search currency...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Consumer(
+              builder: (context, ref, child) => ListView.builder(
+                controller: scrollController,
+                itemCount: _filteredCurrencies.length,
+                itemBuilder: (context, index) {
+                  final currency = _filteredCurrencies[index];
+                  final isSelected = currency == widget.current;
+                  
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    title: Text(
+                      currency.name,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                        color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                      ),
+                    ),
+                    trailing: isSelected 
+                      ? Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary)
+                      : null,
+                    onTap: () {
+                      ref.read(settingsProvider.notifier).setCurrency(currency);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -30,15 +30,22 @@ class ReceiptFilters {
     double? minAmount,
     double? maxAmount,
     String? storeFilter,
+    bool clearSearchQuery = false,
+    bool clearCategoryFilter = false,
+    bool clearStartDate = false,
+    bool clearEndDate = false,
+    bool clearMinAmount = false,
+    bool clearMaxAmount = false,
+    bool clearStoreFilter = false,
   }) {
     return ReceiptFilters(
-      searchQuery: searchQuery ?? this.searchQuery,
-      categoryFilter: categoryFilter ?? this.categoryFilter,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      minAmount: minAmount ?? this.minAmount,
-      maxAmount: maxAmount ?? this.maxAmount,
-      storeFilter: storeFilter ?? this.storeFilter,
+      searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      categoryFilter: clearCategoryFilter ? null : (categoryFilter ?? this.categoryFilter),
+      startDate: clearStartDate ? null : (startDate ?? this.startDate),
+      endDate: clearEndDate ? null : (endDate ?? this.endDate),
+      minAmount: clearMinAmount ? null : (minAmount ?? this.minAmount),
+      maxAmount: clearMaxAmount ? null : (maxAmount ?? this.maxAmount),
+      storeFilter: clearStoreFilter ? null : (storeFilter ?? this.storeFilter),
     );
   }
 

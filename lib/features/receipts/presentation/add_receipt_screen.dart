@@ -58,6 +58,11 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
         );
         ref.read(receiptEntryProvider.notifier).clearResult();
         _manualEntryKey.currentState?.resetFields();
+      } else {
+        // Reset fields even if cancelled, but only if it was a manual entry
+        if (_tabController.index == 1) {
+          _manualEntryKey.currentState?.resetFields();
+        }
       }
     });
   }

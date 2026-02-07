@@ -11,7 +11,9 @@ class AppTheme {
   static const double shapeCornerExtraLarge = 28.0;
 
   static ThemeData getTheme(AppThemeSelection selection, Brightness brightness, ColorScheme? dynamicColorScheme) {
-    final colorScheme = dynamicColorScheme ?? _getColorScheme(selection, brightness);
+    // Always use the selected theme, ignore dynamic color scheme
+    // Dynamic colors can be used in the future if we add a "system" theme option
+    final colorScheme = _getColorScheme(selection, brightness);
     final baseTheme = brightness == Brightness.dark ? ThemeData.dark() : ThemeData.light();
     
     return baseTheme.copyWith(
@@ -152,10 +154,16 @@ class AppTheme {
         );
       case AppThemeSelection.classic:
         return ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
+          seedColor: Colors.grey,
           brightness: brightness,
-          primary: const Color(0xFF6366F1),
-          surface: isDark ? const Color(0xFF0F172A) : Colors.white,
+          primary: isDark ? Colors.white : Colors.black,
+          secondary: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+          tertiary: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+          surface: isDark ? Colors.black : Colors.white,
+          surfaceContainerHighest: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+          surfaceContainerLow: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
+          onSurface: isDark ? Colors.white : Colors.black,
+          onPrimary: isDark ? Colors.black : Colors.white,
         );
     }
   }

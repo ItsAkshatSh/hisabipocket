@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/features/auth/presentation/login_screen.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
-import 'package:hisabi/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:hisabi/features/receipts/presentation/add_receipt_screen.dart';
 import 'package:hisabi/features/receipts/presentation/voice_quick_add_screen.dart';
 import 'package:hisabi/features/receipts/presentation/saved_receipts_screen.dart';
@@ -25,6 +24,10 @@ import 'package:hisabi/features/insights/presentation/insights_screen.dart';
 import 'package:hisabi/features/financial_profile/presentation/financial_profile_screen.dart';
 import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/core/models/category_model.dart';
+import 'package:hisabi/features/onboarding/presentation/visual_tutorial_screen.dart';
+import 'package:hisabi/features/dashboard/presentation/dashboard_screen.dart';
+import 'package:hisabi/features/help/presentation/help_screen.dart';
+import 'package:hisabi/core/services/onboarding_service.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -49,6 +52,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const VisualTutorialScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
@@ -128,6 +135,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const FinancialProfileScreen(),
           ),
           GoRoute(
+            path: '/help',
+            builder: (context, state) => const HelpScreen(),
+          ),
+          GoRoute(
             path: '/privacy-policy',
             builder: (context, state) => const PrivacyPolicyScreen(),
           ),
@@ -138,12 +149,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
-    redirect: (BuildContext context, GoRouterState state) {
+    redirect: (BuildContext context, GoRouterState state) async {
       final authState = ref.read(authProvider);
       final authStatus = authState.status;
       final isAuthenticated = authStatus == AuthStatus.authenticated;
       final isUnauthenticated = authStatus == AuthStatus.unauthenticated;
       final isLoginPage = state.uri.path == '/login';
+      final isOnboardingPage = state.uri.path == '/onboarding';
       
       // Wait for auth check to complete (unknown status means still checking)
       if (authStatus == AuthStatus.unknown) {
@@ -161,13 +173,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
       
       // If not authenticated and not on login page, redirect to login
-      if (isUnauthenticated && !isLoginPage) {
+      if (isUnauthenticated && !isLoginPage && !isOnboardingPage) {
         return '/login';
       }
       
-      // If authenticated and on login page, redirect to dashboard
-      if (isAuthenticated && isLoginPage) {
-        return '/dashboard';
+      // If authenticated, check onboarding status
+      if (isAuthenticated) {
+        final hasSeenOnboarding = await OnboardingService.hasSeenOnboarding();
+        
+        // If on login page, redirect based on onboarding status
+        if (isLoginPage) {
+          return hasSeenOnboarding ? '/dashboard' : '/onboarding';
+        }
+        
+        // If authenticated but hasn't seen onboarding and not on onboarding page, redirect to onboarding
+        if (!hasSeenOnboarding && !isOnboardingPage) {
+          return '/onboarding';
+        }
       }
       
       return null;

@@ -52,7 +52,10 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                       ),
                       onChanged: (value) {
                         ref.read(receiptFiltersProvider.notifier).state = 
-                          filters.copyWith(searchQuery: value.isEmpty ? null : value);
+                          filters.copyWith(
+                            searchQuery: value.isEmpty ? null : value,
+                            clearSearchQuery: value.isEmpty,
+                          );
                       },
                     )
                   : const Text('Saved Receipts'),
@@ -71,7 +74,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                       if (!_showSearch) {
                         _searchController.clear();
                         ref.read(receiptFiltersProvider.notifier).state = 
-                          filters.copyWith(searchQuery: null);
+                          filters.copyWith(clearSearchQuery: true);
                       }
                     });
                   },
@@ -99,7 +102,8 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                         label: Text('Search: ${filters.searchQuery}'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(searchQuery: null);
+                            filters.copyWith(clearSearchQuery: true);
+                          _searchController.clear();
                         },
                       ),
                     if (filters.categoryFilter != null)
@@ -107,7 +111,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                         label: Text('Category: ${CategoryInfo.getInfo(filters.categoryFilter!).name}'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(categoryFilter: null);
+                            filters.copyWith(clearCategoryFilter: true);
                         },
                       ),
                     if (filters.startDate != null || filters.endDate != null)
@@ -115,7 +119,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                         label: Text('Date Range'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(startDate: null, endDate: null);
+                            filters.copyWith(clearStartDate: true, clearEndDate: true);
                         },
                       ),
                     if (filters.minAmount != null || filters.maxAmount != null)
@@ -123,7 +127,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                         label: Text('Amount Range'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(minAmount: null, maxAmount: null);
+                            filters.copyWith(clearMinAmount: true, clearMaxAmount: true);
                         },
                       ),
                     if (filters.storeFilter != null && filters.storeFilter!.isNotEmpty)
@@ -131,7 +135,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                         label: Text('Store: ${filters.storeFilter}'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(storeFilter: null);
+                            filters.copyWith(clearStoreFilter: true);
                         },
                       ),
                   ],
@@ -239,7 +243,10 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      builder: (context) => StatefulBuilder(
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) => SafeArea(
+        child: StatefulBuilder(
         builder: (context, setState) => Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -370,6 +377,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
