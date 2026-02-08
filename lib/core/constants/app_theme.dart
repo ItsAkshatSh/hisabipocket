@@ -11,9 +11,15 @@ class AppTheme {
   static const double shapeCornerExtraLarge = 28.0;
 
   static ThemeData getTheme(AppThemeSelection selection, Brightness brightness, ColorScheme? dynamicColorScheme) {
-    // Always use the selected theme, ignore dynamic color scheme
-    // Dynamic colors can be used in the future if we add a "system" theme option
-    final colorScheme = _getColorScheme(selection, brightness);
+    ColorScheme colorScheme;
+    
+    // If "Classic" is selected and we have a dynamic color scheme (system theme), use it!
+    if (selection == AppThemeSelection.classic && dynamicColorScheme != null) {
+      colorScheme = dynamicColorScheme;
+    } else {
+      colorScheme = _getColorScheme(selection, brightness);
+    }
+
     final baseTheme = brightness == Brightness.dark ? ThemeData.dark() : ThemeData.light();
     
     return baseTheme.copyWith(

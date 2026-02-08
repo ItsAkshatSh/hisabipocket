@@ -31,13 +31,11 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
 
   void _loadExistingBudget() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // First, try to use initial budgets from AI (if provided)
       if (widget.initialBudgets != null && widget.initialBudgets!.isNotEmpty) {
         for (final entry in widget.initialBudgets!.entries) {
           _categoryControllers[entry.key]?.text = entry.value.toStringAsFixed(2);
         }
       } else {
-        // Otherwise, load existing saved budget
         final budgetAsync = ref.read(budgetProvider);
         final budget = budgetAsync.valueOrNull;
         if (budget != null) {
@@ -67,8 +65,6 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
     
     final savingsPercentage = profile.savingsGoalPercentage ?? 20.0;
     final monthlyIncome = profile.monthlyIncome!;
-    
-    // Calculate budget: Income - (Income * Savings Percentage)
     return monthlyIncome * (1 - savingsPercentage / 100);
   }
 
@@ -122,7 +118,10 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Set Budget'),
+        title: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('Set Budget'),
+        ),
         actions: [
           if (_isLoading)
             const Padding(
@@ -141,7 +140,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 140), // Increased bottom padding for nav
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -240,7 +239,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Set individual budgets for each category. Leave empty to use only the total budget. The sum of category budgets should not exceed your monthly budget.',
+              'Set individual budgets for each category. Leave empty to use only the total budget.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (monthlyBudget > 0) ...[
@@ -279,10 +278,13 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                 child: TextField(
                   controller: _categoryControllers[category],
                   keyboardType: TextInputType.number,
-                  onChanged: (_) => setState(() {}), // Rebuild to update total
+                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     labelText: categoryInfo.name,
-                    prefixIcon: Text(categoryInfo.emoji, style: const TextStyle(fontSize: 20)),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(categoryInfo.emoji, style: const TextStyle(fontSize: 20)),
+                    ),
                     prefixText: '${currency.name} ',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -319,16 +321,13 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                     child: Column(
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                'Category Budgets Total',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
+                            Text(
+                              'Category Budgets Total',
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                            Expanded(
-                              flex: 2,
+                            Flexible(
                               child: Text(
                                 formatter.format(totalCategoryBudgets),
                                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -338,24 +337,19 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                                       : null,
                                 ),
                                 textAlign: TextAlign.right,
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                isOverBudget ? 'Over budget by' : 'Remaining',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
+                            Text(
+                              isOverBudget ? 'Over budget by' : 'Remaining',
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
-                            Expanded(
-                              flex: 2,
+                            Flexible(
                               child: Text(
                                 formatter.format(remaining.abs()),
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -365,8 +359,6 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                                       : Theme.of(context).colorScheme.primary,
                                 ),
                                 textAlign: TextAlign.right,
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
                               ),
                             ),
                           ],
@@ -377,11 +369,9 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                 },
               ),
             ],
-            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 }
-

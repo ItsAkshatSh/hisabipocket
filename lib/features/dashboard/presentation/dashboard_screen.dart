@@ -8,6 +8,7 @@ import 'package:hisabi/features/dashboard/providers/wrapped_prompt_provider.dart
 import 'package:hisabi/features/dashboard/presentation/widgets/budget_card.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -21,6 +22,7 @@ class DashboardScreen extends ConsumerWidget {
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
     final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
     final isMobile = MediaQuery.of(context).size.width < 600;
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -49,12 +51,13 @@ class DashboardScreen extends ConsumerWidget {
                   children: [
                     const SizedBox(height: 12),
                     _buildPeriodSelector(context, ref, period),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+                    _buildIncompleteProfileBanner(context, ref),
                     _buildWeeklyWrappedPrompt(context, ref),
                     const SizedBox(height: 24),
                     const BudgetCard(),
                     const SizedBox(height: 24),
-                    _buildSummaryGrid(ref, formatter, isMobile),
+                    _buildSummaryGrid(ref, formatter, isMobile, theme),
                     const SizedBox(height: 40),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -76,6 +79,84 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildIncompleteProfileBanner(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(financialProfileProvider);
+    
+    return profileAsync.maybeWhen(
+      data: (profile) {
+        if (profile.isComplete) return const SizedBox.shrink();
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            color: Theme.of(context).colorScheme.tertiaryContainer.withOpacity(0.5),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.tertiary.withOpacity(0.2),
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => context.push('/financial-profile'),
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.account_balance_rounded, 
+                        color: Theme.of(context).colorScheme.tertiary, 
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Setup Financial Profile', 
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onTertiaryContainer, 
+                              fontWeight: FontWeight.w900, 
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Get smarter budget tips and limits', 
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onTertiaryContainer.withOpacity(0.8), 
+                              fontWeight: FontWeight.w600, 
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded, 
+                      color: Theme.of(context).colorScheme.tertiary, 
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ).animate().fadeIn().slideY(begin: 0.1);
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
@@ -118,8 +199,9 @@ class DashboardScreen extends ConsumerWidget {
     ).animate().fadeIn().slideY(begin: 0.2);
   }
 
-  Widget _buildSummaryGrid(WidgetRef ref, NumberFormat formatter, bool isMobile) {
+  Widget _buildSummaryGrid(WidgetRef ref, NumberFormat formatter, bool isMobile, ThemeData theme) {
     final statsAsync = ref.watch(dashboardStatsProvider);
+    final highlightColor = theme.colorScheme.primary;
     
     return statsAsync.when(
       data: (stats) => GridView.count(
@@ -134,28 +216,28 @@ class DashboardScreen extends ConsumerWidget {
             title: 'Total Spent',
             value: formatter.format(stats.totalSpent),
             icon: Icons.account_balance_wallet_rounded,
-            color: Colors.blue,
+            color: highlightColor,
             delay: 100,
           ),
           _SummaryCard(
             title: 'Receipts',
             value: stats.receiptsCount.toString(),
             icon: Icons.receipt_long_rounded,
-            color: Colors.orange,
+            color: highlightColor,
             delay: 200,
           ),
           _SummaryCard(
             title: 'Average',
             value: formatter.format(stats.averagePerReceipt),
             icon: Icons.analytics_rounded,
-            color: Colors.purple,
+            color: highlightColor,
             delay: 300,
           ),
           _SummaryCard(
             title: 'Top Store',
             value: stats.topStore,
             icon: Icons.store_rounded,
-            color: Colors.green,
+            color: highlightColor,
             delay: 400,
           ),
         ],
@@ -224,6 +306,7 @@ class DashboardScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return ref.watch(shouldShowWrappedPromptProvider).when(
       data: (shouldShow) => shouldShow ? Container(
+        margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
@@ -359,6 +442,7 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -379,16 +463,16 @@ class _SummaryCard extends StatelessWidget {
               children: [
                 Text(
                   title, 
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700, 
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
                 FittedBox(
                   child: Text(
                     value,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),

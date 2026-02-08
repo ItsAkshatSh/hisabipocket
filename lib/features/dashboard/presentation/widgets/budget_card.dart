@@ -16,6 +16,7 @@ class BudgetCard extends ConsumerWidget {
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
     final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
+    final theme = Theme.of(context);
 
     return budgetAsync.when(
       data: (budget) {
@@ -25,13 +26,14 @@ class BudgetCard extends ConsumerWidget {
 
         return overallStatusAsync.when(
           data: (status) {
-            final color = status.alertLevel == BudgetAlertLevel.over
+            // Determine the highlight color based on the theme or budget status
+            final highlightColor = status.alertLevel == BudgetAlertLevel.over
                 ? Colors.red
                 : status.alertLevel == BudgetAlertLevel.warning
                     ? Colors.orange
                     : status.alertLevel == BudgetAlertLevel.caution
                         ? Colors.yellow.shade700
-                        : Colors.green;
+                        : theme.colorScheme.primary;
 
             return Card(
               child: InkWell(
@@ -50,19 +52,19 @@ class BudgetCard extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: color.withOpacity(0.1),
+                                  color: highlightColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   Icons.account_balance_wallet_outlined,
-                                  color: color,
+                                  color: highlightColor,
                                   size: 20,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Text(
                                 'Monthly Budget',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -71,13 +73,13 @@ class BudgetCard extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.1),
+                              color: highlightColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '${status.percentageUsed.toStringAsFixed(0)}%',
                               style: TextStyle(
-                                color: color,
+                                color: highlightColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -87,10 +89,11 @@ class BudgetCard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
                       LinearProgressIndicator(
-                        value: status.percentageUsed / 100,
+                        value: (status.percentageUsed / 100).clamp(0.0, 1.0),
                         minHeight: 8,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(highlightColor),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -101,11 +104,11 @@ class BudgetCard extends ConsumerWidget {
                             children: [
                               Text(
                                 'Spent',
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: theme.textTheme.bodySmall,
                               ),
                               Text(
                                 formatter.format(status.spent),
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -116,13 +119,13 @@ class BudgetCard extends ConsumerWidget {
                             children: [
                               Text(
                                 'Remaining',
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: theme.textTheme.bodySmall,
                               ),
                               Text(
                                 formatter.format(status.remaining),
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: status.remaining < 0 ? Colors.red : null,
+                                  color: status.remaining < 0 ? Colors.red : highlightColor,
                                 ),
                               ),
                             ],
@@ -147,4 +150,3 @@ class BudgetCard extends ConsumerWidget {
     );
   }
 }
-

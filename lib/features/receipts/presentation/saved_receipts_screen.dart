@@ -39,9 +39,10 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
           await ref.read(receiptsStoreProvider.notifier).refresh();
         },
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             SliverAppBar.large(
+              centerTitle: false,
               title: _showSearch
                   ? TextField(
                       controller: _searchController,
@@ -398,15 +399,15 @@ class _EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.receipt_long_outlined, size: 84, color: Theme.of(context).colorScheme.outlineVariant),
+              child: Icon(Icons.receipt_long_outlined, size: 84, color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
             ),
             const SizedBox(height: 24),
             Text(
               'No receipts saved yet',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 15),
             Text(

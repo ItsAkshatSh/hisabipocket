@@ -32,28 +32,25 @@ class _AddRecurringPaymentModalState
 
   @override
   void dispose() {
+    _searchController.removeListener(() {});
     _searchController.dispose();
     super.dispose();
   }
 
   void _handlePresetSelected(RecurringPaymentPreset preset) {
-    // Show dialog with form pre-filled from preset
     _showPaymentDialog(preset: preset);
   }
 
   void _showCustomForm() {
-    // Show dialog for custom payment
     _showPaymentDialog();
   }
 
   void _showPaymentDialog({RecurringPaymentPreset? preset}) {
-    // Reset form fields
     final nameController = TextEditingController();
     final amountController = TextEditingController();
     var frequency = preset?.defaultFrequency ?? PaymentFrequency.monthly;
     var startDate = DateTime.now();
     
-    // Pre-fill if preset selected
     if (preset != null) {
       nameController.text = preset.name;
     } else if (_searchController.text.isNotEmpty) {
@@ -72,7 +69,7 @@ class _AddRecurringPaymentModalState
           await ref.read(financialProfileProvider.notifier).addRecurringPayment(payment);
           if (mounted) {
             Navigator.of(dialogContext).pop();
-            Navigator.of(context).pop(); // Close main modal
+            Navigator.of(context).pop(); 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('${payment.name} added successfully'),
@@ -102,7 +99,6 @@ class _AddRecurringPaymentModalState
       ),
       child: Column(
         children: [
-          // Handle bar
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 8),
             width: 40,
@@ -112,7 +108,6 @@ class _AddRecurringPaymentModalState
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
@@ -129,7 +124,6 @@ class _AddRecurringPaymentModalState
               ],
             ),
           ),
-          // Search Bar
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
@@ -174,7 +168,6 @@ class _AddRecurringPaymentModalState
               ),
             ),
           const SizedBox(height: 16),
-          // Content
           Expanded(
             child: _buildPresetList(context, filteredPresets),
           ),
@@ -204,13 +197,11 @@ class _AddRecurringPaymentModalState
               ),
             ),
           ),
-        // Show matching presets
         ...presets.map((preset) => _PresetCard(
               preset: preset,
               isSelected: false,
               onTap: () => _handlePresetSelected(preset),
             )),
-        // Show create button if search query doesn't match any preset
         if (showCreateButton) ...[
           const SizedBox(height: 8),
           _CreateCustomCard(
@@ -315,7 +306,6 @@ class _PaymentFormDialogState extends ConsumerState<_PaymentFormDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -337,7 +327,6 @@ class _PaymentFormDialogState extends ConsumerState<_PaymentFormDialog> {
                 ],
               ),
             ),
-            // Form
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -515,7 +504,6 @@ class _PaymentFormDialogState extends ConsumerState<_PaymentFormDialog> {
                 ),
               ),
             ),
-            // Save Button
             Padding(
               padding: const EdgeInsets.all(20),
               child: SizedBox(
@@ -524,7 +512,7 @@ class _PaymentFormDialogState extends ConsumerState<_PaymentFormDialog> {
                   onPressed: _savePayment,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.primaryColor,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -747,4 +735,3 @@ class _PresetCard extends StatelessWidget {
     );
   }
 }
-

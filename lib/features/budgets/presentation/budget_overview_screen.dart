@@ -21,7 +21,10 @@ class BudgetOverviewScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Budget Overview'),
+        title: const FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text('Budget Overview'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -59,13 +62,13 @@ class BudgetOverviewScreen extends ConsumerWidget {
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 overallStatusAsync.when(
                   data: (status) => _buildOverallBudgetCard(context, status, formatter),
-                  loading: () => const CircularProgressIndicator(),
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
                 const SizedBox(height: 24),
@@ -82,7 +85,7 @@ class BudgetOverviewScreen extends ConsumerWidget {
                       return _buildCategoryBudgetCard(context, entry.key, entry.value, formatter);
                     }).toList(),
                   ),
-                  loading: () => const CircularProgressIndicator(),
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (_, __) => const Text('Error loading category budgets'),
                 ),
               ],
@@ -147,43 +150,59 @@ class BudgetOverviewScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Spent',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      formatter.format(status.spent),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Spent',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    ),
-                  ],
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          formatter.format(status.spent),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Budget',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Text(
-                      formatter.format(status.budgeted),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Budget',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                    ),
-                  ],
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          formatter.format(status.budgeted),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              '${status.percentageUsed.toStringAsFixed(1)}% used • ${formatter.format(status.remaining)} remaining',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: status.remaining < 0 ? Colors.red : null,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${status.percentageUsed.toStringAsFixed(1)}% used • ${formatter.format(status.remaining)} remaining',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: status.remaining < 0 ? Colors.red : null,
+                ),
               ),
             ),
           ],
@@ -241,15 +260,26 @@ class BudgetOverviewScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  formatter.format(status.spent),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      formatter.format(status.spent),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
-                Text(
-                  'of ${formatter.format(status.budgeted)}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'of ${formatter.format(status.budgeted)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -259,4 +289,3 @@ class BudgetOverviewScreen extends ConsumerWidget {
     );
   }
 }
-
