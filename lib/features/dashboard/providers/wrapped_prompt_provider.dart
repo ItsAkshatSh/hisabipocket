@@ -9,25 +9,23 @@ DateTime _getWeekSunday(DateTime date) {
 
 String _getWeekIdentifier(DateTime date) {
   final sunday = _getWeekSunday(date);
-  return '${sunday.year}-${sunday.month.toString().padLeft(2, '0')}-${sunday.day.toString().padLeft(2, '0')}';
+  return 'wrapped_${sunday.year}_${sunday.month}_${sunday.day}';
 }
 
 final shouldShowWrappedPromptProvider = FutureProvider.autoDispose<bool>((ref) async {
   try {
     final now = DateTime.now();
-    
     if (now.weekday != 7) {
       return false;
     }
     
     final currentWeekId = _getWeekIdentifier(now);
-    
     final box = await Hive.openBox('app_preferences');
     final lastViewedWeekId = box.get('last_wrapped_week_id') as String?;
     
     return lastViewedWeekId != currentWeekId;
   } catch (e) {
+    print('Error in wrapped prompt provider: $e');
     return false;
   }
 });
-

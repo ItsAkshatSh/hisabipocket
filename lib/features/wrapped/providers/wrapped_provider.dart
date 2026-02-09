@@ -4,6 +4,7 @@ import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:intl/intl.dart';
 
 DateTime _getWeekStart(DateTime date) {
@@ -15,28 +16,39 @@ final weekWrappedProvider = FutureProvider.autoDispose.family<WeekWrapped, DateT
   final receiptsAsync = ref.watch(receiptsStoreProvider);
   final receipts = receiptsAsync.valueOrNull ?? [];
   
-  final start = weekStart ?? _getWeekStart(DateTime.now());
-  final end = start.add(const Duration(days: 6));
+  final settingsAsync = ref.watch(settingsProvider);
+  final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+  
+  // Calculate the correct start date for the wrap
+  final now = DateTime.now();
+  
+  final sundayOffset = now.weekday == 7 ? 0 : now.weekday;
+  final lastSunday = DateTime(now.year, now.month, now.day).subtract(Duration(days: sundayOffset));
+  final startOfWrappedWeek = lastSunday.subtract(const Duration(days: 6));
+  
+  final start = weekStart ?? startOfWrappedWeek;
+  final end = DateTime(start.year, start.month, start.day, 23, 59, 59).add(const Duration(days: 6));
   
   final weekReceipts = receipts.where((r) => 
-    r.date.isAfter(start.subtract(const Duration(days: 1))) &&
-    r.date.isBefore(end.add(const Duration(days: 1)))
+    r.date.isAfter(start.subtract(const Duration(seconds: 1))) &&
+    r.date.isBefore(end.add(const Duration(seconds: 1)))
   ).toList();
   
-  return _generateWrapped(weekReceipts, start, end);
+  return _generateWrapped(weekReceipts, start, end, currency.name);
 });
 
 Future<WeekWrapped> _generateWrapped(
   List<ReceiptModel> receipts,
   DateTime start,
   DateTime end,
+  String currencyCode,
 ) async {
   final stats = _calculateStats(receipts);
   final personality = _determinePersonality(receipts);
   final funFacts = _generateFunFacts(receipts, stats);
   final topMoments = _getTopMoments(receipts);
   
-  final formatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+  final formatter = NumberFormat.currency(symbol: currencyCode, decimalDigits: 2);
   
   // Generate cards
   final cards = <WrappedCard>[
@@ -176,10 +188,10 @@ WrappedStats _calculateStats(List<ReceiptModel> receipts) {
 SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
   if (receipts.isEmpty) {
     return SpendingPersonality(
-      type: 'Consistent Spender',
-      description: 'You maintain steady spending habits',
-      emoji: '📊',
-      traits: ['Balanced', 'Predictable'],
+      type: 'Silent Observer',
+      description: 'You haven\'t logged enough spending this week to find your pattern yet!',
+      emoji: '',
+      traits: ['Private', 'Minimalist'],
     );
   }
   
@@ -200,7 +212,7 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
     return SpendingPersonality(
       type: 'Weekend Warrior',
       description: 'You live for the weekend! Most of your spending happens Fri-Sun',
-      emoji: '🎯',
+      emoji: '',
       traits: ['Weekend-focused', 'Social spender'],
     );
   }
@@ -211,7 +223,7 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
     return SpendingPersonality(
       type: 'Bulk Buyer',
       description: 'You prefer fewer, larger purchases',
-      emoji: '📦',
+      emoji: '',
       traits: ['Strategic', 'Planned'],
     );
   }
@@ -220,7 +232,7 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
     return SpendingPersonality(
       type: 'Daily Shopper',
       description: 'You make many small purchases throughout the week',
-      emoji: '🛍️',
+      emoji: '',
       traits: ['Frequent', 'Active'],
     );
   }
@@ -228,7 +240,7 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
   return SpendingPersonality(
     type: 'Balanced Spender',
     description: 'You maintain a healthy spending balance',
-    emoji: '⚖️',
+    emoji: '',
     traits: ['Consistent', 'Moderate'],
   );
 }
@@ -255,9 +267,9 @@ List<FunFact> _generateFunFacts(List<ReceiptModel> receipts, WrappedStats stats)
   
   if (coffeeTotal > foodTotal && coffeeTotal > 0) {
     facts.add(FunFact(
-      fact: 'You spent more on coffee (\$${coffeeTotal.toStringAsFixed(2)}) than general food (\$${foodTotal.toStringAsFixed(2)})',
+      fact: 'You spent more on coffee than general food!',
       context: 'That\'s a lot of caffeine!',
-      emoji: '☕',
+      emoji: '',
     ));
   }
   
@@ -272,7 +284,7 @@ List<FunFact> _generateFunFacts(List<ReceiptModel> receipts, WrappedStats stats)
       facts.add(FunFact(
         fact: 'You visited ${mostVisited.key} ${mostVisited.value} times this week',
         context: 'Your go-to spot!',
-        emoji: '🔄',
+        emoji: '',
       ));
     }
   }
@@ -280,9 +292,9 @@ List<FunFact> _generateFunFacts(List<ReceiptModel> receipts, WrappedStats stats)
   // Average per day
   if (stats.daysWithSpending > 0) {
     facts.add(FunFact(
-      fact: 'You spent an average of \$${stats.dailyAverage.toStringAsFixed(2)} per day',
-      context: '${stats.daysWithSpending} days with expenses',
-      emoji: '📅',
+      fact: 'You logged spending on ${stats.daysWithSpending} out of 7 days',
+      context: 'Keeping consistent!',
+      emoji: '',
     ));
   }
   
@@ -308,12 +320,12 @@ WrappedCard _createOpeningCard(DateTime start, DateTime end) {
   final formatter = DateFormat('MMM d');
   return WrappedCard(
     type: CardType.opening,
-    title: '🎵 Your Week Wrapped 🎵',
+    title: 'Your Week Wrapped',
     subtitle: '${formatter.format(start)} - ${formatter.format(end)}',
     mainValue: 'Ready to see how you spent this week?',
     backgroundColor: const Color(0xFF1DB954), // Spotify green
     textColor: Colors.white,
-    emoji: '🎵',
+    emoji: '',
   );
 }
 
@@ -323,10 +335,10 @@ WrappedCard _createTotalSpentCard(WrappedStats stats, NumberFormat formatter) {
     title: 'You spent',
     subtitle: 'this week',
     mainValue: formatter.format(stats.totalSpent),
-    secondaryValue: 'That\'s ${stats.receiptsCount} receipts across ${stats.uniqueStores} different stores',
+    secondaryValue: 'Across ${stats.receiptsCount} receipts at ${stats.uniqueStores} stores',
     backgroundColor: const Color(0xFF8B5CF6),
     textColor: Colors.white,
-    emoji: '💰',
+    emoji: '',
   );
 }
 
@@ -340,11 +352,11 @@ WrappedCard _createTopCategoryCard(WrappedStats stats, NumberFormat formatter) {
     type: CardType.topCategory,
     title: 'Your top category',
     subtitle: '${percentage}% of your spending',
-    mainValue: '${categoryInfo.emoji} ${categoryInfo.name}',
+    mainValue: categoryInfo.name,
     secondaryValue: formatter.format(stats.topCategorySpending),
     backgroundColor: categoryInfo.color,
     textColor: Colors.white,
-    emoji: categoryInfo.emoji,
+    emoji: '',
   );
 }
 
@@ -352,12 +364,12 @@ WrappedCard _createTopStoreCard(WrappedStats stats, NumberFormat formatter) {
   return WrappedCard(
     type: CardType.topStore,
     title: 'Your favorite spot',
-    subtitle: formatter.format(stats.topStoreSpending),
+    subtitle: 'Total spent: ${formatter.format(stats.topStoreSpending)}',
     mainValue: stats.topStore,
     secondaryValue: 'You visited this store the most',
     backgroundColor: const Color(0xFFFF6B6B),
     textColor: Colors.white,
-    emoji: '🏪',
+    emoji: '',
   );
 }
 
@@ -370,7 +382,7 @@ WrappedCard _createBiggestPurchaseCard(WrappedStats stats, NumberFormat formatte
     secondaryValue: stats.biggestPurchase,
     backgroundColor: const Color(0xFF4ECDC4),
     textColor: Colors.white,
-    emoji: '💎',
+    emoji: '',
   );
 }
 
@@ -378,12 +390,12 @@ WrappedCard _createBusiestDayCard(WrappedStats stats) {
   return WrappedCard(
     type: CardType.busiestDay,
     title: 'Your busiest spending day',
-    subtitle: 'Weekend starts early!',
+    subtitle: 'Most of the action happened here',
     mainValue: stats.busiestDay,
-    secondaryValue: 'Most spending happened here',
+    secondaryValue: 'Make sure to rest next week!',
     backgroundColor: const Color(0xFFFFD93D),
     textColor: Colors.black87,
-    emoji: '📅',
+    emoji: '',
   );
 }
 
@@ -392,11 +404,11 @@ WrappedCard _createPersonalityCard(SpendingPersonality personality) {
     type: CardType.personality,
     title: 'You\'re a',
     subtitle: personality.description,
-    mainValue: '${personality.emoji} ${personality.type}',
+    mainValue: personality.type,
     secondaryValue: personality.traits.join(' • '),
     backgroundColor: const Color(0xFF6C5CE7),
     textColor: Colors.white,
-    emoji: personality.emoji,
+    emoji: '',
   );
 }
 
@@ -408,7 +420,7 @@ WrappedCard _createFunFactCard(FunFact funFact) {
     mainValue: funFact.fact,
     backgroundColor: const Color(0xFFFF9FF3),
     textColor: Colors.white,
-    emoji: funFact.emoji,
+    emoji: '',
   );
 }
 
@@ -416,10 +428,10 @@ WrappedCard _createClosingCard() {
   return WrappedCard(
     type: CardType.closing,
     title: 'That\'s your week!',
-    subtitle: 'Share your wrapped and see how your friends compare',
-    mainValue: '📊',
+    subtitle: 'Keep tracking to see next week\'s story',
+    mainValue: 'Done',
     backgroundColor: const Color(0xFF1DB954),
     textColor: Colors.white,
-    emoji: '🎉',
+    emoji: '',
   );
 }
