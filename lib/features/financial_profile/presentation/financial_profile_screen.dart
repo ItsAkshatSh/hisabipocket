@@ -6,6 +6,8 @@ import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
 import 'package:hisabi/features/financial_profile/presentation/widgets/recurring_payments_section.dart';
+import 'package:hisabi/features/financial_profile/presentation/savings_goals_screen.dart';
+import 'package:hisabi/features/financial_profile/presentation/recurring_bills_screen.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class FinancialProfileScreen extends ConsumerStatefulWidget {
@@ -375,6 +377,16 @@ class _FinancialProfileScreenState
                             RecurringPaymentsSection(
                               payments: profile.recurringPayments,
                             ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: TextButton(
+                                onPressed: () => context.push('/recurring-bills'),
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 48),
+                                ),
+                                child: const Text('View All Recurring Bills'),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -633,3 +645,4 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
+

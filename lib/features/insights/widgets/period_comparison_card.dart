@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/insights/models/period_comparison.dart';
 import 'package:hisabi/core/models/category_model.dart';
-import 'package:intl/intl.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class PeriodComparisonCard extends ConsumerWidget {
   final PeriodComparison comparison;
-  
+
   const PeriodComparisonCard({super.key, required this.comparison});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final formatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final settingsAsync = ref.watch(settingsProvider);
+    final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+
+    final formatter =
+        NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
     final isPositive = comparison.changePercent > 0;
     final trendColor = isPositive
         ? context.errorColor
-        : (comparison.changePercent < 0 ? Colors.green : context.onSurfaceColor);
-    
+        : (comparison.changePercent < 0
+            ? Colors.green
+            : context.onSurfaceColor);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -65,8 +72,8 @@ class PeriodComparisonCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 24),
-            
-            // Overall comparison
+
+            // Overall comparison (original layout)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -94,7 +101,7 @@ class PeriodComparisonCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Change indicator
             Container(
               padding: const EdgeInsets.all(16),
@@ -126,7 +133,7 @@ class PeriodComparisonCard extends ConsumerWidget {
                 ],
               ),
             ),
-            
+
             // Category comparisons
             if (comparison.categoryComparisons.isNotEmpty) ...[
               const SizedBox(height: 24),
@@ -142,9 +149,10 @@ class PeriodComparisonCard extends ConsumerWidget {
               ...comparison.categoryComparisons.values
                   .where((c) => c.isSignificant)
                   .take(5)
-                  .map((categoryComp) => _buildCategoryComparison(context, categoryComp, formatter)),
+                  .map((categoryComp) => _buildCategoryComparison(
+                      context, categoryComp, formatter)),
             ],
-            
+
             // Insights
             if (comparison.insights.isNotEmpty) ...[
               const SizedBox(height: 24),
@@ -176,30 +184,32 @@ class PeriodComparisonCard extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...comparison.insights.take(3).map((insight) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '• ',
-                            style: TextStyle(
-                              color: context.onSurfaceColor,
-                              fontSize: 16,
+                    ...comparison.insights.take(3).map(
+                          (insight) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '• ',
+                                  style: TextStyle(
+                                    color: context.onSurfaceColor,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    insight,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: context.onSurfaceColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              insight,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: context.onSurfaceColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
+                        ),
                   ],
                 ),
               ),
@@ -209,7 +219,7 @@ class PeriodComparisonCard extends ConsumerWidget {
       ),
     );
   }
-  
+
   Widget _buildComparisonItem(
     BuildContext context,
     String label,
@@ -247,7 +257,7 @@ class PeriodComparisonCard extends ConsumerWidget {
       ],
     );
   }
-  
+
   Widget _buildCategoryComparison(
     BuildContext context,
     CategoryComparison comp,
@@ -258,7 +268,7 @@ class PeriodComparisonCard extends ConsumerWidget {
         ? context.errorColor
         : (comp.changePercent < 0 ? Colors.green : context.onSurfaceColor);
     final categoryInfo = CategoryInfo.getInfo(comp.category);
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(

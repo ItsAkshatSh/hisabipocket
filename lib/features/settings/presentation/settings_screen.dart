@@ -68,6 +68,14 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _buildBudgetCard(context, ref),
                   const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Categorization'),
+                  const SizedBox(height: 16),
+                  _buildCategorizationCard(context, ref),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Data'),
+                  const SizedBox(height: 16),
+                  _buildDataCard(context, ref),
+                  const SizedBox(height: 32),
                   _buildSectionHeader(context, 'Account'),
                   const SizedBox(height: 16),
                   _buildAccountCard(context, ref),
@@ -103,69 +111,27 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: settings.themeSelection.name.toUpperCase(),
           onTap: () => _showThemePicker(context, ref, settings.themeSelection),
         ),
-        const Divider(height: 1, indent: 60),
-        _buildThemeModeRow(context, ref, settings),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.brightness_medium_outlined,
+          title: 'Theme Mode',
+          trailing: SegmentedButton<AppThemeMode>(
+            segments: const [
+              ButtonSegment(value: AppThemeMode.light, icon: Icon(Icons.light_mode_outlined, size: 20)),
+              ButtonSegment(value: AppThemeMode.dark, icon: Icon(Icons.dark_mode_outlined, size: 20)),
+              ButtonSegment(value: AppThemeMode.system, icon: Icon(Icons.settings_brightness_outlined, size: 20)),
+            ],
+            selected: {settings.themeMode},
+            onSelectionChanged: (value) => ref.read(settingsProvider.notifier).setThemeMode(value.first),
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
       ],
     ).animate().fadeIn().slideY(begin: 0.1);
-  }
-
-  Widget _buildThemeModeRow(BuildContext context, WidgetRef ref, SettingsState settings) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmall = constraints.maxWidth < 340;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.brightness_medium_outlined, 
-                      color: Theme.of(context).colorScheme.primary, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Theme Mode', 
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                  const Spacer(),
-                  if (!isSmall) _buildSegmentedThemeButton(ref, settings),
-                ],
-              ),
-              if (isSmall) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: _buildSegmentedThemeButton(ref, settings),
-                ),
-              ],
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSegmentedThemeButton(WidgetRef ref, SettingsState settings) {
-    return SegmentedButton<AppThemeMode>(
-      segments: const [
-        ButtonSegment(value: AppThemeMode.light, icon: Icon(Icons.light_mode_outlined, size: 18)),
-        ButtonSegment(value: AppThemeMode.dark, icon: Icon(Icons.dark_mode_outlined, size: 18)),
-        ButtonSegment(value: AppThemeMode.system, icon: Icon(Icons.settings_brightness_outlined, size: 18)),
-      ],
-      selected: {settings.themeMode},
-      onSelectionChanged: (value) => ref.read(settingsProvider.notifier).setThemeMode(value.first),
-      showSelectedIcon: false,
-      style: SegmentedButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
   }
 
   Widget _buildPreferenceCard(BuildContext context, WidgetRef ref, SettingsState settings) {
@@ -177,21 +143,21 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: settings.currency.name,
           onTap: () => _showCurrencyPicker(context, ref, settings.currency),
         ),
-        const Divider(height: 1, indent: 60),
+        const Divider(height: 1),
         _SettingsTile(
           icon: Icons.label_outlined,
           title: 'Receipt Naming',
           subtitle: settings.namingFormat.name.replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[0]}').toUpperCase(),
           onTap: () => _showNamingFormatPicker(context, ref, settings.namingFormat),
         ),
-        const Divider(height: 1, indent: 60),
+        const Divider(height: 1),
         _SettingsTile(
           icon: Icons.help_outline,
           title: 'Help & Tips',
           subtitle: 'Learn how to get the most from Hisabi',
           onTap: () => context.push('/help'),
         ),
-        const Divider(height: 1, indent: 60),
+        const Divider(height: 1),
         _SettingsTile(
           icon: Icons.school_outlined,
           title: 'Take the tour again',
@@ -225,19 +191,52 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: 'View and manage your budget',
           onTap: () => context.push('/budget-overview'),
         ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.edit_outlined,
+          title: 'Set Budget',
+          subtitle: 'Configure monthly budget',
+          onTap: () => context.push('/budget-setup'),
+        ),
       ],
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildCategorizationCard(BuildContext context, WidgetRef ref) {
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.rule_outlined,
+          title: 'Categorization Rules',
+          subtitle: 'Auto-categorize receipts',
+          onTap: () => context.push('/categorization-rules'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1);
+  }
+
+  Widget _buildDataCard(BuildContext context, WidgetRef ref) {
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.download_outlined,
+          title: 'Export Data',
+          subtitle: 'Export receipts to CSV or PDF',
+          onTap: () => context.push('/export'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1);
   }
 
   Widget _buildAccountCard(BuildContext context, WidgetRef ref) {
     return _SettingsCard(
       children: [
         _SettingsTile(
-          icon: Icons.account_circle_outlined,
+          icon: Icons.account_balance_wallet_outlined,
           title: 'Financial Profile',
           onTap: () => context.push('/financial-profile'),
         ),
-        const Divider(height: 1, indent: 60),
+        const Divider(height: 1),
         _SettingsTile(
           icon: Icons.logout_outlined,
           title: 'Logout',
@@ -300,14 +299,26 @@ class SettingsScreen extends ConsumerWidget {
   void _showCurrencyPicker(BuildContext context, WidgetRef ref, Currency current) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      enableDrag: true, 
       showDragHandle: true,
+      isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (context) => SafeArea(
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: Currency.values.length,
+          itemBuilder: (context, index) {
+            final currency = Currency.values[index];
+            return ListTile(
+              title: Text(currency.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+              selected: currency == current,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setCurrency(currency);
+                Navigator.pop(context);
+              },
+            );
+          },
+        ),
       ),
-      builder: (context) => _CurrencyPickerSheet(current: current),
     );
   }
 
@@ -334,102 +345,6 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _CurrencyPickerSheet extends StatefulWidget {
-  final Currency current;
-  const _CurrencyPickerSheet({required this.current});
-
-  @override
-  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
-}
-
-class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
-  final TextEditingController _searchController = TextEditingController();
-  List<Currency> _filteredCurrencies = Currency.values;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_filterCurrencies);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_filterCurrencies);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterCurrencies() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredCurrencies = Currency.values.where((c) {
-        return c.name.toLowerCase().contains(query);
-      }).toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search currency...',
-                prefixIcon: const Icon(Icons.search_rounded),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Consumer(
-              builder: (context, ref, child) => ListView.builder(
-                controller: scrollController,
-                itemCount: _filteredCurrencies.length,
-                itemBuilder: (context, index) {
-                  final currency = _filteredCurrencies[index];
-                  final isSelected = currency == widget.current;
-                  
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    title: Text(
-                      currency.name,
-                      style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                        color: isSelected ? Theme.of(context).colorScheme.primary : null,
-                      ),
-                    ),
-                    trailing: isSelected 
-                      ? Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary)
-                      : null,
-                    onTap: () {
-                      ref.read(settingsProvider.notifier).setCurrency(currency);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SettingsCard extends StatelessWidget {
   final List<Widget> children;
   const _SettingsCard({required this.children});
@@ -437,7 +352,6 @@ class _SettingsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(24),
@@ -445,10 +359,7 @@ class _SettingsCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 }
@@ -475,7 +386,7 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -484,14 +395,8 @@ class _SettingsTile extends StatelessWidget {
         ),
         child: Icon(icon, color: iconColor ?? Theme.of(context).colorScheme.primary, size: 22),
       ),
-      title: Text(
-        title, 
-        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: titleColor),
-      ),
-      subtitle: subtitle != null ? Text(
-        subtitle!, 
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
-      ) : null,
+      title: Text(title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: titleColor)),
+      subtitle: subtitle != null ? Text(subtitle!, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)) : null,
       trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right_rounded, size: 20) : null),
       onTap: onTap,
     );
