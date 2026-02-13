@@ -9,6 +9,8 @@ import 'package:hisabi/features/dashboard/presentation/widgets/budget_card.dart'
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
+import 'package:hisabi/features/insights/providers/spending_alerts_provider.dart';
+import 'package:hisabi/features/insights/models/spending_alert.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
 
 class DashboardNotification {
@@ -68,9 +70,16 @@ class DashboardScreen extends ConsumerWidget {
                               data: (value) => value,
                               orElse: () => false,
                             );
+                    
+                    final alertsAsync = ref.read(spendingAlertsProvider);
+                    final alerts = alertsAsync.maybeWhen(
+                      data: (value) => value,
+                      orElse: () => <SpendingAlert>[],
+                    );
 
                     final List<DashboardNotification> notifications = [];
 
+                    // 1. Weekly Wrapped Notification
                     if (shouldShowWrapped && stats != null) {
                       notifications.add(
                         DashboardNotification(
@@ -84,6 +93,20 @@ class DashboardScreen extends ConsumerWidget {
                       );
                     }
 
+                    // 2. Spending Alerts (Critical & Warning)
+                    for (final alert in alerts) {
+                      notifications.add(
+                        DashboardNotification(
+                          title: alert.title,
+                          message: alert.message,
+                          date: alert.detectedAt,
+                          isImportant: alert.severity == AlertSeverity.critical,
+                          onTap: () => context.go('/stats'),
+                        ),
+                      );
+                    }
+
+                    // 3. General Spending Snapshots
                     if (stats != null) {
                       notifications.add(
                         DashboardNotification(
@@ -93,22 +116,9 @@ class DashboardScreen extends ConsumerWidget {
                           date:
                               DateTime.now().subtract(const Duration(hours: 2)),
                           isImportant: false,
+                          onTap: () => context.go('/saved-receipts'),
                         ),
                       );
-
-                      if (stats.topStore.isNotEmpty) {
-                        notifications.add(
-                          DashboardNotification(
-                            title:
-                                'Top store this ${period.name.toLowerCase()}',
-                            message:
-                                'You\'re spending the most at ${stats.topStore}. Keep an eye on how often you shop there.',
-                            date: DateTime.now()
-                                .subtract(const Duration(days: 1)),
-                            isImportant: false,
-                          ),
-                        );
-                      }
                     }
 
                     _showNotificationsSheet(context, notifications);
@@ -641,11 +651,12 @@ void _showNotificationsSheet(
                       );
 
                       if (n.onTap != null) {
-                        tile = GestureDetector(
+                        tile = InkWell(
                           onTap: () {
                             Navigator.of(context).pop();
                             n.onTap!();
                           },
+                          borderRadius: BorderRadius.circular(16),
                           child: tile,
                         );
                       }
