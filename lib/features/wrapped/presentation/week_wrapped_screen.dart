@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/wrapped/providers/wrapped_provider.dart';
 import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
@@ -60,6 +60,7 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
                 _animationController.reset();
                 _animationController.forward();
                 
+                // If it's the first page, mark as viewed for this week
                 if (index == 0) {
                   _markWrappedAsViewed();
                 }
@@ -191,17 +192,14 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   
   Future<void> _markWrappedAsViewed() async {
     try {
-      final box = await Hive.openBox('app_preferences');
       final now = DateTime.now();
-      
       final daysToSubtract = now.weekday == 7 ? 0 : now.weekday;
       final sunday = now.subtract(Duration(days: daysToSubtract));
       final sundayStart = DateTime(sunday.year, sunday.month, sunday.day);
+      final weekId = 'wrapped_${sundayStart.year}_${sundayStart.month}_${sundayStart.day}';
       
-      final weekId = '${sundayStart.year}-${sundayStart.month.toString().padLeft(2, '0')}-${sundayStart.day.toString().padLeft(2, '0')}';
-      
-      await box.put('last_wrapped_week_id', weekId);
-      await box.put('last_wrapped_view', now.toIso8601String());
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_wrapped_week_id', weekId);
     } catch (e) {}
   }
   
