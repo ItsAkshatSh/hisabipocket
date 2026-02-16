@@ -302,23 +302,7 @@ class SettingsScreen extends ConsumerWidget {
       showDragHandle: true,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => SafeArea(
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: Currency.values.length,
-          itemBuilder: (context, index) {
-            final currency = Currency.values[index];
-            return ListTile(
-              title: Text(currency.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-              selected: currency == current,
-              onTap: () {
-                ref.read(settingsProvider.notifier).setCurrency(currency);
-                Navigator.pop(context);
-              },
-            );
-          },
-        ),
-      ),
+      builder: (context) => _CurrencyPickerSheet(current: current, ref: ref),
     );
   }
 
@@ -339,6 +323,76 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           )).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrencyPickerSheet extends StatefulWidget {
+  final Currency current;
+  final WidgetRef ref;
+
+  const _CurrencyPickerSheet({required this.current, required this.ref});
+
+  @override
+  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
+}
+
+class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredCurrencies = Currency.values
+        .where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+
+    return SafeArea(
+      child: Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: TextField(
+                onChanged: (value) => setState(() => _searchQuery = value),
+                decoration: InputDecoration(
+                  hintText: 'Search currency...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: filteredCurrencies.length,
+                itemBuilder: (context, index) {
+                  final currency = filteredCurrencies[index];
+                  return ListTile(
+                    title: Text(currency.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    selected: currency == widget.current,
+                    onTap: () {
+                      widget.ref.read(settingsProvider.notifier).setCurrency(currency);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

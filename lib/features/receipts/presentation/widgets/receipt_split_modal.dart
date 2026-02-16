@@ -64,7 +64,7 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
         amount: 0.0,
       ));
       _amountControllers[newId] = TextEditingController();
-      _labelControllers[newId] = TextEditingController(text: 'Split ${_splits.length}');
+      _labelControllers[newId] = TextEditingController(text: 'Split ${_splits.length + 1}');
       _categorySelections[newId] = null;
     });
   }
@@ -87,7 +87,8 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
 
     final updatedSplits = <ReceiptSplit>[];
     for (final split in _splits) {
-      final amount = double.tryParse(_amountControllers[split.id]?.text ?? '0') ?? 0.0;
+      final amountText = _amountControllers[split.id]?.text.replaceAll(',', '') ?? '0';
+      final amount = double.tryParse(amountText) ?? 0.0;
       final label = _labelControllers[split.id]?.text ?? split.label;
       if (amount > 0 && label.isNotEmpty) {
         updatedSplits.add(ReceiptSplit(
@@ -108,6 +109,7 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
       total: receipt.total,
       primaryCategory: receipt.primaryCategory,
       splits: updatedSplits,
+      currency: receipt.currency,
     );
 
     await ref.read(receiptProvider.notifier).updateReceipt(updatedReceipt);
@@ -125,170 +127,174 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
     final receiptAsync = ref.watch(receiptDetailsProvider(widget.receiptId));
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
-    final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
 
     return receiptAsync.when(
       data: (receipt) {
         final totalSplit = _splits.fold<double>(
           0.0,
-          (sum, split) => sum + (double.tryParse(_amountControllers[split.id]?.text ?? '0') ?? 0.0),
+          (sum, split) {
+            final text = _amountControllers[split.id]?.text.replaceAll(',', '') ?? '0';
+            return sum + (double.tryParse(text) ?? 0.0);
+          },
         );
         final remaining = receipt.total - totalSplit;
 
         return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            title: const Text('Split Receipt'),
+            title: const Text('Split Receipt', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24)),
+            centerTitle: false,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
             actions: [
               TextButton(
                 onPressed: _saveSplits,
-                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text('Save', style: TextStyle(
+                  fontWeight: FontWeight.w900, 
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 16,
+                )),
               ),
+              const SizedBox(width: 8),
             ],
           ),
           body: Column(
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                margin: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3)),
+                ),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        Text(
-                          formatter.format(receipt.total),
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    _buildSummaryRow(context, 'Total', '${receipt.currency.name} ${receipt.total.toStringAsFixed(2)}', isBold: true, fontSize: 24),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      child: Divider(height: 1),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Split Total',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          formatter.format(totalSplit),
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Remaining',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        Text(
-                          formatter.format(remaining),
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: remaining < 0 ? Colors.red : remaining > 0 ? Colors.orange : Colors.green,
-                          ),
-                        ),
-                      ],
+                    _buildSummaryRow(context, 'Split Total', '${receipt.currency.name} ${totalSplit.toStringAsFixed(2)}'),
+                    const SizedBox(height: 12),
+                    _buildSummaryRow(
+                      context, 
+                      'Remaining', 
+                      '${receipt.currency.name} ${remaining.toStringAsFixed(2)}',
+                      color: remaining < 0 ? Colors.red : remaining > 0 ? Colors.orange : Colors.green,
                     ),
                   ],
                 ),
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: _splits.length,
                   itemBuilder: (context, index) {
                     final split = _splits[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _labelControllers[split.id],
-                                    decoration: const InputDecoration(
-                                      labelText: 'Label',
-                                      border: OutlineInputBorder(),
-                                    ),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _labelControllers[split.id],
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  decoration: InputDecoration(
+                                    labelText: 'Label',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    filled: true,
+                                    fillColor: Theme.of(context).colorScheme.surface,
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () => _removeSplit(split.id),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _amountControllers[split.id],
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: 'Amount',
-                                prefixText: '${currency.name} ',
-                                border: const OutlineInputBorder(),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField<ExpenseCategory?>(
-                              value: _categorySelections[split.id],
-                              decoration: const InputDecoration(
-                                labelText: 'Category (Optional)',
-                                border: OutlineInputBorder(),
+                              const SizedBox(width: 12),
+                              IconButton.filledTonal(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () => _removeSplit(split.id),
                               ),
-                              items: [
-                                const DropdownMenuItem<ExpenseCategory?>(
-                                  value: null,
-                                  child: Text('None'),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: TextField(
+                                  controller: _amountControllers[split.id],
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  onChanged: (_) => setState(() {}),
+                                  decoration: InputDecoration(
+                                    labelText: 'Amount',
+                                    prefixText: '${receipt.currency.name} ',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    filled: true,
+                                    fillColor: Theme.of(context).colorScheme.surface,
+                                  ),
                                 ),
-                                ...ExpenseCategory.values.map((category) {
-                                  final info = CategoryInfo.getInfo(category);
-                                  return DropdownMenuItem<ExpenseCategory?>(
-                                    value: category,
-                                    child: Row(
-                                      children: [
-                                        Text(info.emoji),
-                                        const SizedBox(width: 8),
-                                        Text(info.name),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  _categorySelections[split.id] = value;
-                                });
-                              },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<ExpenseCategory?>(
+                            value: _categorySelections[split.id],
+                            decoration: InputDecoration(
+                              labelText: 'Category',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
-                          ],
-                        ),
+                            items: [
+                              const DropdownMenuItem<ExpenseCategory?>(
+                                value: null,
+                                child: Text('Default Category'),
+                              ),
+                              ...ExpenseCategory.values.map((category) {
+                                final info = CategoryInfo.getInfo(category);
+                                return DropdownMenuItem<ExpenseCategory?>(
+                                  value: category,
+                                  child: Row(
+                                    children: [
+                                      Text(info.emoji),
+                                      const SizedBox(width: 10),
+                                      Text(info.name),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _categorySelections[split.id] = value;
+                              });
+                            },
+                          ),
+                        ],
                       ),
                     );
                   },
                 ),
               ),
+              // Footer button
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + MediaQuery.of(context).viewPadding.bottom + 120), // Increased bottom padding to 120
                 child: ElevatedButton.icon(
                   onPressed: _addSplit,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Split'),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add Split Entry', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
+                    minimumSize: const Size(double.infinity, 56),
+                    backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                 ),
               ),
@@ -300,5 +306,28 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
       error: (err, stack) => Scaffold(body: Center(child: Text('Error: $err'))),
     );
   }
-}
 
+  Widget _buildSummaryRow(BuildContext context, String label, String value, {bool isBold = false, double fontSize = 16, Color? color}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: isBold ? FontWeight.w900 : FontWeight.w800,
+            fontSize: fontSize,
+            color: color ?? Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}
