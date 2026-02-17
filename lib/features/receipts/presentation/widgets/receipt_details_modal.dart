@@ -21,9 +21,11 @@ class ReceiptDetailsModal extends ConsumerWidget {
       maxChildSize: 0.95,
       builder: (_, controller) => receiptAsync.when(
         data: (receipt) {
-          final categoryInfo = receipt.primaryCategory != null 
-              ? CategoryInfo.getInfo(receipt.primaryCategory!) 
-              : null;
+          // Get primary category from receipt using the same logic as the budget card
+          final category = receipt.primaryCategory ?? receipt.calculatedPrimaryCategory;
+          final categoryInfo = category != null 
+              ? CategoryInfo.getInfo(category) 
+              : CategoryInfo.getInfo(ExpenseCategory.other);
 
           return Column(
             children: [
@@ -41,7 +43,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
               ),
               // Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -49,38 +51,11 @@ class ReceiptDetailsModal extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                receipt.name,
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (categoryInfo != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        categoryInfo.emoji,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        categoryInfo.name.toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w900,
-                                          color: categoryInfo.color,
-                                          letterSpacing: 1.0,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
+                          child: Text(
+                            receipt.name,
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         if (receipt.isSplit)
@@ -110,12 +85,24 @@ class ReceiptDetailsModal extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _buildInfoChip(context, Icons.store_outlined, receipt.store),
-                        const SizedBox(width: 12),
-                        _buildInfoChip(context, Icons.calendar_today_outlined, DateFormat('MMM d, yyyy').format(receipt.date)),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildInfoChip(
+                            context, 
+                            null, 
+                            categoryInfo.name, 
+                            emoji: categoryInfo.emoji,
+                            backgroundColor: categoryInfo.color.withOpacity(0.8), // High opacity colored chip
+                            labelColor: Colors.white,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildInfoChip(context, Icons.store_outlined, receipt.store),
+                          const SizedBox(width: 12),
+                          _buildInfoChip(context, Icons.calendar_today_outlined, DateFormat('MMM d, yyyy').format(receipt.date)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -131,6 +118,8 @@ class ReceiptDetailsModal extends ConsumerWidget {
                       return _buildSplitsSection(context, receipt);
                     }
                     final item = receipt.items[index];
+                    final itemCategoryInfo = item.category != null ? CategoryInfo.getInfo(item.category!) : null;
+                    
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                       title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -138,13 +127,13 @@ class ReceiptDetailsModal extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('${item.quantity.toInt()} x ${receipt.currency.name} ${item.price.toStringAsFixed(2)}'),
-                          if (item.category != null)
+                          if (itemCategoryInfo != null)
                             Text(
-                              CategoryInfo.getInfo(item.category!).name,
+                              itemCategoryInfo.name,
                               style: TextStyle(
-                                color: CategoryInfo.getInfo(item.category!).color,
+                                color: itemCategoryInfo.color,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                         ],
@@ -159,7 +148,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
               ),
               // Footer with Total and Actions
               Container(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + MediaQuery.of(context).viewPadding.bottom + 100), // Increased bottom padding significantly
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + MediaQuery.of(context).viewPadding.bottom + 120),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
@@ -226,24 +215,27 @@ class ReceiptDetailsModal extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
+  Widget _buildInfoChip(BuildContext context, IconData? icon, String label, {String? emoji, Color? backgroundColor, Color? labelColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), // Slightly taller
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.9), // Higher opacity
+        borderRadius: BorderRadius.circular(12), // Rounder corners
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
+          if (emoji != null)
+            Text(emoji, style: const TextStyle(fontSize: 16))
+          else if (icon != null)
+            Icon(icon, size: 16, color: labelColor ?? Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+              fontSize: 13, // Slightly larger
+              color: labelColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -288,7 +280,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 12,
                             color: splitCategoryInfo.color,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                     ],

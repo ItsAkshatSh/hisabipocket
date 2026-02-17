@@ -84,7 +84,7 @@ class _BudgetPlannerCardState extends State<BudgetPlannerCard> {
               [
                 _buildStatRow(
                   context,
-                  'Estimated Income',
+                  'Income',
                   formatter.format(widget.insights.estimatedIncome),
                 ),
                 _buildStatRow(
