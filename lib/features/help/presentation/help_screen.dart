@@ -9,8 +9,8 @@ class HelpScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: const Text('Help & Tips'),
+          const SliverAppBar.large(
+            title: Text('Help & Tips'),
             centerTitle: false,
           ),
           SliverPadding(
@@ -20,20 +20,20 @@ class HelpScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _buildSectionHeader(context, 'Getting started'),
                 const SizedBox(height: 16),
-                _HelpCard(
+                const _HelpCard(
                   children: [
                     _HelpTile(
                       question: 'How do I add a receipt?',
                       answer:
                           'Go to the Dashboard and tap "Add receipt". You can enter items manually or use the voice quick-add screen. Hisabi will try to categorize items for you automatically.',
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1),
                     _HelpTile(
                       question: 'What does the "Voice quick add" do?',
                       answer:
                           'Voice quick add lets you quickly log a simple expense by speaking, without filling all receipt details. It\'s great for on-the-go tracking.',
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1),
                     _HelpTile(
                       question: 'How do I view my saved receipts?',
                       answer:
@@ -44,20 +44,20 @@ class HelpScreen extends StatelessWidget {
                 const SizedBox(height: 32),
                 _buildSectionHeader(context, 'Insights & wrapped'),
                 const SizedBox(height: 16),
-                _HelpCard(
+                const _HelpCard(
                   children: [
                     _HelpTile(
                       question: 'How are my insights calculated?',
                       answer:
                           'Hisabi groups your spending by category using your receipts and recurring payments. We estimate income and highlight top categories, savings rate, and unusual activity.',
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1),
                     _HelpTile(
                       question: 'What is "Weekly wrapped"?',
                       answer:
                           'Weekly wrapped is a fun summary of your last week of spending, showing top stores, categories, and interesting patterns in a story-like format.',
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1),
                     _HelpTile(
                       question: 'How do budgets work?',
                       answer:
@@ -68,20 +68,20 @@ class HelpScreen extends StatelessWidget {
                 const SizedBox(height: 32),
                 _buildSectionHeader(context, 'Privacy & data'),
                 const SizedBox(height: 16),
-                _HelpCard(
+                const _HelpCard(
                   children: [
                     _HelpTile(
                       question: 'How is my data stored?',
                       answer:
                           'Your data is stored securely using Firebase. Only you can access your receipts and financial profile when signed in.',
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1),
                     _HelpTile(
                       question: 'Can I export my data?',
                       answer:
                           'Yes! Go to Settings → Export Data to download your receipts as CSV or PDF files.',
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1),
                     _HelpTile(
                       question: 'What about my financial profile?',
                       answer:

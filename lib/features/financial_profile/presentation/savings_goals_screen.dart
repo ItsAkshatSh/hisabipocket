@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/features/financial_profile/providers/goals_provider.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:intl/intl.dart';

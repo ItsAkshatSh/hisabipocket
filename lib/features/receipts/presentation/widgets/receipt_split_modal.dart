@@ -4,8 +4,6 @@ import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/receipts/models/receipt_split_model.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
-import 'package:hisabi/features/settings/providers/settings_provider.dart';
-import 'package:intl/intl.dart';
 
 class ReceiptSplitModal extends ConsumerStatefulWidget {
   final String receiptId;
@@ -125,8 +123,6 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
   @override
   Widget build(BuildContext context) {
     final receiptAsync = ref.watch(receiptDetailsProvider(widget.receiptId));
-    final settingsAsync = ref.watch(settingsProvider);
-    final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
 
     return receiptAsync.when(
       data: (receipt) {
@@ -244,7 +240,7 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<ExpenseCategory?>(
-                            value: _categorySelections[split.id],
+                            initialValue: _categorySelections[split.id],
                             decoration: InputDecoration(
                               labelText: 'Category',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

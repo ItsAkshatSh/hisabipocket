@@ -7,10 +7,6 @@ import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:intl/intl.dart';
 
-DateTime _getWeekStart(DateTime date) {
-  final weekday = date.weekday;
-  return date.subtract(Duration(days: weekday - 1));
-}
 
 final weekWrappedProvider = FutureProvider.autoDispose.family<WeekWrapped, DateTime?>((ref, weekStart) async {
   final receiptsAsync = ref.watch(receiptsStoreProvider);
@@ -351,7 +347,7 @@ WrappedCard _createTopCategoryCard(WrappedStats stats, NumberFormat formatter) {
   return WrappedCard(
     type: CardType.topCategory,
     title: 'Your top category',
-    subtitle: '${percentage}% of your spending',
+    subtitle: '$percentage% of your spending',
     mainValue: categoryInfo.name,
     secondaryValue: formatter.format(stats.topCategorySpending),
     backgroundColor: categoryInfo.color,

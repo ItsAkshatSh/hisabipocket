@@ -63,8 +63,6 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
             items: receipt.items,
             total: receipt.total,
             primaryCategory: receipt.primaryCategory,
-            currency: receipt.currency,
-            splits: receipt.splits,
           )
         : receipt;
 
@@ -88,35 +86,6 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
     }
   }
 
-  Future<void> update(ReceiptModel updatedReceipt) async {
-    final currentReceipts = state.valueOrNull ?? [];
-    final updatedReceipts = currentReceipts.map((r) => 
-      r.id == updatedReceipt.id ? updatedReceipt : r
-    ).toList();
-    
-    // Optimistically update UI first
-    state = AsyncValue.data(updatedReceipts);
-    _cachedReceipts = updatedReceipts;
-    _lastLoadTime = DateTime.now();
-
-    // Persist to storage in background
-    try {
-      final allReceipts = await StorageService.loadReceipts();
-      final index = allReceipts.indexWhere((r) => r.id == updatedReceipt.id);
-      if (index != -1) {
-        allReceipts[index] = updatedReceipt;
-        await StorageService.saveReceipts(allReceipts);
-      }
-    } catch (e) {
-      print('Error updating receipt in storage: $e');
-      // Revert on error
-      state = AsyncValue.data(currentReceipts);
-      _cachedReceipts = currentReceipts;
-      await loadReceipts(forceRefresh: true);
-      rethrow;
-    }
-  }
-
   Future<void> delete(String receiptId) async {
     final currentReceipts = state.valueOrNull ?? [];
     final updatedReceipts = currentReceipts.where((r) => r.id != receiptId).toList();
@@ -132,6 +101,32 @@ class ReceiptsStore extends StateNotifier<AsyncValue<List<ReceiptModel>>> {
     } catch (e) {
       print('Error deleting receipt from storage: $e');
       // Revert on error
+      state = AsyncValue.data(currentReceipts);
+      _cachedReceipts = currentReceipts;
+      await loadReceipts(forceRefresh: true);
+      rethrow;
+    }
+  }
+
+  /// Update an existing receipt; persists full list after modification.
+  Future<void> update(ReceiptModel updated) async {
+    final currentReceipts = state.valueOrNull ?? [];
+    final index = currentReceipts.indexWhere((r) => r.id == updated.id);
+    if (index == -1) return;
+
+    final updatedReceipts = List<ReceiptModel>.from(currentReceipts);
+    updatedReceipts[index] = updated;
+
+    state = AsyncValue.data(updatedReceipts);
+    _cachedReceipts = updatedReceipts;
+    _lastLoadTime = DateTime.now();
+
+    try {
+      // Persist the entire list since storage only supports saveAll semantics
+      await StorageService.saveReceipts(updatedReceipts);
+    } catch (e) {
+      print('Error updating receipt in storage: $e');
+      // revert on error
       state = AsyncValue.data(currentReceipts);
       _cachedReceipts = currentReceipts;
       await loadReceipts(forceRefresh: true);

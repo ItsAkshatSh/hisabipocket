@@ -66,12 +66,12 @@ class ReceiptDetailsModal extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: Colors.blue.withOpacity(0.2)),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.call_split, size: 14, color: Colors.blue),
-                                const SizedBox(width: 6),
-                                const Text(
+                                Icon(Icons.call_split, size: 14, color: Colors.blue),
+                                SizedBox(width: 6),
+                                Text(
                                   'SPLIT',
                                   style: TextStyle(
                                     color: Colors.blue,

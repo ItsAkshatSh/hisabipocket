@@ -46,14 +46,14 @@ class TermsOfServiceScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            _Section(
+            const _Section(
               title: '1. Acceptance of Terms',
               content:
                   'By accessing and using Hisabi, you accept and agree to be bound by the terms '
                   'and provision of this agreement.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '2. Use License',
               content:
                   'Permission is granted to temporarily use Hisabi for personal, non-commercial '
@@ -64,7 +64,7 @@ class TermsOfServiceScreen extends StatelessWidget {
                   '• Attempt to reverse engineer any software contained in the app',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '3. User Responsibilities',
               content: 'You are responsible for:\n\n'
                   '• Maintaining the confidentiality of your account\n'
@@ -73,7 +73,7 @@ class TermsOfServiceScreen extends StatelessWidget {
                   '• Backing up your data regularly',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '4. Service Availability',
               content:
                   'We strive to provide a reliable service, but we do not guarantee that the app '
@@ -81,7 +81,7 @@ class TermsOfServiceScreen extends StatelessWidget {
                   'or unforeseen circumstances.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '5. Data Accuracy',
               content:
                   'While we provide tools to help you track receipts, you are responsible for '
@@ -89,7 +89,7 @@ class TermsOfServiceScreen extends StatelessWidget {
                   'receipt data or calculations.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '6. Limitation of Liability',
               content:
                   'In no event shall Hisabi or its suppliers be liable for any damages arising '
@@ -97,14 +97,14 @@ class TermsOfServiceScreen extends StatelessWidget {
                   'possibility of such damage.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '7. Changes to Terms',
               content:
                   'We reserve the right to modify these terms at any time. We will notify users '
                   'of any material changes by updating the "Last updated" date.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '8. Termination',
               content:
                   'We may terminate or suspend your access to the app immediately, without prior '

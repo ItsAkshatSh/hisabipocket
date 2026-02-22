@@ -154,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       _BrandedSignInButton(
                         onPressed: _isLoading ? null : _handleLogin,
                         iconWidget: Image.network(
-                          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_\"G\"_logo.svg/1200px-Google_\"G\"_logo.svg.png',
+                          'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_"G"_logo.svg/1200px-Google_"G"_logo.svg.png',
                           width: 20,
                           height: 20,
                         ),

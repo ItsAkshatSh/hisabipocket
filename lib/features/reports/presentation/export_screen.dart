@@ -157,7 +157,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Column(
                 children: [
-                  Text('Error: $err', style: TextStyle(color: Colors.red)),
+                  Text('Error: $err', style: const TextStyle(color: Colors.red)),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _export,

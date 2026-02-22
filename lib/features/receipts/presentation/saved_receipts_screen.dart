@@ -116,7 +116,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                       ),
                     if (filters.startDate != null || filters.endDate != null)
                       Chip(
-                        label: Text('Date Range'),
+                        label: const Text('Date Range'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
                             filters.copyWith(clearStartDate: true, clearEndDate: true);
@@ -124,7 +124,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                       ),
                     if (filters.minAmount != null || filters.maxAmount != null)
                       Chip(
-                        label: Text('Amount Range'),
+                        label: const Text('Amount Range'),
                         onDeleted: () {
                           ref.read(receiptFiltersProvider.notifier).state = 
                             filters.copyWith(clearMinAmount: true, clearMaxAmount: true);
@@ -183,8 +183,8 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (r.isSplit)
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 8),
+                                      const Padding(
+                                        padding: EdgeInsets.only(right: 8),
                                         child: Icon(
                                           Icons.call_split,
                                           size: 16,
@@ -215,7 +215,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                       ),
                     ),
               loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (error, stack) => SliverFillRemaining(child: Center(child: Text('Error loading receipts'))),
+              error: (error, stack) => const SliverFillRemaining(child: Center(child: Text('Error loading receipts'))),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
@@ -261,7 +261,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
               ),
               const SizedBox(height: 20),
               DropdownButtonFormField<ExpenseCategory?>(
-                value: selectedCategory,
+                initialValue: selectedCategory,
                 decoration: const InputDecoration(
                   labelText: 'Category',
                   border: OutlineInputBorder(),

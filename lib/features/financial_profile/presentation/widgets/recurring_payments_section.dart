@@ -24,49 +24,92 @@ class RecurringPaymentsSection extends ConsumerWidget {
       decimalDigits: 2,
     );
 
-    return Column(
-      children: [
-        if (payments.isEmpty)
+    return _ProfileSection(
+      title: 'Recurring Payments',
+      icon: Icons.repeat_outlined,
+      child: Column(
+        children: [
+          // Header with Add Button
           Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.repeat_outlined,
-                  size: 48,
-                  color: context.onSurfaceMutedColor.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'No recurring payments',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: context.onSurfaceMutedColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add subscriptions, bills, and other regular payments',
-                  textAlign: TextAlign.center,
+                  '${payments.length} ${payments.length == 1 ? 'payment' : 'payments'}',
                   style: TextStyle(
                     fontSize: 14,
                     color: context.onSurfaceMutedColor,
                   ),
                 ),
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.primaryColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const AddRecurringPaymentModal(),
+                    );
+                  },
+                  tooltip: 'Add recurring payment',
+                ),
               ],
             ),
-          )
-        else
-          ...payments.map((payment) => _RecurringPaymentCard(
-                payment: payment,
-                formatter: formatter,
-                onDelete: () {
-                  ref
-                      .read(financialProfileProvider.notifier)
-                      .removeRecurringPayment(payment.id);
-                },
-              )),
-      ],
+          ),
+          if (payments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.repeat_outlined,
+                    size: 48,
+                    color: context.onSurfaceMutedColor.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No recurring payments',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: context.onSurfaceMutedColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add subscriptions, bills, and other regular payments',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.onSurfaceMutedColor,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...payments.map((payment) => _RecurringPaymentCard(
+                  payment: payment,
+                  formatter: formatter,
+                  onDelete: () {
+                    ref
+                        .read(financialProfileProvider.notifier)
+                        .removeRecurringPayment(payment.id);
+                  },
+                )),
+        ],
+      ),
     );
   }
 }
@@ -284,3 +327,51 @@ class _RecurringPaymentCard extends StatelessWidget {
     );
   }
 }
+
+class _ProfileSection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _ProfileSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: context.primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: context.onSurfaceColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: context.surfaceColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: context.borderColor,
+              width: 1,
+            ),
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+

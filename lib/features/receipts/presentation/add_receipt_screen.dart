@@ -328,7 +328,7 @@ class _ManualEntryTabState extends ConsumerState<_ManualEntryTab> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<Currency>(
-                      value: _selectedCurrency,
+                      initialValue: _selectedCurrency,
                       decoration: const InputDecoration(
                         labelText: 'Currency',
                         border: OutlineInputBorder(),

@@ -189,75 +189,75 @@ class RecurringPaymentPreset {
 }
 
 final recurringPaymentPresets = [
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Netflix',
     iconName: 'netflix',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Entertainment',
-    color: const Color(0xFFE50914),
+    color: Color(0xFFE50914),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Spotify',
     iconName: 'spotify',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Entertainment',
-    color: const Color(0xFF1DB954),
+    color: Color(0xFF1DB954),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Amazon Prime',
     iconName: 'amazon',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Shopping',
-    color: const Color(0xFFFF9900),
+    color: Color(0xFFFF9900),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'YouTube Premium',
     iconName: 'youtube',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Entertainment',
-    color: const Color(0xFFFF0000),
+    color: Color(0xFFFF0000),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Phone Bill',
     iconName: 'phone',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Utilities',
-    color: const Color(0xFF2196F3),
+    color: Color(0xFF2196F3),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Rent',
     iconName: 'home',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Housing',
-    color: const Color(0xFF9C27B0),
+    color: Color(0xFF9C27B0),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Gym Membership',
     iconName: 'fitness',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Health',
-    color: const Color(0xFF4CAF50),
+    color: Color(0xFF4CAF50),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Internet',
     iconName: 'wifi',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Utilities',
-    color: const Color(0xFF00BCD4),
+    color: Color(0xFF00BCD4),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Electricity',
     iconName: 'bolt',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Utilities',
-    color: const Color(0xFFFFC107),
+    color: Color(0xFFFFC107),
   ),
-  RecurringPaymentPreset(
+  const RecurringPaymentPreset(
     name: 'Insurance',
     iconName: 'shield',
     defaultFrequency: PaymentFrequency.monthly,
     category: 'Insurance',
-    color: const Color(0xFF607D8B),
+    color: Color(0xFF607D8B),
   ),
 ];
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/settings/models/categorization_rule_model.dart';
 import 'package:hisabi/features/settings/providers/categorization_rules_provider.dart';
-import 'package:go_router/go_router.dart';
 
 class CategorizationRulesScreen extends ConsumerWidget {
   const CategorizationRulesScreen({super.key});
@@ -132,7 +131,7 @@ class CategorizationRulesScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<RuleMatchType>(
-                  value: selectedMatchType,
+                  initialValue: selectedMatchType,
                   decoration: const InputDecoration(labelText: 'Match Type'),
                   items: RuleMatchType.values.map((type) {
                     return DropdownMenuItem(
@@ -148,7 +147,7 @@ class CategorizationRulesScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<ExpenseCategory>(
-                  value: selectedCategory,
+                  initialValue: selectedCategory,
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: ExpenseCategory.values.map((category) {
                     final info = CategoryInfo.getInfo(category);

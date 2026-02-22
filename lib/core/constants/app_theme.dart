@@ -23,7 +23,6 @@ class AppTheme {
     final baseTheme = brightness == Brightness.dark ? ThemeData.dark() : ThemeData.light();
     
     return baseTheme.copyWith(
-      useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: colorScheme.surface,
       

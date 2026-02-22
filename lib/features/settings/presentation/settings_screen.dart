@@ -83,7 +83,7 @@ class SettingsScreen extends ConsumerWidget {
                 ]),
               ),
               loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (err, stack) => SliverFillRemaining(child: Center(child: Text('Error loading settings'))),
+              error: (err, stack) => const SliverFillRemaining(child: Center(child: Text('Error loading settings'))),
             ),
           ),
         ],

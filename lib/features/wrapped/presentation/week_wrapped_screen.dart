@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/wrapped/providers/wrapped_provider.dart';
 import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
-import 'package:hisabi/core/constants/app_theme.dart';
 
 class WeekWrappedScreen extends ConsumerStatefulWidget {
   final DateTime? weekStart;

@@ -46,7 +46,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            _Section(
+            const _Section(
               title: '1. Information We Collect',
               content:
                   'Hisabi collects and stores the following information locally on your device:\n\n'
@@ -55,7 +55,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   '• Authentication information (email, name, profile picture)',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '2. Data Storage',
               content:
                   'All data is stored locally on your device using secure local storage. '
@@ -63,14 +63,14 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   'choose to sync with a backend service.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '3. Data Usage',
               content:
                   'Your data is used solely to provide the receipt tracking and analysis features. '
                   'We do not sell, share, or use your data for advertising purposes.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '4. Third-Party Services',
               content:
                   'Hisabi uses Google Sign-In for authentication. When you sign in with Google, '
@@ -78,21 +78,21 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   'locally and used only for authentication purposes.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '5. Data Export and Deletion',
               content:
                   'You can export your data at any time through the Settings screen. '
                   'You can also delete all data using the "Clear All Data" option in Settings.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '6. Changes to This Policy',
               content:
                   'We may update this Privacy Policy from time to time. We will notify you of any '
                   'changes by updating the "Last updated" date at the top of this policy.',
             ),
             const SizedBox(height: 24),
-            _Section(
+            const _Section(
               title: '7. Contact Us',
               content:
                   'If you have any questions about this Privacy Policy, please contact us through '
