@@ -231,10 +231,8 @@ class _BudgetPlannerCardState extends State<BudgetPlannerCard> {
   }
 
   Widget _buildCategoryBudgetItem(BuildContext context, NumberFormat formatter, MapEntry<String, double> entry) {
-    final category = ExpenseCategory.values.firstWhere(
-      (c) => c.name == entry.key,
-      orElse: () => ExpenseCategory.other,
-    );
+    // Use the robust mapping logic instead of simple lookup
+    final category = CategoryInfo.mapStringToCategory(entry.key);
     final categoryInfo = CategoryInfo.getInfo(category);
     final currentSpending = widget.insights.categorySpending[category] ?? 0.0;
     final budget = entry.value;
@@ -304,10 +302,7 @@ class _BudgetPlannerCardState extends State<BudgetPlannerCard> {
     if (budgets != null) {
       final categoryBudgets = <ExpenseCategory, double>{};
       for (final entry in budgets.entries) {
-        final category = ExpenseCategory.values.firstWhere(
-          (c) => c.name == entry.key,
-          orElse: () => ExpenseCategory.other,
-        );
+        final category = CategoryInfo.mapStringToCategory(entry.key);
         categoryBudgets[category] = entry.value;
       }
       context.push('/budget-setup', extra: categoryBudgets);
@@ -349,14 +344,15 @@ class _BudgetPlannerCardState extends State<BudgetPlannerCard> {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: context.onSurfaceMutedColor,
+              color: isHighlight ? context.onSurfaceColor : context.onSurfaceMutedColor,
+              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
               color: context.onSurfaceColor,
             ),
           ),

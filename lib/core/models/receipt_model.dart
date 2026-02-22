@@ -104,19 +104,53 @@ class ReceiptModel {
 
   // Factory constructor for full detail
   factory ReceiptModel.fromDetailJson(Map<String, dynamic> json) {
+    final data = (json['data'] is Map)
+        ? Map<String, dynamic>.from(json['data'] as Map)
+        : json;
+
+    final currencyName = (json['currency'] ?? data['currency']) as String?;
+    final parsedCurrency = currencyName != null
+        ? Currency.values.firstWhere(
+            (c) => c.name == currencyName,
+            orElse: () => Currency.USD,
+          )
+        : Currency.USD;
+
+    final splits = (json['splits'] ?? data['splits']) is List
+        ? (List.from((json['splits'] ?? data['splits']) as List)
+            .map((split) => ReceiptSplit.fromJson(Map<String, dynamic>.from(split)))
+            .toList())
+        : <ReceiptSplit>[];
+
     return ReceiptModel(
-      id: json['id'],
-      name: json['name'],
-      date: DateTime.parse(json['data']['date']),
-      store: json['data']['store'],
-      items: (json['data']['items'] as List)
-          .map((i) => ReceiptItem(
-              name: i['name'], 
-              quantity: i['quantity'].toDouble(), 
-              price: i['price'].toDouble(), 
-              total: i['total'].toDouble()
-          )).toList(),
-      total: json['data']['total'].toDouble(),
+      id: (json['id'] ?? data['id'])?.toString() ?? '',
+      name: (json['name'] ?? data['name']) as String? ?? '',
+      date: DateTime.tryParse((data['date'] ?? json['date'])?.toString() ?? '') ?? DateTime.now(),
+      store: (data['store'] ?? json['store']) as String? ?? '',
+      items: (data['items'] is List)
+          ? (data['items'] as List)
+              .map((i) {
+                final itemMap = i is Map ? Map<String, dynamic>.from(i) : <String, dynamic>{};
+                final categoryName = itemMap['category'] as String?;
+                final category = categoryName != null
+                    ? ExpenseCategory.values.firstWhere(
+                        (c) => c.name == categoryName,
+                        orElse: () => ExpenseCategory.other,
+                      )
+                    : null;
+                return ReceiptItem(
+                  name: itemMap['name'] as String? ?? '',
+                  quantity: (itemMap['quantity'] as num?)?.toDouble() ?? 0.0,
+                  price: (itemMap['price'] as num?)?.toDouble() ?? 0.0,
+                  total: (itemMap['total'] as num?)?.toDouble() ?? 0.0,
+                  category: category,
+                );
+              })
+              .toList()
+          : <ReceiptItem>[],
+      total: (data['total'] as num?)?.toDouble() ?? 0.0,
+      splits: splits,
+      currency: parsedCurrency,
     );
   }
 }

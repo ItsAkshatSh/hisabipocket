@@ -31,7 +31,7 @@ class AIService {
             {
               'role': 'system',
               'content':
-                  'You are a financial categorization assistant. Return only valid JSON. Use lowercase category names matching ExpenseCategory enum: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.',
+                  'You are a financial categorization assistant. Return only valid JSON. Categorize items into: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.',
             },
             {
               'role': 'user',
@@ -46,7 +46,7 @@ class AIService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final content = data['choices'][0]['message']['content'];
-        return _parseCategorizationResponse(content, itemNames);
+        return _parseCategorizationResponse(content, itemNames, storeName);
       }
     } catch (e) {
       print('AI categorization error: $e');
@@ -83,35 +83,47 @@ Return only the JSON object, no other text.
   Map<String, ExpenseCategory> _parseCategorizationResponse(
     String jsonContent,
     List<String> itemNames,
+    String storeName,
   ) {
     try {
       final data = jsonDecode(jsonContent);
       final items = data['items'] as Map<String, dynamic>?;
-      if (items == null) return _fallbackCategorization(itemNames, '');
+      if (items == null) return _fallbackCategorization(itemNames, storeName);
 
       final result = <String, ExpenseCategory>{};
 
       for (final entry in items.entries) {
-        final categoryName = entry.value.toString().toLowerCase();
-        final category = ExpenseCategory.values.firstWhere(
-          (c) => c.name == categoryName,
-          orElse: () => ExpenseCategory.other,
-        );
-        result[entry.key] = category;
+        final categoryName = entry.value.toString();
+        // Use the robust mapStringToCategory which handles synonyms and keywords
+        result[entry.key] = CategoryInfo.mapStringToCategory(categoryName);
       }
 
       // Ensure all items are categorized
       for (final item in itemNames) {
-        if (!result.containsKey(item)) {
-          result[item] = ExpenseCategory.other;
+        if (!result.containsKey(item) || result[item] == ExpenseCategory.other) {
+          // If AI failed or said 'other', try keyword fallback for this specific item
+          result[item] = _categorizeSingleItemFallback(item, storeName);
         }
       }
 
       return result;
     } catch (e) {
       print('Error parsing AI response: $e');
-      return _fallbackCategorization(itemNames, '');
+      return _fallbackCategorization(itemNames, storeName);
     }
+  }
+
+  ExpenseCategory _categorizeSingleItemFallback(String item, String store) {
+    final itemLower = item.toLowerCase();
+    final storeLower = store.toLowerCase();
+
+    for (final catEntry in CategoryInfo.categories.entries) {
+      if (catEntry.value.keywords.any((keyword) => 
+          itemLower.contains(keyword) || storeLower.contains(keyword))) {
+        return catEntry.key;
+      }
+    }
+    return ExpenseCategory.other;
   }
 
   Map<String, ExpenseCategory> _fallbackCategorization(
@@ -119,24 +131,9 @@ Return only the JSON object, no other text.
     String store,
   ) {
     final result = <String, ExpenseCategory>{};
-    final storeLower = store.toLowerCase();
-
     for (final item in items) {
-      final itemLower = item.toLowerCase();
-      ExpenseCategory? category;
-
-      // Use the updated CategoryInfo keywords
-      for (final catEntry in CategoryInfo.categories.entries) {
-        if (catEntry.value.keywords.any((keyword) => 
-            itemLower.contains(keyword) || storeLower.contains(keyword))) {
-          category = catEntry.key;
-          break;
-        }
-      }
-
-      result[item] = category ?? ExpenseCategory.other;
+      result[item] = _categorizeSingleItemFallback(item, store);
     }
-
     return result;
   }
 
@@ -295,7 +292,7 @@ CRITICAL INSTRUCTIONS:
             {
               'role': 'system',
               'content':
-                  'You are a creative financial storyteller. Generate engaging, fun narratives about spending patterns in a Spotify Wrapped style. Be concise, friendly, and use emojis. Use the correct currency code provided.',
+                  'You are a financial storyteller. Generate engaging, fun narratives about spending patterns in a Spotify Wrapped style. Be concise, friendly, and use emojis. Use the correct currency code provided.',
             },
             {
               'role': 'user',

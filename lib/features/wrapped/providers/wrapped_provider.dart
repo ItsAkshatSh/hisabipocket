@@ -48,7 +48,7 @@ Future<WeekWrapped> _generateWrapped(
   final funFacts = _generateFunFacts(receipts, stats);
   final topMoments = _getTopMoments(receipts);
   
-  final formatter = NumberFormat.currency(symbol: currencyCode, decimalDigits: 2);
+  final formatter = NumberFormat.simpleCurrency(name: currencyCode, decimalDigits: 2);
   
   // Generate cards
   final cards = <WrappedCard>[
@@ -199,7 +199,7 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
   double weekendTotal = 0.0;
   double weekdayTotal = 0.0;
   for (final r in receipts) {
-    if (r.date.weekday >= 5) { // Friday, Saturday, Sunday
+    if (r.date.weekday >= 6) {
       weekendTotal += r.total;
     } else {
       weekdayTotal += r.total;
@@ -259,8 +259,8 @@ List<FunFact> _generateFunFacts(List<ReceiptModel> receipts, WrappedStats stats)
       if (name.contains('coffee') || name.contains('latte') || name.contains('cappuccino')) {
         coffeeTotal += item.total;
       }
-      if (r.items.any((i) => i.category == ExpenseCategory.food)) {
-        foodTotal += r.total;
+      if (item.category == ExpenseCategory.food) {
+        foodTotal += item.total;
       }
     }
   }
