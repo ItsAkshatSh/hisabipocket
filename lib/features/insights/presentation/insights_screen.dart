@@ -9,6 +9,7 @@ import 'package:hisabi/features/insights/widgets/period_comparison_card.dart';
 import 'package:hisabi/features/insights/widgets/budget_planner_card.dart';
 import 'package:hisabi/features/insights/widgets/ai_insights_card.dart';
 import 'package:hisabi/features/insights/widgets/spending_analysis_card.dart';
+import 'package:hisabi/features/insights/widgets/subscription_detective_card.dart';
 
 class InsightsScreen extends ConsumerWidget {
   const InsightsScreen({super.key});
@@ -32,7 +33,11 @@ class InsightsScreen extends ConsumerWidget {
                   QuickStatsHeader(insights: insights),
                   const SizedBox(height: 24),
                   
-                  // Alerts - Spending Alerts are perfect here
+                  // Subscription Detective - New Feature!
+                  const SubscriptionDetectiveCard(),
+                  const SizedBox(height: 24),
+                  
+                  // Alerts - Spending Alerts
                   ref.watch(spendingAlertsProvider).maybeWhen(
                     data: (alerts) => alerts.isEmpty ? const SizedBox.shrink() : Column(
                       children: [
@@ -59,7 +64,7 @@ class InsightsScreen extends ConsumerWidget {
                   AIInsightsCard(insights: insights),
                   const SizedBox(height: 24),
                   SpendingAnalysisCard(insights: insights),
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 120),
                 ]),
               ),
               loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
