@@ -25,10 +25,10 @@ class RecurringPayment {
 
   DateTime get calculatedNextDueDate {
     if (nextDueDate != null) return nextDueDate!;
-    
+
     final now = DateTime.now();
     DateTime next = startDate;
-    
+
     while (next.isBefore(now) || next.isAtSameMomentAs(now)) {
       switch (frequency) {
         case PaymentFrequency.weekly:
@@ -48,7 +48,7 @@ class RecurringPayment {
           break;
       }
     }
-    
+
     return next;
   }
 
@@ -260,4 +260,3 @@ final recurringPaymentPresets = [
     color: Color(0xFF607D8B),
   ),
 ];
-

@@ -76,7 +76,8 @@ class StorageService {
     await firebase.FirebaseStorageService.deleteBudget();
   }
 
-  static Future<void> saveCategorizationRules(List<CategorizationRule> rules) async {
+  static Future<void> saveCategorizationRules(
+      List<CategorizationRule> rules) async {
     await firebase.FirebaseStorageService.saveCategorizationRules(rules);
   }
 

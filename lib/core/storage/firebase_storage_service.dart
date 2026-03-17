@@ -43,8 +43,9 @@ class FirebaseStorageService {
           .collection('receipts')
           .doc('list')
           .set({'receipts': receiptsJson});
-      
-      print('✅ Saved ${receipts.length} receipts to Firebase for user: $userId');
+
+      print(
+          '✅ Saved ${receipts.length} receipts to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving receipts to Firebase: $e');
       print('Stack trace: $stackTrace');
@@ -74,7 +75,7 @@ class FirebaseStorageService {
 
       final data = doc.data()!;
       final receiptsData = data['receipts'] as List?;
-      
+
       if (receiptsData == null) {
         return [];
       }
@@ -94,7 +95,8 @@ class FirebaseStorageService {
           .whereType<ReceiptModel>()
           .toList();
 
-      print('Successfully loaded ${loadedReceipts.length} receipts from Firebase');
+      print(
+          'Successfully loaded ${loadedReceipts.length} receipts from Firebase');
       return loadedReceipts;
     } catch (e) {
       print('Error loading receipts from Firebase: $e');
@@ -144,20 +146,16 @@ class FirebaseStorageService {
     }
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set({
-            'settings': {
-              'currency': settings.currency.name,
-              'namingFormat': settings.namingFormat.name,
-              'themeMode': settings.themeMode.name,
-              'themeSelection': settings.themeSelection.name,
-              'widgetSettings': settings.widgetSettings.toJson(),
-            }
-          }, SetOptions(merge: true))
-          .timeout(const Duration(seconds: 10));
-      
+      await _firestore.collection('users').doc(userId).set({
+        'settings': {
+          'currency': settings.currency.name,
+          'namingFormat': settings.namingFormat.name,
+          'themeMode': settings.themeMode.name,
+          'themeSelection': settings.themeSelection.name,
+          'widgetSettings': settings.widgetSettings.toJson(),
+        }
+      }, SetOptions(merge: true)).timeout(const Duration(seconds: 10));
+
       print('✅ Settings saved to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving settings to Firebase: $e');
@@ -186,7 +184,7 @@ class FirebaseStorageService {
 
       final data = doc.data()!;
       final settingsData = data['settings'] as Map<String, dynamic>?;
-      
+
       if (settingsData == null) {
         return SettingsState();
       }
@@ -226,7 +224,8 @@ class FirebaseStorageService {
 
       final widgetSettingsData = settingsData['widgetSettings'];
       final widgetSettings = widgetSettingsData != null
-          ? WidgetSettings.fromJson(Map<String, dynamic>.from(widgetSettingsData))
+          ? WidgetSettings.fromJson(
+              Map<String, dynamic>.from(widgetSettingsData))
           : WidgetSettings();
 
       print('Settings loaded from Firebase for user: $userId');
@@ -251,13 +250,10 @@ class FirebaseStorageService {
     }
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set({
-            'financialProfile': profile.toJson(),
-          }, SetOptions(merge: true));
-      
+      await _firestore.collection('users').doc(userId).set({
+        'financialProfile': profile.toJson(),
+      }, SetOptions(merge: true));
+
       print('✅ Financial profile saved to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving financial profile to Firebase: $e');
@@ -274,10 +270,7 @@ class FirebaseStorageService {
     }
 
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
+      final doc = await _firestore.collection('users').doc(userId).get();
 
       if (!doc.exists || doc.data() == null) {
         print('No financial profile found in Firebase');
@@ -306,13 +299,10 @@ class FirebaseStorageService {
     }
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set({
-            'budget': budget.toJson(),
-          }, SetOptions(merge: true));
-      
+      await _firestore.collection('users').doc(userId).set({
+        'budget': budget.toJson(),
+      }, SetOptions(merge: true));
+
       print('✅ Budget saved to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving budget to Firebase: $e');
@@ -329,10 +319,7 @@ class FirebaseStorageService {
     }
 
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
+      final doc = await _firestore.collection('users').doc(userId).get();
 
       if (!doc.exists || doc.data() == null) {
         print('No budget found in Firebase');
@@ -362,13 +349,10 @@ class FirebaseStorageService {
     }
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .update({
-            'budget': FieldValue.delete(),
-          });
-      
+      await _firestore.collection('users').doc(userId).update({
+        'budget': FieldValue.delete(),
+      });
+
       print('✅ Budget deleted from Firebase for user: $userId');
     } catch (e) {
       print('❌ Error deleting budget: $e');
@@ -376,20 +360,18 @@ class FirebaseStorageService {
     }
   }
 
-  static Future<void> saveCategorizationRules(List<CategorizationRule> rules) async {
+  static Future<void> saveCategorizationRules(
+      List<CategorizationRule> rules) async {
     final userId = currentUserId;
     if (userId == null) {
       throw Exception('User not authenticated');
     }
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set({
-            'categorizationRules': rules.map((r) => r.toJson()).toList(),
-          }, SetOptions(merge: true));
-      
+      await _firestore.collection('users').doc(userId).set({
+        'categorizationRules': rules.map((r) => r.toJson()).toList(),
+      }, SetOptions(merge: true));
+
       print('✅ Categorization rules saved to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving categorization rules to Firebase: $e');
@@ -406,10 +388,7 @@ class FirebaseStorageService {
     }
 
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
+      final doc = await _firestore.collection('users').doc(userId).get();
 
       if (!doc.exists || doc.data() == null) {
         print('No categorization rules found in Firebase');
@@ -425,7 +404,8 @@ class FirebaseStorageService {
 
       print('Categorization rules loaded from Firebase for user: $userId');
       return rulesData
-          .map((item) => CategorizationRule.fromJson(Map<String, dynamic>.from(item)))
+          .map((item) =>
+              CategorizationRule.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     } catch (e) {
       print('Error loading categorization rules from Firebase: $e');
@@ -440,13 +420,10 @@ class FirebaseStorageService {
     }
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .set({
-            'savingsGoals': goals.map((g) => g.toJson()).toList(),
-          }, SetOptions(merge: true));
-      
+      await _firestore.collection('users').doc(userId).set({
+        'savingsGoals': goals.map((g) => g.toJson()).toList(),
+      }, SetOptions(merge: true));
+
       print('✅ Savings goals saved to Firebase for user: $userId');
     } catch (e, stackTrace) {
       print('❌ Error saving savings goals to Firebase: $e');
@@ -463,10 +440,7 @@ class FirebaseStorageService {
     }
 
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .get();
+      final doc = await _firestore.collection('users').doc(userId).get();
 
       if (!doc.exists || doc.data() == null) {
         print('No savings goals found in Firebase');
@@ -498,15 +472,15 @@ class FirebaseStorageService {
 
     final batch = _firestore.batch();
     final userRef = _firestore.collection('users').doc(userId);
-    
+
     batch.delete(userRef);
-    
+
     final receiptsRef = userRef.collection('receipts');
     final receiptsSnapshot = await receiptsRef.get();
     for (var doc in receiptsSnapshot.docs) {
       batch.delete(doc.reference);
     }
-    
+
     await batch.commit();
     print('All user data cleared from Firebase');
   }
@@ -538,33 +512,30 @@ class FirebaseStorageService {
       name: json['name'] as String? ?? '',
       date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
       store: json['store'] as String? ?? '',
-      items: (json['items'] as List?)
-              ?.map((item) {
-                final categoryName = item['category'] as String?;
-                final category = categoryName != null
-                    ? ExpenseCategory.values.firstWhere(
-                        (c) => c.name == categoryName,
-                        orElse: () => ExpenseCategory.other,
-                      )
-                    : null;
-                return ReceiptItem(
-                  name: item['name'] as String? ?? '',
-                  quantity: (item['quantity'] as num?)?.toDouble() ?? 0.0,
-                  price: (item['price'] as num?)?.toDouble() ?? 0.0,
-                  total: (item['total'] as num?)?.toDouble() ?? 0.0,
-                  category: category,
-                );
-              })
-              .toList() ??
+      items: (json['items'] as List?)?.map((item) {
+            final categoryName = item['category'] as String?;
+            final category = categoryName != null
+                ? ExpenseCategory.values.firstWhere(
+                    (c) => c.name == categoryName,
+                    orElse: () => ExpenseCategory.other,
+                  )
+                : null;
+            return ReceiptItem(
+              name: item['name'] as String? ?? '',
+              quantity: (item['quantity'] as num?)?.toDouble() ?? 0.0,
+              price: (item['price'] as num?)?.toDouble() ?? 0.0,
+              total: (item['total'] as num?)?.toDouble() ?? 0.0,
+              category: category,
+            );
+          }).toList() ??
           [],
       total: (json['total'] as num?)?.toDouble() ?? 0.0,
       splits: (json['splits'] as List?)
-              ?.map((split) => ReceiptSplit.fromJson(Map<String, dynamic>.from(split)))
+              ?.map((split) =>
+                  ReceiptSplit.fromJson(Map<String, dynamic>.from(split)))
               .toList() ??
           [],
       currency: currency,
     );
   }
 }
-
-

@@ -91,8 +91,8 @@ class FinancialProfile {
         'savingsGoalPercentage': savingsGoalPercentage,
         'emergencyFundTarget': emergencyFundTarget,
         'customBudgetLimits': customBudgetLimits?.map(
-              (k, v) => MapEntry(k.name, v),
-            ),
+          (k, v) => MapEntry(k.name, v),
+        ),
         'employmentStatus': employmentStatus?.name,
         'familySize': familySize,
         'primaryPriority': primaryPriority?.name,
@@ -152,4 +152,3 @@ class FinancialProfile {
     );
   }
 }
-

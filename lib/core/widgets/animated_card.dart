@@ -106,4 +106,3 @@ class _AnimatedCardState extends State<AnimatedCard>
     );
   }
 }
-

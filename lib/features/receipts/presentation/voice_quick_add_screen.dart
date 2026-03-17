@@ -492,8 +492,11 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Theme.of(context).colorScheme.onPrimary,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary,
                                         ),
                                       ),
                                     )
@@ -751,7 +754,7 @@ class _MicrophoneButton extends StatelessWidget {
                     ),
                   ],
                 ),
-                  child: Icon(
+                child: Icon(
                   isListening ? Icons.mic : Icons.mic_none,
                   color: isListening
                       ? Theme.of(context).colorScheme.onPrimary
