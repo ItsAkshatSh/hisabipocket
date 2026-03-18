@@ -7,6 +7,8 @@ import 'package:hisabi/features/receipts/providers/receipt_filter_provider.dart'
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/core/models/category_model.dart';
+import 'package:hisabi/core/widgets/app_bottom_sheet.dart';
+import 'package:hisabi/core/widgets/app_snackbar.dart';
 
 class SavedReceiptsScreen extends ConsumerStatefulWidget {
   const SavedReceiptsScreen({super.key});
@@ -39,6 +41,7 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
           await ref.read(receiptsStoreProvider.notifier).refresh();
         },
         child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverAppBar.large(
@@ -64,6 +67,13 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                   icon: const Icon(Icons.refresh_rounded),
                   onPressed: () async {
                     await ref.read(receiptsStoreProvider.notifier).refresh();
+                    if (context.mounted) {
+                      showAppSnackBar(
+                        context,
+                        message: 'Receipts refreshed',
+                        icon: Icons.check_circle_rounded,
+                      );
+                    }
                   },
                 ),
                 IconButton(
@@ -201,11 +211,11 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                                     ),
                                   ],
                                 ),
-                                onTap: () => showModalBottomSheet(
+                                onTap: () => showAppBottomSheet(
                                   context: context,
-                                  isScrollControlled: true,
                                   backgroundColor: Colors.transparent,
-                                  builder: (_) => ReceiptDetailsModal(receiptId: r.id),
+                                  builder: (_) =>
+                                      ReceiptDetailsModal(receiptId: r.id),
                                 ),
                               ),
                             ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.1),
@@ -240,11 +250,8 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
       text: currentFilters.storeFilter ?? '',
     );
 
-    showModalBottomSheet(
+    showAppBottomSheet(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => SafeArea(
         child: StatefulBuilder(
         builder: (context, setState) => Padding(

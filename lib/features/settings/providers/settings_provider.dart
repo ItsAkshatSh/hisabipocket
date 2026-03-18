@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
 enum Currency { 
   USD, EUR, GBP, JPY, CNY, INR, AUD, CAD, 
@@ -117,13 +118,35 @@ class SettingsState {
 }
 
 final settingsProvider = StateNotifierProvider<SettingsNotifier, AsyncValue<SettingsState>>((ref) {
-  final notifier = SettingsNotifier();
-  notifier.loadSettings();
+  final notifier = SettingsNotifier(ref);
+
+  final authState = ref.watch(authProvider);
+  if (authState.status == AuthStatus.authenticated) {
+    notifier.loadSettings();
+  } else if (authState.status == AuthStatus.unauthenticated) {
+    notifier.resetToDefaults();
+  }
+
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    final prevEmail = previous?.user?.email;
+    final nextEmail = next.user?.email;
+
+    if (previous?.status != next.status || prevEmail != nextEmail) {
+      if (next.status == AuthStatus.authenticated) {
+        notifier.loadSettings();
+      } else if (next.status == AuthStatus.unauthenticated) {
+        notifier.resetToDefaults();
+      }
+    }
+  });
+
   return notifier;
 });
 
 class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
-  SettingsNotifier() : super(AsyncValue.data(SettingsState()));
+  final Ref _ref;
+
+  SettingsNotifier(this._ref) : super(AsyncValue.data(SettingsState()));
 
   Future<void> loadSettings() async {
     state = const AsyncValue.loading();
@@ -133,6 +156,11 @@ class SettingsNotifier extends StateNotifier<AsyncValue<SettingsState>> {
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
     }
+  }
+
+  void resetToDefaults() {
+    state = AsyncValue.data(SettingsState());
+    // Don’t persist defaults on logout; just clear in-memory UI state.
   }
 
   Future<void> setCurrency(Currency newCurrency) async {

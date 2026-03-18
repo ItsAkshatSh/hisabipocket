@@ -9,6 +9,20 @@ import 'package:intl/intl.dart';
 class BudgetCard extends ConsumerWidget {
   const BudgetCard({super.key});
 
+  Color _levelColor(BuildContext context, BudgetAlertLevel level) {
+    final cs = Theme.of(context).colorScheme;
+    switch (level) {
+      case BudgetAlertLevel.over:
+        return cs.error;
+      case BudgetAlertLevel.warning:
+        return cs.tertiary;
+      case BudgetAlertLevel.caution:
+        return cs.secondary;
+      case BudgetAlertLevel.good:
+        return cs.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final budgetAsync = ref.watch(budgetProvider);
@@ -26,14 +40,8 @@ class BudgetCard extends ConsumerWidget {
 
         return overallStatusAsync.when(
           data: (status) {
-            // Determine the highlight color based on the theme or budget status
-            final highlightColor = status.alertLevel == BudgetAlertLevel.over
-                ? Colors.red
-                : status.alertLevel == BudgetAlertLevel.warning
-                    ? Colors.orange
-                    : status.alertLevel == BudgetAlertLevel.caution
-                        ? Colors.yellow.shade700
-                        : theme.colorScheme.primary;
+            final highlightColor = _levelColor(context, status.alertLevel);
+            final negativeColor = theme.colorScheme.error;
 
             return Card(
               child: InkWell(
@@ -125,7 +133,9 @@ class BudgetCard extends ConsumerWidget {
                                 formatter.format(status.remaining),
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: status.remaining < 0 ? Colors.red : highlightColor,
+                                  color: status.remaining < 0
+                                      ? negativeColor
+                                      : highlightColor,
                                 ),
                               ),
                             ],

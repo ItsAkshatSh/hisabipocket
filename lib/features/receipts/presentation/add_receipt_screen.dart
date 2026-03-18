@@ -8,6 +8,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/core/widgets/app_bottom_sheet.dart';
+import 'package:flutter/services.dart';
 
 class AddReceiptScreen extends ConsumerStatefulWidget {
   const AddReceiptScreen({super.key});
@@ -34,9 +36,9 @@ class _AddReceiptScreenState extends ConsumerState<AddReceiptScreen>
   }
 
   void _startSaveReceiptFlow(ReceiptModel receipt) {
-    showModalBottomSheet(
+    HapticFeedback.lightImpact();
+    showAppBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _SaveReceiptModal(receipt: receipt),
     ).then((saved) {
@@ -437,7 +439,10 @@ class _ResultsSection extends ConsumerWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
                   child: const Icon(Icons.check_rounded, size: 32, color: Colors.white),
                 ),
                 const SizedBox(height: 20),

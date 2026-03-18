@@ -19,11 +19,12 @@ class PeriodComparisonCard extends ConsumerWidget {
     final formatter =
         NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
     final isPositive = comparison.changePercent > 0;
+    // Spending up = "worse" (error), spending down = "better" (primary),
+    // flat = onSurface.
+    final cs = Theme.of(context).colorScheme;
     final trendColor = isPositive
-        ? context.errorColor
-        : (comparison.changePercent < 0
-            ? Colors.green
-            : context.onSurfaceColor);
+        ? cs.error
+        : (comparison.changePercent < 0 ? cs.primary : cs.onSurface);
 
     return Card(
       child: Padding(
@@ -264,9 +265,9 @@ class PeriodComparisonCard extends ConsumerWidget {
     NumberFormat formatter,
   ) {
     final isPositive = comp.changePercent > 0;
-    final trendColor = isPositive
-        ? context.errorColor
-        : (comp.changePercent < 0 ? Colors.green : context.onSurfaceColor);
+    final cs = Theme.of(context).colorScheme;
+    final trendColor =
+        isPositive ? cs.error : (comp.changePercent < 0 ? cs.primary : cs.onSurface);
     final categoryInfo = CategoryInfo.getInfo(comp.category);
 
     return Padding(

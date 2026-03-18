@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:hisabi/core/widgets/app_bottom_sheet.dart';
+import 'package:hisabi/core/services/onboarding_service.dart';
+import 'package:hisabi/core/services/quick_start_service.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
@@ -13,6 +16,7 @@ class SettingsScreen extends ConsumerWidget {
     final settingsAsync = ref.watch(settingsProvider);
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: CustomScrollView(
@@ -33,12 +37,12 @@ class SettingsScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 16.0),
                   child: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    backgroundColor: cs.primaryContainer,
                     radius: 18,
                     child: Text(
                       user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        color: cs.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -52,6 +56,10 @@ class SettingsScreen extends ConsumerWidget {
               data: (settings) => SliverList(
                 delegate: SliverChildListDelegate([
                   const SizedBox(height: 12),
+                  if (user != null) ...[
+                    _buildProfileCard(context, user),
+                    const SizedBox(height: 24),
+                  ],
                   _buildSectionHeader(context, 'Appearance'),
                   const SizedBox(height: 16),
                   _buildThemeCard(context, ref, settings),
@@ -60,11 +68,11 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _buildPreferenceCard(context, ref, settings),
                   const SizedBox(height: 32),
-                  _buildSectionHeader(context, 'Widget'),
+                  _buildSectionHeader(context, 'Widgets'),
                   const SizedBox(height: 16),
                   _buildWidgetCard(context, ref, settings),
                   const SizedBox(height: 32),
-                  _buildSectionHeader(context, 'Budget'),
+                  _buildSectionHeader(context, 'Money'),
                   const SizedBox(height: 16),
                   _buildBudgetCard(context, ref),
                   const SizedBox(height: 32),
@@ -76,6 +84,10 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _buildDataCard(context, ref),
                   const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Legal'),
+                  const SizedBox(height: 16),
+                  _buildLegalCard(context),
+                  const SizedBox(height: 32),
                   _buildSectionHeader(context, 'Account'),
                   const SizedBox(height: 16),
                   _buildAccountCard(context, ref),
@@ -83,7 +95,7 @@ class SettingsScreen extends ConsumerWidget {
                 ]),
               ),
               loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (err, stack) => const SliverFillRemaining(child: Center(child: Text('Error loading settings'))),
+              error: (err, stack) => SliverFillRemaining(child: Center(child: Text('Error loading settings'))),
             ),
           ),
         ],
@@ -92,14 +104,47 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
+    final cs = Theme.of(context).colorScheme;
     return Text(
       title,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w900,
-        color: Theme.of(context).colorScheme.primary,
-        letterSpacing: 1.2,
+        fontWeight: FontWeight.w800,
+        color: cs.onSurfaceVariant,
+        letterSpacing: 0.6,
       ),
     ).animate().fadeIn().slideX(begin: -0.1);
+  }
+
+  Widget _buildProfileCard(BuildContext context, dynamic user) {
+    final cs = Theme.of(context).colorScheme;
+    final displayName = (user.name as String?)?.trim();
+    final initial = (displayName?.isNotEmpty ?? false) ? displayName![0].toUpperCase() : 'U';
+    final email = (user.email as String?)?.trim();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        leading: CircleAvatar(
+          backgroundColor: cs.primaryContainer,
+          foregroundColor: cs.onPrimaryContainer,
+          child: Text(initial, style: const TextStyle(fontWeight: FontWeight.w900)),
+        ),
+        title: Text(
+          (displayName?.isNotEmpty ?? false) ? displayName! : 'Account',
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+        subtitle: email != null && email.isNotEmpty
+            ? Text(email, style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600))
+            : null,
+        trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant),
+        onTap: () => context.push('/financial-profile'),
+      ),
+    ).animate().fadeIn().slideY(begin: 0.05);
   }
 
   Widget _buildThemeCard(BuildContext context, WidgetRef ref, SettingsState settings) {
@@ -162,7 +207,11 @@ class SettingsScreen extends ConsumerWidget {
           icon: Icons.school_outlined,
           title: 'Take the tour again',
           subtitle: 'Replay the quick Hisabi walkthrough',
-          onTap: () => context.push('/onboarding'),
+          onTap: () async {
+            await OnboardingService.resetOnboarding();
+            await QuickStartService.resetQuickStart();
+            if (context.mounted) context.push('/onboarding');
+          },
         ),
       ],
     ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1);
@@ -198,6 +247,27 @@ class SettingsScreen extends ConsumerWidget {
           subtitle: 'Configure monthly budget',
           onTap: () => context.push('/budget-setup'),
         ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.savings_outlined,
+          title: 'Savings Goals',
+          subtitle: 'Track what you’re working toward',
+          onTap: () => context.push('/savings-goals'),
+        ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.receipt_long_outlined,
+          title: 'Recurring Bills',
+          subtitle: 'See upcoming bills and due dates',
+          onTap: () => context.push('/recurring-bills'),
+        ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.account_circle_outlined,
+          title: 'Financial Profile',
+          subtitle: 'Income, goals, and budget style',
+          onTap: () => context.push('/financial-profile'),
+        ),
       ],
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
@@ -229,19 +299,14 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildAccountCard(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
     return _SettingsCard(
       children: [
         _SettingsTile(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Financial Profile',
-          onTap: () => context.push('/financial-profile'),
-        ),
-        const Divider(height: 1),
-        _SettingsTile(
           icon: Icons.logout_outlined,
           title: 'Logout',
-          titleColor: Colors.red,
-          iconColor: Colors.red,
+          titleColor: cs.error,
+          iconColor: cs.error,
           onTap: () async {
             await ref.read(authProvider.notifier).logout();
             if (context.mounted) context.go('/login');
@@ -251,12 +316,29 @@ class SettingsScreen extends ConsumerWidget {
     ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.1);
   }
 
+  Widget _buildLegalCard(BuildContext context) {
+    return _SettingsCard(
+      children: [
+        _SettingsTile(
+          icon: Icons.verified_user_outlined,
+          title: 'Privacy Policy',
+          subtitle: 'How we handle your data',
+          onTap: () => context.push('/privacy-policy'),
+        ),
+        const Divider(height: 1),
+        _SettingsTile(
+          icon: Icons.description_outlined,
+          title: 'Terms of Service',
+          subtitle: 'The rules for using Hisabi',
+          onTap: () => context.push('/terms-of-service'),
+        ),
+      ],
+    ).animate().fadeIn(delay: 320.ms).slideY(begin: 0.1);
+  }
+
   void _showThemePicker(BuildContext context, WidgetRef ref, AppThemeSelection current) {
-    showModalBottomSheet(
+    showAppBottomSheet(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => SafeArea(
         child: Container(
           padding: const EdgeInsets.only(bottom: 32),
@@ -270,7 +352,7 @@ class SettingsScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle, 
                   color: _getThemeColor(selection),
-                  border: Border.all(color: Colors.white24, width: 2),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.6), width: 2),
                 )
               ),
               selected: selection == current,
@@ -297,21 +379,31 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showCurrencyPicker(BuildContext context, WidgetRef ref, Currency current) {
-    showModalBottomSheet(
+    showAppBottomSheet(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      builder: (context) => _CurrencyPickerSheet(current: current, ref: ref),
+      builder: (context) => SafeArea(
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: Currency.values.length,
+          itemBuilder: (context, index) {
+            final currency = Currency.values[index];
+            return ListTile(
+              title: Text(currency.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+              selected: currency == current,
+              onTap: () {
+                ref.read(settingsProvider.notifier).setCurrency(currency);
+                Navigator.pop(context);
+              },
+            );
+          },
+        ),
+      ),
     );
   }
 
   void _showNamingFormatPicker(BuildContext context, WidgetRef ref, NamingFormat current) {
-    showModalBottomSheet(
+    showAppBottomSheet(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -323,76 +415,6 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           )).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-class _CurrencyPickerSheet extends StatefulWidget {
-  final Currency current;
-  final WidgetRef ref;
-
-  const _CurrencyPickerSheet({required this.current, required this.ref});
-
-  @override
-  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
-}
-
-class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
-  String _searchQuery = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final filteredCurrencies = Currency.values
-        .where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
-
-    return SafeArea(
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: TextField(
-                onChanged: (value) => setState(() => _searchQuery = value),
-                decoration: InputDecoration(
-                  hintText: 'Search currency...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredCurrencies.length,
-                itemBuilder: (context, index) {
-                  final currency = filteredCurrencies[index];
-                  return ListTile(
-                    title: Text(currency.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-                    selected: currency == widget.current,
-                    onTap: () {
-                      widget.ref.read(settingsProvider.notifier).setCurrency(currency);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
         ),
       ),
     );

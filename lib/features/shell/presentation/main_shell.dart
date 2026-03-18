@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
+import 'package:flutter/services.dart';
 
 class MainShell extends ConsumerWidget {
   final Widget child;
@@ -9,14 +10,20 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final String location = GoRouterState.of(context).uri.path;
     final selectedIndex = _calculateSelectedIndex(context);
     final theme = Theme.of(context);
+    final hideBottomNav = location.startsWith('/wrapped');
 
     return Scaffold(
       extendBody: true,
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: child,
-      bottomNavigationBar: SafeArea(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: child,
+      ),
+      bottomNavigationBar: hideBottomNav ? null : SafeArea(
         child: Container(
           margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
           child: ClipRRect(
@@ -54,6 +61,8 @@ class MainShell extends ConsumerWidget {
                       '/saved-receipts',
                       '/settings',
                     ];
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    HapticFeedback.selectionClick();
                     context.go(paths[index]);
                   },
                   destinations: [

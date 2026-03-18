@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
-import 'package:hisabi/core/utils/quick_add_parser.dart';
+import 'package:hisabi/core/services/ai_service.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
 
@@ -30,7 +30,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
   bool _isListening = false;
   bool _isSaving = false;
   String _rawTranscript = '';
-  QuickAddParseResult? _parsed;
+  QuickAddDraft? _parsed;
   String? _error;
 
   @override
@@ -77,7 +77,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
       setState(() {
         _isListening = false;
         _rawTranscript = text;
-        _parsed = parseQuickAdd(text);
+        _parsed = AIService().parseQuickAddText(text);
       });
     } on PlatformException catch (e) {
       if (!mounted) return;
@@ -95,7 +95,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
   }
 
   Future<void> _showConfirmAndSave() async {
-    final parsed = _parsed ?? parseQuickAdd(_rawTranscript);
+    final parsed = _parsed ?? AIService().parseQuickAddText(_rawTranscript);
     if (parsed == null) {
       setState(() {
         _error = 'Did not understand. Say e.g. "20 for groceries".';
@@ -122,9 +122,16 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Parsed: ${parsed.amount} for ${parsed.description}',
+                'Parsed: ${parsed.amount ?? 0} at ${parsed.merchant}',
                 style: TextStyle(color: context.onSurfaceColor),
               ),
+              if (parsed.date != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Date: ${DateFormat.yMMMd().format(parsed.date!)}',
+                  style: TextStyle(color: context.onSurfaceMutedColor),
+                ),
+              ],
             ],
           ),
           actions: [
@@ -146,11 +153,11 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
     }
   }
 
-  Future<void> _onSave([QuickAddParseResult? parsedArg]) async {
-    final parsed = parsedArg ?? _parsed ?? parseQuickAdd(_rawTranscript);
-    if (parsed == null) {
+  Future<void> _onSave([QuickAddDraft? parsedArg]) async {
+    final parsed = parsedArg ?? _parsed ?? AIService().parseQuickAddText(_rawTranscript);
+    if (parsed.amount == null) {
       setState(() {
-        _error = 'Try saying something like: "20 for groceries".';
+        _error = 'Try saying something like: "20 at Starbucks".';
       });
       return;
     }
@@ -162,24 +169,25 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
 
     try {
       final item = ReceiptItem(
-        name: parsed.description,
+        name: parsed.merchant,
         quantity: 1.0,
-        price: parsed.amount,
-        total: parsed.amount,
+        price: parsed.amount!,
+        total: parsed.amount!,
+        category: parsed.category,
       );
 
       final receipt = ReceiptModel(
         id: '',
-        name: parsed.description,
-        date: DateTime.now(),
-        store: 'Quick Add',
+        name: parsed.merchant,
+        date: parsed.date ?? DateTime.now(),
+        store: parsed.merchant,
         items: [item],
-        total: parsed.amount,
+        total: parsed.amount!,
       );
 
       final notifier = ref.read(receiptEntryProvider.notifier);
       final ok = await notifier.saveReceipt(
-        'Quick: ${parsed.description}',
+        'Quick: ${parsed.merchant}',
         receipt,
       );
 
@@ -194,7 +202,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
             NumberFormat.currency(symbol: 'USD').format(parsed.amount);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added $formattedAmount for ${parsed.description}'),
+            content: Text('Added $formattedAmount at ${parsed.merchant}'),
           ),
         );
         if (context.mounted) {

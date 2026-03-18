@@ -12,6 +12,10 @@ import 'package:hisabi/features/financial_profile/providers/financial_profile_pr
 import 'package:hisabi/features/insights/providers/spending_alerts_provider.dart';
 import 'package:hisabi/features/insights/models/spending_alert.dart';
 import 'package:hisabi/core/models/receipt_summary_model.dart';
+import 'package:hisabi/core/services/quick_start_service.dart';
+import 'package:hisabi/core/widgets/app_bottom_sheet.dart';
+import 'package:hisabi/features/onboarding/presentation/quick_start_sheet.dart';
+import 'package:hisabi/features/auth/providers/auth_provider.dart';
 
 class DashboardNotification {
   final String title;
@@ -29,17 +33,46 @@ class DashboardNotification {
   });
 }
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _quickStartPromptedThisSession = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _maybeShowQuickStart();
+  }
+
+  Future<void> _maybeShowQuickStart() async {
+    if (_quickStartPromptedThisSession) return;
+
+    final auth = ref.read(authProvider);
+    if (auth.status != AuthStatus.authenticated) return;
+
+    final completed = await QuickStartService.hasCompletedQuickStart();
+    if (completed) return;
+    if (!mounted) return;
+
+    _quickStartPromptedThisSession = true;
+    await showAppBottomSheet<void>(
+      context: context,
+      builder: (_) => const QuickStartSheet(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(widgetUpdateProvider);
     final period = ref.watch(periodProvider);
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
-    final formatter =
-        NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
+    final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
     final isMobile = MediaQuery.of(context).size.width < 600;
     final theme = Theme.of(context);
 
@@ -50,8 +83,8 @@ class DashboardScreen extends ConsumerWidget {
           ref.invalidate(recentReceiptsProvider);
         },
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics()),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             SliverAppBar.large(
               title: const Text('Dashboard'),
@@ -70,7 +103,7 @@ class DashboardScreen extends ConsumerWidget {
                               data: (value) => value,
                               orElse: () => false,
                             );
-                    
+
                     final alertsAsync = ref.read(spendingAlertsProvider);
                     final alerts = alertsAsync.maybeWhen(
                       data: (value) => value,
@@ -79,7 +112,6 @@ class DashboardScreen extends ConsumerWidget {
 
                     final List<DashboardNotification> notifications = [];
 
-                    // 1. Weekly Wrapped Notification
                     if (shouldShowWrapped && stats != null) {
                       notifications.add(
                         DashboardNotification(
@@ -93,7 +125,6 @@ class DashboardScreen extends ConsumerWidget {
                       );
                     }
 
-                    // 2. Spending Alerts (Critical & Warning)
                     for (final alert in alerts) {
                       notifications.add(
                         DashboardNotification(
@@ -106,15 +137,13 @@ class DashboardScreen extends ConsumerWidget {
                       );
                     }
 
-                    // 3. General Spending Snapshots
                     if (stats != null) {
                       notifications.add(
                         DashboardNotification(
                           title: 'Spending snapshot',
                           message:
                               'You have ${stats.receiptsCount} receipts this ${period.name.toLowerCase()} with an average of ${formatter.format(stats.averagePerReceipt)} per receipt.',
-                          date:
-                              DateTime.now().subtract(const Duration(hours: 2)),
+                          date: DateTime.now(),
                           isImportant: false,
                           onTap: () => context.go('/saved-receipts'),
                         ),
@@ -165,6 +194,7 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
   Widget _buildIncompleteProfileBanner(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(financialProfileProvider);

@@ -290,10 +290,11 @@ class RecurringExpensesCard extends ConsumerWidget {
   }
   
   Color _getConfidenceColor(BuildContext context, double confidence) {
+    final cs = Theme.of(context).colorScheme;
     if (confidence >= 0.8) {
-      return Colors.green;
+      return cs.primary;
     } else if (confidence >= 0.6) {
-      return Colors.orange;
+      return cs.tertiary;
     } else {
       return context.onSurfaceMutedColor;
     }

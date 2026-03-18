@@ -81,18 +81,22 @@ class SavingsGoalsScreen extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.check_circle, size: 16, color: Colors.green),
+                                  Icon(
+                                    Icons.check_circle,
+                                    size: 16,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
                                   SizedBox(width: 4),
                                   Text(
                                     'Completed',
                                     style: TextStyle(
-                                      color: Colors.green,
+                                      color: Theme.of(context).colorScheme.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -106,9 +110,14 @@ class SavingsGoalsScreen extends ConsumerWidget {
                       LinearProgressIndicator(
                         value: goal.progress.clamp(0.0, 1.0),
                         minHeight: 8,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.35),
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          goal.isCompleted ? Colors.green : Colors.blue,
+                          goal.isCompleted
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.secondary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -163,7 +172,7 @@ class SavingsGoalsScreen extends ConsumerWidget {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.delete_outline),
-                            color: Colors.red,
+                            color: Theme.of(context).colorScheme.error,
                             onPressed: () => _confirmDelete(context, ref, goal.title),
                           ),
                         ],
@@ -197,7 +206,10 @@ class SavingsGoalsScreen extends ConsumerWidget {
               ref.read(savingsGoalsProvider.notifier).deleteGoal(goalTitle);
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Delete'),
           ),
         ],

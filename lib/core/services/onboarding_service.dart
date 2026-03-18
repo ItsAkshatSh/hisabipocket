@@ -1,13 +1,26 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class OnboardingService {
   static const String _key = 'has_seen_onboarding_v1';
   
   // Fallback in-memory cache if SharedPreferences fails
   static bool? _memoryCache;
+  static String? _memoryScope;
+
+  static String _scopedKey() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid == null ? _key : '${_key}_$uid';
+  }
 
   /// Check if the user has already seen the onboarding
   static Future<bool> hasSeenOnboarding() async {
+    final scope = FirebaseAuth.instance.currentUser?.uid;
+    if (_memoryScope != scope) {
+      _memoryScope = scope;
+      _memoryCache = null;
+    }
+
     // Check memory cache first
     if (_memoryCache != null) {
       return _memoryCache!;
@@ -15,7 +28,7 @@ class OnboardingService {
     
     try {
       final prefs = await SharedPreferences.getInstance();
-      final value = prefs.getBool(_key) ?? false;
+      final value = prefs.getBool(_scopedKey()) ?? false;
       // Update memory cache
       _memoryCache = value;
       return value;
@@ -37,7 +50,7 @@ class OnboardingService {
     
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_key, true);
+      await prefs.setBool(_scopedKey(), true);
     } catch (e) {
       // If SharedPreferences fails, we still have the memory cache
       // This is acceptable for the session, but won't persist across app restarts
@@ -60,7 +73,7 @@ class OnboardingService {
     
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_key);
+      await prefs.remove(_scopedKey());
     } catch (e) {
       // If SharedPreferences fails, memory cache is already cleared
       print('Warning: Could not reset onboarding status: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hisabi/core/services/onboarding_service.dart';
+import 'package:hisabi/core/services/quick_start_service.dart';
 
 class VisualTutorialScreen extends StatefulWidget {
   const VisualTutorialScreen({super.key});
@@ -60,6 +61,7 @@ class _VisualTutorialScreenState extends State<VisualTutorialScreen> {
   Future<void> _finishTutorial() async {
     await OnboardingService.setSeenOnboarding();
     if (mounted) {
+      // Always land on the dashboard; it will present Quick Start as a sheet if needed.
       context.go('/dashboard');
     }
   }
@@ -412,16 +414,16 @@ class _DashboardPreview extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatBox(colorScheme, 'Total', '\$1,234', Colors.blue),
-              _StatBox(colorScheme, 'Receipts', '12', Colors.orange),
+              _StatBox(colorScheme, 'Total', '\$1,234', colorScheme.primary),
+              _StatBox(colorScheme, 'Receipts', '12', colorScheme.secondary),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatBox(colorScheme, 'Average', '\$103', Colors.purple),
-              _StatBox(colorScheme, 'Top Store', 'Walmart', Colors.green),
+              _StatBox(colorScheme, 'Average', '\$103', colorScheme.tertiary),
+              _StatBox(colorScheme, 'Top Store', 'Walmart', colorScheme.primary),
             ],
           ),
         ],

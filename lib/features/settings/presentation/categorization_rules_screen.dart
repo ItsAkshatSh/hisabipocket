@@ -59,7 +59,7 @@ class CategorizationRulesScreen extends ConsumerWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: CategoryInfo.getInfo(rule.category).color.withOpacity(0.2),
+                    backgroundColor: CategoryInfo.themedColor(context, rule.category).withOpacity(0.2),
                     child: Text(
                       CategoryInfo.getInfo(rule.category).emoji,
                       style: const TextStyle(fontSize: 20),

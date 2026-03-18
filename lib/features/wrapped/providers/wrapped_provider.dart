@@ -15,7 +15,6 @@ final weekWrappedProvider = FutureProvider.autoDispose.family<WeekWrapped, DateT
   final settingsAsync = ref.watch(settingsProvider);
   final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
   
-  // Calculate the correct start date for the wrap
   final now = DateTime.now();
   
   final sundayOffset = now.weekday == 7 ? 0 : now.weekday;
@@ -46,7 +45,6 @@ Future<WeekWrapped> _generateWrapped(
   
   final formatter = NumberFormat.simpleCurrency(name: currencyCode, decimalDigits: 2);
   
-  // Generate cards
   final cards = <WrappedCard>[
     _createOpeningCard(start, end),
     _createTotalSpentCard(stats, formatter),
@@ -94,7 +92,6 @@ WrappedStats _calculateStats(List<ReceiptModel> receipts) {
   final uniqueStores = receipts.map((r) => r.store).toSet().length;
   final averagePerReceipt = totalSpent / receiptsCount;
   
-  // Top store
   final storeTotals = <String, double>{};
   for (final r in receipts) {
     storeTotals[r.store] = (storeTotals[r.store] ?? 0.0) + r.total;
@@ -108,7 +105,6 @@ WrappedStats _calculateStats(List<ReceiptModel> receipts) {
     }
   });
   
-  // Category breakdown
   final categoryTotals = <ExpenseCategory, double>{};
   for (final receipt in receipts) {
     for (final item in receipt.items) {
@@ -130,7 +126,6 @@ WrappedStats _calculateStats(List<ReceiptModel> receipts) {
     }
   });
   
-  // Busiest day
   final dayTotals = <String, double>{};
   final dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   for (final r in receipts) {
@@ -146,7 +141,6 @@ WrappedStats _calculateStats(List<ReceiptModel> receipts) {
     }
   });
   
-  // Biggest purchase
   ReceiptModel? biggestReceipt;
   double biggestAmount = 0.0;
   for (final r in receipts) {
@@ -191,7 +185,6 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
     );
   }
   
-  // Check weekend vs weekday spending
   double weekendTotal = 0.0;
   double weekdayTotal = 0.0;
   for (final r in receipts) {
@@ -213,7 +206,6 @@ SpendingPersonality _determinePersonality(List<ReceiptModel> receipts) {
     );
   }
   
-  // Check for bulk vs frequent purchases
   final avgReceiptSize = receipts.fold<double>(0.0, (sum, r) => sum + r.total) / receipts.length;
   if (avgReceiptSize > 100 && receipts.length < 5) {
     return SpendingPersonality(
@@ -319,8 +311,8 @@ WrappedCard _createOpeningCard(DateTime start, DateTime end) {
     title: 'Your Week Wrapped',
     subtitle: '${formatter.format(start)} - ${formatter.format(end)}',
     mainValue: 'Ready to see how you spent this week?',
-    backgroundColor: const Color(0xFF1DB954), // Spotify green
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -332,8 +324,8 @@ WrappedCard _createTotalSpentCard(WrappedStats stats, NumberFormat formatter) {
     subtitle: 'this week',
     mainValue: formatter.format(stats.totalSpent),
     secondaryValue: 'Across ${stats.receiptsCount} receipts at ${stats.uniqueStores} stores',
-    backgroundColor: const Color(0xFF8B5CF6),
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -350,8 +342,8 @@ WrappedCard _createTopCategoryCard(WrappedStats stats, NumberFormat formatter) {
     subtitle: '$percentage% of your spending',
     mainValue: categoryInfo.name,
     secondaryValue: formatter.format(stats.topCategorySpending),
-    backgroundColor: categoryInfo.color,
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -363,8 +355,8 @@ WrappedCard _createTopStoreCard(WrappedStats stats, NumberFormat formatter) {
     subtitle: 'Total spent: ${formatter.format(stats.topStoreSpending)}',
     mainValue: stats.topStore,
     secondaryValue: 'You visited this store the most',
-    backgroundColor: const Color(0xFFFF6B6B),
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -376,8 +368,8 @@ WrappedCard _createBiggestPurchaseCard(WrappedStats stats, NumberFormat formatte
     subtitle: 'at ${stats.biggestPurchaseStore}',
     mainValue: formatter.format(stats.biggestPurchaseAmount),
     secondaryValue: stats.biggestPurchase,
-    backgroundColor: const Color(0xFF4ECDC4),
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -389,8 +381,8 @@ WrappedCard _createBusiestDayCard(WrappedStats stats) {
     subtitle: 'Most of the action happened here',
     mainValue: stats.busiestDay,
     secondaryValue: 'Make sure to rest next week!',
-    backgroundColor: const Color(0xFFFFD93D),
-    textColor: Colors.black87,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -402,8 +394,8 @@ WrappedCard _createPersonalityCard(SpendingPersonality personality) {
     subtitle: personality.description,
     mainValue: personality.type,
     secondaryValue: personality.traits.join(' • '),
-    backgroundColor: const Color(0xFF6C5CE7),
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -414,8 +406,8 @@ WrappedCard _createFunFactCard(FunFact funFact) {
     title: 'Fun Fact',
     subtitle: funFact.context,
     mainValue: funFact.fact,
-    backgroundColor: const Color(0xFFFF9FF3),
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }
@@ -426,8 +418,8 @@ WrappedCard _createClosingCard() {
     title: 'That\'s your week!',
     subtitle: 'Keep tracking to see next week\'s story',
     mainValue: 'Done',
-    backgroundColor: const Color(0xFF1DB954),
-    textColor: Colors.white,
+    backgroundColor: Colors.transparent,
+    textColor: Colors.transparent,
     emoji: '',
   );
 }

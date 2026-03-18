@@ -25,6 +25,7 @@ import 'package:hisabi/features/financial_profile/presentation/financial_profile
 import 'package:hisabi/core/widgets/widget_summary.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/onboarding/presentation/visual_tutorial_screen.dart';
+import 'package:hisabi/features/onboarding/presentation/quick_start_screen.dart';
 import 'package:hisabi/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:hisabi/features/help/presentation/help_screen.dart';
 import 'package:hisabi/core/services/onboarding_service.dart';
@@ -56,6 +57,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const VisualTutorialScreen(),
+      ),
+      GoRoute(
+        path: '/quick-start',
+        builder: (context, state) => const QuickStartScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
@@ -156,6 +161,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isUnauthenticated = authStatus == AuthStatus.unauthenticated;
       final isLoginPage = state.uri.path == '/login';
       final isOnboardingPage = state.uri.path == '/onboarding';
+      final isQuickStartPage = state.uri.path == '/quick-start';
       
       // Wait for auth check to complete (unknown status means still checking)
       if (authStatus == AuthStatus.unknown) {
@@ -173,7 +179,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
       
       // If not authenticated and not on login page, redirect to login
-      if (isUnauthenticated && !isLoginPage && !isOnboardingPage) {
+      if (isUnauthenticated && !isLoginPage && !isOnboardingPage && !isQuickStartPage) {
         return '/login';
       }
       
@@ -187,7 +193,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         }
         
         // If authenticated but hasn't seen onboarding and not on onboarding page, redirect to onboarding
-        if (!hasSeenOnboarding && !isOnboardingPage) {
+        if (!hasSeenOnboarding && !isOnboardingPage && !isQuickStartPage) {
           return '/onboarding';
         }
       }

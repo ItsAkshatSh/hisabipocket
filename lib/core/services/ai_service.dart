@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/category_model.dart';
+import 'package:intl/intl.dart';
 
 class AIService {
   static String get _apiKey => dotenv.get('AI_API_KEY', fallback: '');
@@ -348,4 +349,132 @@ Create a short, engaging narrative (2-3 sentences) that makes spending tracking 
 
     return 'You spent $currency $totalSpent across $receiptsCount ${receiptsCount == 1 ? 'receipt' : 'receipts'} this week! Your top spending was at $topStore. $personality';
   }
+
+  // ---------- OFFLINE QUICK ADD PARSER ----------
+
+  QuickAddDraft parseQuickAddText(String input, {DateTime? now}) {
+    final text = input.trim();
+    final reference = now ?? DateTime.now();
+
+    final amount = _extractQuickAddAmount(text);
+    final date = _extractQuickAddDate(text, reference);
+    final merchant = _extractQuickAddMerchant(text);
+    final category = CategoryInfo.mapStringToCategory(text);
+
+    return QuickAddDraft(
+      merchant: merchant,
+      amount: amount,
+      date: date,
+      category: category,
+      notes: text,
+    );
+  }
+
+  double? _extractQuickAddAmount(String text) {
+    final normalized = text.replaceAll(',', '');
+    final regex = RegExp(r'(\d+(\.\d{1,2})?)');
+    final match = regex.firstMatch(normalized);
+    if (match == null) return null;
+    return double.tryParse(match.group(1)!);
+  }
+
+  DateTime? _extractQuickAddDate(String text, DateTime reference) {
+    final lower = text.toLowerCase();
+
+    if (lower.contains('today')) {
+      return DateTime(reference.year, reference.month, reference.day);
+    }
+    if (lower.contains('yesterday')) {
+      final d = reference.subtract(const Duration(days: 1));
+      return DateTime(d.year, d.month, d.day);
+    }
+    if (lower.contains('last week')) {
+      final d = reference.subtract(const Duration(days: 7));
+      return DateTime(d.year, d.month, d.day);
+    }
+
+    // Weekday names
+    const weekdays = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    for (var i = 0; i < weekdays.length; i++) {
+      if (lower.contains(weekdays[i])) {
+        // Go backwards to the most recent matching weekday
+        var d = reference;
+        while (d.weekday != i + 1) {
+          d = d.subtract(const Duration(days: 1));
+        }
+        return DateTime(d.year, d.month, d.day);
+      }
+    }
+
+    // Simple absolute day like "on 5", "on 23rd"
+    final dayRegex = RegExp(r'\b(on\s+)?(\d{1,2})(st|nd|rd|th)?\b');
+    final dayMatch = dayRegex.firstMatch(lower);
+    if (dayMatch != null) {
+      final day = int.tryParse(dayMatch.group(2)!);
+      if (day != null && day >= 1 && day <= 31) {
+        final candidate = DateTime(reference.year, reference.month, day);
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  String _extractQuickAddMerchant(String text) {
+    final lower = text.toLowerCase();
+    final preps = [' at ', ' from ', ' in '];
+
+    for (final prep in preps) {
+      final idx = lower.indexOf(prep);
+      if (idx != -1) {
+        final start = idx + prep.length;
+        var segment = text.substring(start).trim();
+        // Cut off trailing phrases starting with "for", "around", "about"
+        for (final stop in [' for ', ' around ', ' about ']) {
+          final stopIdx = segment.toLowerCase().indexOf(stop);
+          if (stopIdx != -1) {
+            segment = segment.substring(0, stopIdx).trim();
+          }
+        }
+        // Limit overly long merchants
+        if (segment.length > 40) {
+          segment = segment.split(' ').take(3).join(' ');
+        }
+        if (segment.isNotEmpty) return segment;
+      }
+    }
+
+    // Fallback: first 2–3 alphabetic words
+    final words = text.split(RegExp(r'\s+'));
+    final candidates = words
+        .where((w) => w.isNotEmpty && RegExp(r'[A-Za-z]').hasMatch(w[0]))
+        .take(3)
+        .join(' ')
+        .trim();
+    return candidates.isNotEmpty ? candidates : 'Quick add';
+  }
+}
+
+class QuickAddDraft {
+  final String merchant;
+  final double? amount;
+  final DateTime? date;
+  final ExpenseCategory category;
+  final String notes;
+
+  QuickAddDraft({
+    required this.merchant,
+    required this.amount,
+    required this.date,
+    required this.category,
+    required this.notes,
+  });
 }

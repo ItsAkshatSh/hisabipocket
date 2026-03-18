@@ -10,6 +10,20 @@ import 'package:go_router/go_router.dart';
 class BudgetOverviewScreen extends ConsumerWidget {
   const BudgetOverviewScreen({super.key});
 
+  Color _levelColor(BuildContext context, BudgetAlertLevel level) {
+    final cs = Theme.of(context).colorScheme;
+    switch (level) {
+      case BudgetAlertLevel.over:
+        return cs.error;
+      case BudgetAlertLevel.warning:
+        return cs.primary;
+      case BudgetAlertLevel.caution:
+        return cs.primary;
+      case BudgetAlertLevel.good:
+        return cs.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final budgetAsync = ref.watch(budgetProvider);
@@ -99,13 +113,8 @@ class BudgetOverviewScreen extends ConsumerWidget {
   }
 
   Widget _buildOverallBudgetCard(BuildContext context, BudgetStatus status, NumberFormat formatter) {
-    final color = status.alertLevel == BudgetAlertLevel.over
-        ? Colors.red
-        : status.alertLevel == BudgetAlertLevel.warning
-            ? Colors.orange
-            : status.alertLevel == BudgetAlertLevel.caution
-                ? Colors.yellow.shade700
-                : Colors.green;
+    final color = _levelColor(context, status.alertLevel);
+    final cs = Theme.of(context).colorScheme;
 
     return Card(
       child: Padding(
@@ -143,7 +152,7 @@ class BudgetOverviewScreen extends ConsumerWidget {
             LinearProgressIndicator(
               value: status.percentageUsed / 100,
               minHeight: 8,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.35),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
             const SizedBox(height: 12),
@@ -201,7 +210,7 @@ class BudgetOverviewScreen extends ConsumerWidget {
               child: Text(
                 '${status.percentageUsed.toStringAsFixed(1)}% used • ${formatter.format(status.remaining)} remaining',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: status.remaining < 0 ? Colors.red : null,
+                  color: status.remaining < 0 ? cs.error : null,
                 ),
               ),
             ),
@@ -213,13 +222,8 @@ class BudgetOverviewScreen extends ConsumerWidget {
 
   Widget _buildCategoryBudgetCard(BuildContext context, ExpenseCategory category, BudgetStatus status, NumberFormat formatter) {
     final categoryInfo = CategoryInfo.getInfo(category);
-    final color = status.alertLevel == BudgetAlertLevel.over
-        ? Colors.red
-        : status.alertLevel == BudgetAlertLevel.warning
-            ? Colors.orange
-            : status.alertLevel == BudgetAlertLevel.caution
-                ? Colors.yellow.shade700
-                : Colors.green;
+    final color = _levelColor(context, status.alertLevel);
+    final cs = Theme.of(context).colorScheme;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -253,7 +257,7 @@ class BudgetOverviewScreen extends ConsumerWidget {
             LinearProgressIndicator(
               value: status.percentageUsed / 100,
               minHeight: 6,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.35),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
             const SizedBox(height: 8),

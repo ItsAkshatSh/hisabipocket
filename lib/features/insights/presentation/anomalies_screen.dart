@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/features/insights/providers/anomaly_provider.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/core/widgets/app_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 
 class AnomaliesScreen extends ConsumerWidget {
@@ -55,7 +56,7 @@ class AnomaliesScreen extends ConsumerWidget {
                   const Icon(
                     Icons.check_circle_outline,
                     size: 64,
-                    color: Colors.green,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -80,17 +81,18 @@ class AnomaliesScreen extends ConsumerWidget {
               final receipt = anomaly.receipt;
 
               Color getAnomalyColor() {
+                final cs = Theme.of(context).colorScheme;
                 switch (anomaly.type) {
                   case AnomalyType.unusuallyHigh:
-                    return Colors.red;
+                    return cs.error;
                   case AnomalyType.unusuallyLow:
-                    return Colors.blue;
+                    return cs.secondary;
                   case AnomalyType.unusualCategory:
-                    return Colors.orange;
+                    return cs.tertiary;
                   case AnomalyType.unusualStore:
-                    return Colors.purple;
+                    return cs.primary;
                   case AnomalyType.unusualTime:
-                    return Colors.teal;
+                    return cs.outline;
                 }
               }
 
@@ -113,9 +115,8 @@ class AnomaliesScreen extends ConsumerWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   onTap: () {
-                    showModalBottomSheet(
+                    showAppBottomSheet(
                       context: context,
-                      isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (_) => ReceiptDetailsModal(receiptId: receipt.id),
                     );

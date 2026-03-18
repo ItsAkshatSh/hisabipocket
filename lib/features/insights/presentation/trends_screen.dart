@@ -177,7 +177,9 @@ class TrendsScreen extends ConsumerWidget {
     NumberFormat formatter,
   ) {
     final isPositive = changePercent > 0;
-    final color = isPositive ? Colors.red : Colors.green;
+    // For spending trends: up = error, down = primary.
+    final cs = Theme.of(context).colorScheme;
+    final color = isPositive ? cs.error : cs.primary;
 
     return Card(
       child: Padding(

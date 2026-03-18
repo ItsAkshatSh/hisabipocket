@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/wrapped/providers/wrapped_provider.dart';
 import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
-import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class WeekWrappedScreen extends ConsumerStatefulWidget {
   final DateTime? weekStart;
@@ -42,10 +41,8 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   @override
   Widget build(BuildContext context) {
     final wrappedAsync = ref.watch(weekWrappedProvider(widget.weekStart));
-    final settingsAsync = ref.watch(settingsProvider);
-    final themeSelection = settingsAsync.valueOrNull?.themeSelection ?? AppThemeSelection.classic;
-    
-    final bgColor = themeSelection == AppThemeSelection.classic ? Colors.black : _getThemeBaseColor(themeSelection);
+    final cs = Theme.of(context).colorScheme;
+    final bgColor = cs.surface;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -59,7 +56,6 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
                 _animationController.reset();
                 _animationController.forward();
                 
-                // If it's the first page, mark as viewed for this week
                 if (index == 0) {
                   _markWrappedAsViewed();
                 }
@@ -86,7 +82,7 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
               left: 20,
               child: SafeArea(
                 child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: Icon(Icons.close, color: cs.onSurface),
                   onPressed: () => context.go('/dashboard'),
                 ),
               ),
@@ -121,19 +117,9 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
       ),
     );
   }
-  
-  Color _getThemeBaseColor(AppThemeSelection selection) {
-    switch (selection) {
-      case AppThemeSelection.classic: return Colors.black;
-      case AppThemeSelection.midnight: return const Color(0xFF0F172A);
-      case AppThemeSelection.forest: return const Color(0xFF022C22);
-      case AppThemeSelection.sunset: return const Color(0xFF451A03);
-      case AppThemeSelection.lavender: return const Color(0xFF0C0A09);
-      case AppThemeSelection.monochrome: return const Color(0xFF121212);
-    }
-  }
 
   Widget _buildProgressIndicator(int totalCards) {
+    final cs = Theme.of(context).colorScheme;
     return SafeArea(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -144,7 +130,9 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
             width: _currentPage == index ? 24 : 8,
             height: 4,
             decoration: BoxDecoration(
-              color: _currentPage == index ? Colors.white : Colors.white30,
+              color: _currentPage == index
+                  ? cs.onSurface
+                  : cs.onSurfaceVariant.withOpacity(0.35),
               borderRadius: BorderRadius.circular(2),
             ),
           );
@@ -154,6 +142,7 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   }
   
   Widget _buildShareButton(WeekWrapped wrapped) {
+    final cs = Theme.of(context).colorScheme;
     return ElevatedButton.icon(
       onPressed: () {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -161,8 +150,8 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
         );
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white.withOpacity(0.2),
-        foregroundColor: Colors.white,
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.7),
+        foregroundColor: cs.onSurface,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -172,11 +161,12 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   }
 
   Widget _buildDoneButton() {
+    final cs = Theme.of(context).colorScheme;
     return ElevatedButton.icon(
       onPressed: () => context.go('/dashboard'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -186,30 +176,35 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   }
   
   Widget _buildLoadingScreen() {
-    return const Center(child: CircularProgressIndicator(color: Colors.white));
+    final cs = Theme.of(context).colorScheme;
+    return Center(child: CircularProgressIndicator(color: cs.primary));
   }
   
   Future<void> _markWrappedAsViewed() async {
     try {
+      final box = await Hive.openBox('app_preferences');
       final now = DateTime.now();
+      
       final daysToSubtract = now.weekday == 7 ? 0 : now.weekday;
       final sunday = now.subtract(Duration(days: daysToSubtract));
       final sundayStart = DateTime(sunday.year, sunday.month, sunday.day);
-      final weekId = 'wrapped_${sundayStart.year}_${sundayStart.month}_${sundayStart.day}';
       
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_wrapped_week_id', weekId);
+      final weekId = '${sundayStart.year}-${sundayStart.month.toString().padLeft(2, '0')}-${sundayStart.day.toString().padLeft(2, '0')}';
+      
+      await box.put('last_wrapped_week_id', weekId);
+      await box.put('last_wrapped_view', now.toIso8601String());
     } catch (e) {}
   }
   
   Widget _buildErrorScreen(Object error) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 64),
+          Icon(Icons.error_outline, color: cs.error, size: 64),
           const SizedBox(height: 16),
-          const Text('Error loading wrapped', style: TextStyle(color: Colors.white, fontSize: 18)),
+          Text('Error loading wrapped', style: TextStyle(color: cs.onSurface, fontSize: 18)),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go('/dashboard'),
@@ -234,13 +229,8 @@ class _WrappedCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final startColor = themeSelection == AppThemeSelection.classic 
-        ? card.backgroundColor 
-        : Theme.of(context).colorScheme.primary;
-        
-    final endColor = themeSelection == AppThemeSelection.classic 
-        ? card.backgroundColor.withOpacity(0.7)
-        : Theme.of(context).colorScheme.secondary.withOpacity(0.8);
+    final cs = Theme.of(context).colorScheme;
+    final palette = _paletteFor(card.type, cs);
 
     return Container(
       width: double.infinity,
@@ -248,7 +238,7 @@ class _WrappedCardWidget extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [startColor, endColor],
+          colors: [palette.start, palette.end],
         ),
       ),
       child: SafeArea(
@@ -265,7 +255,7 @@ class _WrappedCardWidget extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14, 
                     fontWeight: FontWeight.w900, 
-                    color: Colors.white.withOpacity(0.7),
+                    color: palette.on.withOpacity(0.75),
                     letterSpacing: 2.0,
                   ),
                 ),
@@ -275,10 +265,10 @@ class _WrappedCardWidget extends StatelessWidget {
                 opacity: animation,
                 child: Text(
                   card.subtitle, 
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 28, 
                     fontWeight: FontWeight.w800, 
-                    color: Colors.white,
+                    color: palette.on,
                     height: 1.1,
                   ),
                 ),
@@ -295,7 +285,7 @@ class _WrappedCardWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: card.type == CardType.totalSpent ? 72 : 56, 
                       fontWeight: FontWeight.w900, 
-                      color: Colors.white, 
+                      color: palette.on, 
                       letterSpacing: -2,
                       height: 1.0,
                     ),
@@ -310,7 +300,7 @@ class _WrappedCardWidget extends StatelessWidget {
                     card.secondaryValue!, 
                     style: TextStyle(
                       fontSize: 18, 
-                      color: Colors.white.withOpacity(0.8),
+                      color: palette.on.withOpacity(0.85),
                       fontWeight: FontWeight.w500,
                       height: 1.4,
                     ),
@@ -323,4 +313,36 @@ class _WrappedCardWidget extends StatelessWidget {
       ),
     );
   }
+
+  _WrappedPalette _paletteFor(CardType type, ColorScheme cs) {
+    switch (type) {
+      case CardType.opening:
+        return _WrappedPalette(cs.primaryContainer, cs.primary, cs.onPrimaryContainer);
+      case CardType.totalSpent:
+        return _WrappedPalette(cs.secondaryContainer, cs.secondary, cs.onSecondaryContainer);
+      case CardType.topCategory:
+        return _WrappedPalette(cs.tertiaryContainer, cs.tertiary, cs.onTertiaryContainer);
+      case CardType.topStore:
+        return _WrappedPalette(cs.primary, cs.primaryContainer, cs.onPrimary);
+      case CardType.biggestPurchase:
+        return _WrappedPalette(cs.tertiary, cs.tertiaryContainer, cs.onTertiary);
+      case CardType.busiestDay:
+        return _WrappedPalette(cs.surfaceContainerHighest, cs.surfaceContainer, cs.onSurface);
+      case CardType.personality:
+        return _WrappedPalette(cs.secondary, cs.secondaryContainer, cs.onSecondary);
+      case CardType.funFact:
+        return _WrappedPalette(cs.errorContainer, cs.error, cs.onErrorContainer);
+      case CardType.comparison:
+        return _WrappedPalette(cs.surfaceContainerHighest, cs.surfaceContainerLow, cs.onSurface);
+      case CardType.closing:
+        return _WrappedPalette(cs.primaryContainer, cs.surface, cs.onPrimaryContainer);
+    }
+  }
+}
+
+class _WrappedPalette {
+  final Color start;
+  final Color end;
+  final Color on;
+  const _WrappedPalette(this.start, this.end, this.on);
 }

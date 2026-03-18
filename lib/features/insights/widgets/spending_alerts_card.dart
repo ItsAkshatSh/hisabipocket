@@ -179,11 +179,13 @@ class SpendingAlertsCard extends ConsumerWidget {
   }
   
   Color _getSeverityColor(BuildContext context, AlertSeverity severity) {
+    final cs = Theme.of(context).colorScheme;
     switch (severity) {
       case AlertSeverity.critical:
         return context.errorColor;
       case AlertSeverity.warning:
-        return Colors.orange;
+        // Theme-based "warning" accent (works in monochrome too)
+        return cs.tertiary;
       case AlertSeverity.info:
         return context.primaryColor;
     }

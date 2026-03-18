@@ -9,6 +9,13 @@ import 'package:intl/intl.dart';
 class RecurringBillsScreen extends ConsumerWidget {
   const RecurringBillsScreen({super.key});
 
+  Color _dueColor(BuildContext context, int daysUntilDue) {
+    final cs = Theme.of(context).colorScheme;
+    if (daysUntilDue < 0 || daysUntilDue <= 7) return cs.error;
+    if (daysUntilDue <= 30) return cs.tertiary;
+    return cs.onSurfaceVariant;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(financialProfileProvider);
@@ -141,11 +148,7 @@ class RecurringBillsScreen extends ConsumerWidget {
                                 Icon(
                                   Icons.calendar_today,
                                   size: 14,
-                                  color: daysUntilDue <= 7
-                                      ? Colors.red
-                                      : daysUntilDue <= 30
-                                          ? Colors.orange
-                                          : Colors.grey,
+                                  color: _dueColor(context, daysUntilDue),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -158,11 +161,7 @@ class RecurringBillsScreen extends ConsumerWidget {
                                               : 'Due in $daysUntilDue days',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: daysUntilDue <= 7
-                                        ? Colors.red
-                                        : daysUntilDue <= 30
-                                            ? Colors.orange
-                                            : Colors.grey,
+                                    color: _dueColor(context, daysUntilDue),
                                     fontWeight: daysUntilDue <= 7 ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
@@ -187,11 +186,20 @@ class RecurringBillsScreen extends ConsumerWidget {
                               },
                             ),
                             PopupMenuItem(
-                              child: const Row(
+                              child: Row(
                                 children: [
-                                  Icon(Icons.delete, size: 18, color: Colors.red),
+                                  Icon(
+                                    Icons.delete,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
                                   SizedBox(width: 8),
-                                  Text('Delete', style: TextStyle(color: Colors.red)),
+                                  Text(
+                                    'Delete',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.error,
+                                    ),
+                                  ),
                                 ],
                               ),
                               onTap: () {
@@ -280,7 +288,10 @@ class RecurringBillsScreen extends ConsumerWidget {
               ref.read(financialProfileProvider.notifier).removeRecurringPayment(paymentId);
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Delete'),
           ),
         ],
