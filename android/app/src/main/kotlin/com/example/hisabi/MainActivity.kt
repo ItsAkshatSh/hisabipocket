@@ -1,18 +1,24 @@
 package com.example.hisabipocket
 
 import android.app.Activity
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "hisabi/voice_input"
     private val REQUEST_CODE_SPEECH = 1001
+    private val REQUEST_CODE_RECORD_AUDIO = 2002
     private var pendingResult: MethodChannel.Result? = null
+    private var pendingStartAfterPermission: Boolean = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -33,9 +39,34 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun startVoiceRecognition() {
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!granted) {
+            pendingStartAfterPermission = true
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                REQUEST_CODE_RECORD_AUDIO
+            )
+            return
+        }
+
+        startVoiceRecognitionInternal()
+    }
+
+    private fun startVoiceRecognitionInternal() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+            // Offline-first: rely on on-device speech packs when available.
+            // If the user hasn't downloaded an offline language pack, Android may still fail.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            // Avoid streaming partial hypotheses; we only need the final transcript.
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Say something like \"20 for groceries\"")
         }
 
@@ -60,6 +91,31 @@ class MainActivity : FlutterActivity() {
                 result.success(text)
             } else {
                 result.error("CANCELLED", "User cancelled voice input", null)
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == REQUEST_CODE_RECORD_AUDIO) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (pendingStartAfterPermission) {
+                    pendingStartAfterPermission = false
+                    startVoiceRecognitionInternal()
+                }
+            } else {
+                pendingStartAfterPermission = false
+                pendingResult?.error(
+                    "PERMISSION_DENIED",
+                    "Microphone permission was denied",
+                    null
+                )
+                pendingResult = null
             }
         }
     }

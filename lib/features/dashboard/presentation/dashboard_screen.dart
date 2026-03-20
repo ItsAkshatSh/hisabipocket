@@ -194,7 +194,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
     );
   }
-}
 
   Widget _buildIncompleteProfileBanner(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(financialProfileProvider);

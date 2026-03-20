@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hisabi/features/wrapped/providers/wrapped_provider.dart';
 import 'package:hisabi/features/wrapped/models/wrapped_models.dart';
+import 'package:hisabi/features/settings/providers/settings_provider.dart';
 
 class WeekWrappedScreen extends ConsumerStatefulWidget {
   final DateTime? weekStart;
@@ -41,6 +42,9 @@ class _WeekWrappedScreenState extends ConsumerState<WeekWrappedScreen>
   @override
   Widget build(BuildContext context) {
     final wrappedAsync = ref.watch(weekWrappedProvider(widget.weekStart));
+    final settingsAsync = ref.watch(settingsProvider);
+    final themeSelection = settingsAsync.valueOrNull?.themeSelection ?? AppThemeSelection.classic;
+    
     final cs = Theme.of(context).colorScheme;
     final bgColor = cs.surface;
 
