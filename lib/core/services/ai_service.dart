@@ -430,15 +430,16 @@ Create a short, engaging narrative (2-3 sentences) that makes spending tracking 
 
   String _extractQuickAddMerchant(String text) {
     final lower = text.toLowerCase();
-    final preps = [' at ', ' from ', ' in '];
+    // Added ' on ' and ' for ' to prepositions
+    final preps = [' at ', ' from ', ' in ', ' on ', ' for '];
 
     for (final prep in preps) {
       final idx = lower.indexOf(prep);
       if (idx != -1) {
         final start = idx + prep.length;
         var segment = text.substring(start).trim();
-        // Cut off trailing phrases starting with "for", "around", "about"
-        for (final stop in [' for ', ' around ', ' about ']) {
+        // Cut off trailing phrases starting with "today", "yesterday", "around", "about"
+        for (final stop in [' today', ' yesterday', ' around ', ' about ', ' last week']) {
           final stopIdx = segment.toLowerCase().indexOf(stop);
           if (stopIdx != -1) {
             segment = segment.substring(0, stopIdx).trim();
@@ -452,10 +453,12 @@ Create a short, engaging narrative (2-3 sentences) that makes spending tracking 
       }
     }
 
-    // Fallback: first 2–3 alphabetic words
+    // Fallback: first 2–3 alphabetic words excluding numbers
     final words = text.split(RegExp(r'\s+'));
     final candidates = words
-        .where((w) => w.isNotEmpty && RegExp(r'[A-Za-z]').hasMatch(w[0]))
+        .where((w) => w.isNotEmpty && 
+                      RegExp(r'[A-Za-z]').hasMatch(w[0]) &&
+                      !RegExp(r'^\d+$').hasMatch(w))
         .take(3)
         .join(' ')
         .trim();

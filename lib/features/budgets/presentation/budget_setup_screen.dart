@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/budgets/models/budget_model.dart';
 import 'package:hisabi/features/budgets/providers/budget_provider.dart';
@@ -23,14 +24,16 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
   @override
   void initState() {
     super.initState();
-    _loadExistingBudget();
     for (final category in ExpenseCategory.values) {
       _categoryControllers[category] = TextEditingController();
     }
+    _loadExistingBudget();
   }
 
   void _loadExistingBudget() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
       if (widget.initialBudgets != null && widget.initialBudgets!.isNotEmpty) {
         for (final entry in widget.initialBudgets!.entries) {
           _categoryControllers[entry.key]?.text = entry.value.toStringAsFixed(2);
@@ -44,6 +47,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
           }
         }
       }
+      setState(() {});
     });
   }
 
@@ -72,38 +76,57 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
     final monthlyTotal = _calculateMonthlyBudget();
     
     if (monthlyTotal <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please set your monthly income and savings goal in Financial Profile first'),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please set your monthly income and savings goal in Financial Profile first'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final categoryBudgets = <ExpenseCategory, double>{};
-    for (final entry in _categoryControllers.entries) {
-      final amount = double.tryParse(entry.value.text);
-      if (amount != null && amount > 0) {
-        categoryBudgets[entry.key] = amount;
+    try {
+      final categoryBudgets = <ExpenseCategory, double>{};
+      for (final entry in _categoryControllers.entries) {
+        final amount = double.tryParse(entry.value.text);
+        if (amount != null && amount > 0) {
+          categoryBudgets[entry.key] = amount;
+        }
       }
-    }
 
-    final budget = Budget(
-      monthlyTotal: monthlyTotal,
-      categoryBudgets: categoryBudgets,
-    );
-
-    await ref.read(budgetProvider.notifier).setBudget(budget);
-    
-    setState(() => _isLoading = false);
-    
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Budget saved successfully')),
+      final budget = Budget(
+        monthlyTotal: monthlyTotal,
+        categoryBudgets: categoryBudgets,
       );
+
+      await ref.read(budgetProvider.notifier).setBudget(budget);
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        final messenger = ScaffoldMessenger.of(context);
+        context.pop();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Budget saved successfully'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving budget: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -118,10 +141,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text('Set Budget'),
-        ),
+        title: const Text('Set Budget'),
         actions: [
           if (_isLoading)
             const Padding(
@@ -140,7 +160,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 140), // Increased bottom padding for nav
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 140),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -164,26 +184,21 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Calculated Monthly Budget',
-                          style: Theme.of(context).textTheme.titleMedium,
+                    Text(
+                      'Calculated Monthly Budget',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        formatter.format(monthlyBudget),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                        const SizedBox(height: 8),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            formatter.format(monthlyBudget),
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (profile?.monthlyIncome != null && profile?.savingsGoalPercentage != null)
@@ -206,25 +221,20 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                     color: Theme.of(context).colorScheme.error.withOpacity(0.3),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Theme.of(context).colorScheme.error,
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Please set your monthly income and savings goal in Financial Profile first',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Please set your monthly income and savings goal in Financial Profile first',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -243,7 +253,7 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (monthlyBudget > 0) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(

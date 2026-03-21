@@ -153,6 +153,11 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
     }
   }
 
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s.split(' ').map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1)).join(' ');
+  }
+
   Future<void> _onSave([QuickAddDraft? parsedArg]) async {
     final parsed = parsedArg ?? _parsed ?? AIService().parseQuickAddText(_rawTranscript);
     if (parsed.amount == null) {
@@ -169,7 +174,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
 
     try {
       final item = ReceiptItem(
-        name: parsed.merchant,
+        name: _capitalize(parsed.merchant),
         quantity: 1.0,
         price: parsed.amount!,
         total: parsed.amount!,
@@ -178,16 +183,16 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
 
       final receipt = ReceiptModel(
         id: '',
-        name: parsed.merchant,
+        name: _capitalize(parsed.merchant),
         date: parsed.date ?? DateTime.now(),
-        store: parsed.merchant,
+        store: _capitalize(parsed.merchant),
         items: [item],
         total: parsed.amount!,
       );
 
       final notifier = ref.read(receiptEntryProvider.notifier);
       final ok = await notifier.saveReceipt(
-        'Quick: ${parsed.merchant}',
+        _capitalize(parsed.merchant),
         receipt,
       );
 
@@ -199,10 +204,10 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
         });
       } else {
         final formattedAmount =
-            NumberFormat.currency(symbol: 'USD').format(parsed.amount);
+            NumberFormat.currency(symbol: 'AED').format(parsed.amount); // Updated to AED as per current project usage
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added $formattedAmount at ${parsed.merchant}'),
+            content: Text('Added $formattedAmount for ${_capitalize(parsed.merchant)}'),
           ),
         );
         if (context.mounted) {

@@ -3,6 +3,8 @@ import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/core/storage/storage_service.dart';
 import 'package:hisabi/features/budgets/models/budget_model.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
+import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
+import 'package:hisabi/features/financial_profile/models/recurring_payment_model.dart';
 
 final budgetProvider = StateNotifierProvider<BudgetNotifier, AsyncValue<Budget?>>((ref) {
   final notifier = BudgetNotifier();
@@ -73,9 +75,11 @@ class BudgetNotifier extends StateNotifier<AsyncValue<Budget?>> {
 final budgetStatusProvider = FutureProvider.autoDispose<Map<ExpenseCategory, BudgetStatus>>((ref) async {
   final budgetAsync = ref.watch(budgetProvider);
   final receiptsAsync = ref.watch(receiptsStoreProvider);
+  final profileAsync = ref.watch(financialProfileProvider);
   
   final budget = budgetAsync.valueOrNull;
   final receipts = receiptsAsync.valueOrNull ?? [];
+  final profile = profileAsync.valueOrNull;
   
   if (budget == null) {
     return {};
@@ -85,6 +89,8 @@ final budgetStatusProvider = FutureProvider.autoDispose<Map<ExpenseCategory, Bud
   final monthStart = DateTime(now.year, now.month, budget.startDay);
   final monthEnd = DateTime(now.year, now.month + 1, budget.startDay).subtract(const Duration(days: 1));
   
+  final effectiveEnd = now.isBefore(monthEnd) ? now : monthEnd;
+
   final filteredReceipts = receipts.where((r) => 
     r.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
     r.date.isBefore(monthEnd.add(const Duration(days: 1)))
@@ -99,6 +105,14 @@ final budgetStatusProvider = FutureProvider.autoDispose<Map<ExpenseCategory, Bud
     }
   }
 
+  if (profile != null) {
+    for (final payment in profile.recurringPayments) {
+      final category = CategoryInfo.mapStringToCategory(payment.category);
+      final spentSoFar = _calculateActualOccurrencesInMonth(payment, monthStart, effectiveEnd);
+      categorySpending[category] = (categorySpending[category] ?? 0.0) + spentSoFar;
+    }
+  }
+
   final statusMap = <ExpenseCategory, BudgetStatus>{};
   
   for (final entry in budget.categoryBudgets.entries) {
@@ -109,10 +123,19 @@ final budgetStatusProvider = FutureProvider.autoDispose<Map<ExpenseCategory, Bud
     );
   }
 
-  final totalSpent = filteredReceipts.fold<double>(0.0, (sum, r) => sum + r.total);
+  final receiptsTotal = filteredReceipts.fold<double>(0.0, (sum, r) => sum + r.total);
+  double totalRecurringSpent = 0.0;
+  if (profile != null) {
+    for (final p in profile.recurringPayments) {
+      totalRecurringSpent += _calculateActualOccurrencesInMonth(p, monthStart, effectiveEnd);
+    }
+  }
+  
+  final totalSpent = receiptsTotal + totalRecurringSpent;
+
   statusMap[ExpenseCategory.other] = BudgetStatus(
     budgeted: budget.monthlyTotal - budget.totalCategoryBudgets,
-    spent: totalSpent - categorySpending.values.fold(0.0, (sum, amount) => sum + amount),
+    spent: totalSpent - statusMap.values.fold(0.0, (sum, status) => sum + status.spent),
   );
 
   return statusMap;
@@ -121,9 +144,11 @@ final budgetStatusProvider = FutureProvider.autoDispose<Map<ExpenseCategory, Bud
 final overallBudgetStatusProvider = FutureProvider.autoDispose<BudgetStatus>((ref) async {
   final budgetAsync = ref.watch(budgetProvider);
   final receiptsAsync = ref.watch(receiptsStoreProvider);
+  final profileAsync = ref.watch(financialProfileProvider);
   
   final budget = budgetAsync.valueOrNull;
   final receipts = receiptsAsync.valueOrNull ?? [];
+  final profile = profileAsync.valueOrNull;
   
   if (budget == null) {
     return BudgetStatus(budgeted: 0, spent: 0);
@@ -132,13 +157,23 @@ final overallBudgetStatusProvider = FutureProvider.autoDispose<BudgetStatus>((re
   final now = DateTime.now();
   final monthStart = DateTime(now.year, now.month, budget.startDay);
   final monthEnd = DateTime(now.year, now.month + 1, budget.startDay).subtract(const Duration(days: 1));
-  
+  final effectiveEnd = now.isBefore(monthEnd) ? now : monthEnd;
+
   final filteredReceipts = receipts.where((r) => 
     r.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
     r.date.isBefore(monthEnd.add(const Duration(days: 1)))
   ).toList();
 
-  final totalSpent = filteredReceipts.fold<double>(0.0, (sum, r) => sum + r.total);
+  final receiptsTotal = filteredReceipts.fold<double>(0.0, (sum, r) => sum + r.total);
+  
+  double totalRecurringSpent = 0.0;
+  if (profile != null) {
+    for (final p in profile.recurringPayments) {
+      totalRecurringSpent += _calculateActualOccurrencesInMonth(p, monthStart, effectiveEnd);
+    }
+  }
+  
+  final totalSpent = receiptsTotal + totalRecurringSpent;
 
   return BudgetStatus(
     budgeted: budget.monthlyTotal,
@@ -146,3 +181,35 @@ final overallBudgetStatusProvider = FutureProvider.autoDispose<BudgetStatus>((re
   );
 });
 
+double _calculateActualOccurrencesInMonth(RecurringPayment payment, DateTime start, DateTime end) {
+  int count = 0;
+  DateTime current = payment.startDate;
+
+  while (current.isBefore(start)) {
+    current = _nextDate(current, payment.frequency);
+  }
+
+  while (!current.isAfter(end)) {
+    if (!current.isBefore(start)) {
+      count++;
+    }
+    current = _nextDate(current, payment.frequency);
+  }
+
+  return count * payment.amount;
+}
+
+DateTime _nextDate(DateTime date, PaymentFrequency frequency) {
+  switch (frequency) {
+    case PaymentFrequency.weekly:
+      return date.add(const Duration(days: 7));
+    case PaymentFrequency.biWeekly:
+      return date.add(const Duration(days: 14));
+    case PaymentFrequency.monthly:
+      return DateTime(date.year, date.month + 1, date.day);
+    case PaymentFrequency.quarterly:
+      return DateTime(date.year, date.month + 3, date.day);
+    case PaymentFrequency.yearly:
+      return DateTime(date.year + 1, date.month, date.day);
+  }
+}
