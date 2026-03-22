@@ -9,4 +9,4 @@ This is your own personal budgeting companion, built for you, by us. Plan your e
 - [x] 📂 Upload reciepts, and let OCR do your work for you
 - [x] 🤖 Hisabi's AI companion
 - [ ] Add functional widgets
-- [ ] Work on notifaction provider
+- [ ] Work on notification provider
