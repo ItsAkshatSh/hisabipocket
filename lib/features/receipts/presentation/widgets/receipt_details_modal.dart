@@ -5,6 +5,7 @@ import 'package:hisabi/features/receipts/presentation/widgets/receipt_split_moda
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
+import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:intl/intl.dart';
 
 class ReceiptDetailsModal extends ConsumerWidget {
@@ -15,7 +16,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final receiptAsync = ref.watch(receiptDetailsProvider(receiptId));
     final settingsAsync = ref.watch(settingsProvider);
-    final userCurrency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+    final userCurrency = settingsAsync.valueOrNull?.currency;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -24,12 +25,20 @@ class ReceiptDetailsModal extends ConsumerWidget {
       maxChildSize: 0.95,
       builder: (_, controller) => receiptAsync.when(
         data: (receipt) {
-          // Use receipt currency if available, fallback to user's preferred currency
-          final currencyCode = receipt.currency.name;
+          // Use the user's current currency setting for display consistency.
+          final currencyCode = (userCurrency ?? receipt.currency).name;
+          final currencyFormatter = NumberFormat.currency(
+            symbol: currencyCode,
+            decimalDigits: 2,
+          );
           final category = receipt.primaryCategory ?? receipt.calculatedPrimaryCategory;
           final categoryInfo = category != null 
               ? CategoryInfo.getInfo(category) 
               : CategoryInfo.getInfo(ExpenseCategory.other);
+          final cs = Theme.of(context).colorScheme;
+          final categoryAccent = category != null
+              ? CategoryInfo.themedColor(context, category)
+              : cs.outlineVariant;
 
           return Column(
             children: [
@@ -66,19 +75,19 @@ class ReceiptDetailsModal extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
+                              color: cs.secondary.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                              border: Border.all(color: cs.secondary.withOpacity(0.25)),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.call_split, size: 14, color: Colors.blue),
+                                Icon(Icons.call_split, size: 14, color: cs.secondary),
                                 SizedBox(width: 6),
                                 Text(
                                   'SPLIT',
                                   style: TextStyle(
-                                    color: Colors.blue,
+                                    color: cs.secondary,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -86,6 +95,80 @@ class ReceiptDetailsModal extends ConsumerWidget {
                               ],
                             ),
                           ),
+                        IconButton(
+                          tooltip: 'Remove expense',
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          color: cs.error,
+                          onPressed: () async {
+                            final deletedReceipt = receipt;
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogContext) {
+                                final csDialog = Theme.of(dialogContext).colorScheme;
+                                final title = deletedReceipt.isSplit
+                                    ? 'Remove split expense?'
+                                    : 'Remove expense?';
+                                final description = deletedReceipt.isSplit
+                                    ? 'This will permanently delete "${deletedReceipt.name}" and all its splits.'
+                                    : 'This will permanently delete "${deletedReceipt.name}".';
+                                return AlertDialog(
+                                  title: Text(title),
+                                  content: Text(description,
+                                      style: TextStyle(
+                                        color: csDialog.onSurfaceVariant,
+                                      )),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                                      child: Text(
+                                        'Remove',
+                                        style: TextStyle(color: csDialog.error),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirmed != true) return;
+
+                            await ref.read(receiptsStoreProvider.notifier).delete(receipt.id);
+                            if (!context.mounted) return;
+
+                            // Show undo snackbar before closing the sheet.
+                            final messenger = ScaffoldMessenger.of(context);
+                            messenger
+                              ..hideCurrentSnackBar()
+                              ..showSnackBar(
+                                SnackBar(
+                                  behavior: SnackBarBehavior.floating,
+                                  margin: const EdgeInsets.all(16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  content: const Text(
+                                    'Expense removed',
+                                    style: TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                  action: SnackBarAction(
+                                    label: 'Undo',
+                                    textColor: cs.error,
+                                    onPressed: () async {
+                                      await ref
+                                          .read(receiptsStoreProvider.notifier)
+                                          .add(deletedReceipt);
+                                    },
+                                  ),
+                                ),
+                              );
+
+                            Navigator.pop(context);
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -98,8 +181,8 @@ class ReceiptDetailsModal extends ConsumerWidget {
                             null, 
                             categoryInfo.name, 
                             emoji: categoryInfo.emoji,
-                            backgroundColor: categoryInfo.color.withOpacity(0.8),
-                            labelColor: Colors.white,
+                            backgroundColor: categoryAccent.withOpacity(0.16),
+                            labelColor: cs.onSurfaceVariant,
                           ),
                           const SizedBox(width: 12),
                           _buildInfoChip(context, Icons.store_outlined, receipt.store),
@@ -123,6 +206,9 @@ class ReceiptDetailsModal extends ConsumerWidget {
                     }
                     final item = receipt.items[index];
                     final itemCategoryInfo = item.category != null ? CategoryInfo.getInfo(item.category!) : null;
+                    final itemAccent = item.category != null
+                        ? CategoryInfo.themedColor(context, item.category!)
+                        : null;
                     
                     return ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -130,12 +216,14 @@ class ReceiptDetailsModal extends ConsumerWidget {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${item.quantity.toInt()} x $currencyCode ${item.price.toStringAsFixed(2)}'),
+                          Text(
+                            '${item.quantity.toInt()} x ${currencyFormatter.format(item.price)}',
+                          ),
                           if (itemCategoryInfo != null)
                             Text(
                               itemCategoryInfo.name,
                               style: TextStyle(
-                                color: itemCategoryInfo.color,
+                                color: itemAccent ?? itemCategoryInfo.color,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -143,7 +231,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
                         ],
                       ),
                       trailing: Text(
-                        '$currencyCode ${item.total.toStringAsFixed(2)}',
+                        currencyFormatter.format(item.total),
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                     );
@@ -177,7 +265,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          '$currencyCode ${receipt.total.toStringAsFixed(2)}',
+                          currencyFormatter.format(receipt.total),
                           style: TextStyle(
                             fontWeight: FontWeight.w900, 
                             fontSize: 22,
@@ -248,6 +336,10 @@ class ReceiptDetailsModal extends ConsumerWidget {
   }
 
   Widget _buildSplitsSection(BuildContext context, ReceiptModel receipt, String currencyCode) {
+    final currencyFormatter = NumberFormat.currency(
+      symbol: currencyCode,
+      decimalDigits: 2,
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
@@ -268,6 +360,9 @@ class ReceiptDetailsModal extends ConsumerWidget {
             final splitCategoryInfo = split.category != null 
                 ? CategoryInfo.getInfo(split.category!) 
                 : null;
+            final splitAccent = split.category != null
+                ? CategoryInfo.themedColor(context, split.category!)
+                : null;
             
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -283,14 +378,14 @@ class ReceiptDetailsModal extends ConsumerWidget {
                           splitCategoryInfo.name,
                           style: TextStyle(
                             fontSize: 12,
-                            color: splitCategoryInfo.color,
+                            color: splitAccent ?? splitCategoryInfo.color,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                     ],
                   ),
                   Text(
-                    '$currencyCode ${split.amount.toStringAsFixed(2)}',
+                    currencyFormatter.format(split.amount),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
