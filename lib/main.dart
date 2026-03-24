@@ -14,22 +14,22 @@ Future<void> main() async {
   
   try {
     await Firebase.initializeApp();
-    print('✅ Firebase initialized successfully');
+    print('Firebase initialized successfully');
   } catch (e, stackTrace) {
-    print('❌ Error initializing Firebase: $e');
+    print('Error initializing Firebase: $e');
     print('Stack trace: $stackTrace');
   }
   
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    print('⚠️ Warning: Could not load .env file: $e');
+    print('Warning: Could not load .env file: $e');
   }
   
   try {
     await StorageService.init();
   } catch (e, stackTrace) {
-    print('❌ Error initializing storage: $e');
+    print('Error initializing storage: $e');
     print('Stack trace: $stackTrace');
   }
 

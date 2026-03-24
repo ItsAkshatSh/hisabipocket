@@ -53,7 +53,7 @@ class AnomaliesScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_circle_outline,
                     size: 64,
                     color: Theme.of(context).colorScheme.primary,
