@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/insights/models/insights_models.dart';
 import 'package:intl/intl.dart';
 
@@ -22,7 +21,6 @@ class PremiumSavingsCard extends StatelessWidget {
     final savingsAmount = insights.estimatedIncome - insights.monthlySpending;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),

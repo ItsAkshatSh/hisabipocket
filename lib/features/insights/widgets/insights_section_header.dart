@@ -23,7 +23,7 @@ class InsightsSectionHeader extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
       child: Row(
         children: [
           Container(
@@ -46,7 +46,8 @@ class InsightsSectionHeader extends StatelessWidget {
                 Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                     color: context.onSurfaceColor,
                   ),
                 ),

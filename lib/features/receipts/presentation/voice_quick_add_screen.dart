@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 
 import 'package:hisabi/core/constants/app_theme.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
-import 'package:hisabi/core/services/ai_service.dart';
+import 'package:hisabi/core/utils/quick_add_parser.dart';
 import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/receipts/providers/receipt_provider.dart';
 
@@ -30,7 +30,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
   bool _isListening = false;
   bool _isSaving = false;
   String _rawTranscript = '';
-  QuickAddDraft? _parsed;
+  QuickAddParseResult? _parsed;
   String? _error;
 
   @override
@@ -77,13 +77,20 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
       setState(() {
         _isListening = false;
         _rawTranscript = text;
-        _parsed = AIService().parseQuickAddText(text);
+        _parsed = parseQuickAdd(text);
       });
     } on PlatformException catch (e) {
       if (!mounted) return;
       setState(() {
         _isListening = false;
-        _error = e.message ?? 'Speech recognition not available.';
+        // If Android reports "voice search not available", show it directly.
+        if (e.code == 'VOICE_SEARCH_UNAVAILABLE') {
+          _error = e.message ?? 'Voice search is not available.';
+        } else if (e.code == 'NO_SPEECH_APP') {
+          _error = e.message ?? 'Speech recognition not available.';
+        } else {
+          _error = e.message ?? 'Speech recognition not available.';
+        }
       });
     }
   }
@@ -95,7 +102,7 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
   }
 
   Future<void> _showConfirmAndSave() async {
-    final parsed = _parsed ?? AIService().parseQuickAddText(_rawTranscript);
+    final parsed = _parsed ?? parseQuickAdd(_rawTranscript);
     if (parsed == null) {
       setState(() {
         _error = 'Did not understand. Say e.g. "20 for groceries".';
@@ -122,16 +129,9 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Parsed: ${parsed.amount ?? 0} at ${parsed.merchant}',
+                'Parsed: ${parsed.amount} for ${parsed.description}',
                 style: TextStyle(color: context.onSurfaceColor),
               ),
-              if (parsed.date != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Date: ${DateFormat.yMMMd().format(parsed.date!)}',
-                  style: TextStyle(color: context.onSurfaceMutedColor),
-                ),
-              ],
             ],
           ),
           actions: [
@@ -153,16 +153,11 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
     }
   }
 
-  String _capitalize(String s) {
-    if (s.isEmpty) return s;
-    return s.split(' ').map((w) => w.isEmpty ? '' : w[0].toUpperCase() + w.substring(1)).join(' ');
-  }
-
-  Future<void> _onSave([QuickAddDraft? parsedArg]) async {
-    final parsed = parsedArg ?? _parsed ?? AIService().parseQuickAddText(_rawTranscript);
-    if (parsed.amount == null) {
+  Future<void> _onSave([QuickAddParseResult? parsedArg]) async {
+    final parsed = parsedArg ?? _parsed ?? parseQuickAdd(_rawTranscript);
+    if (parsed == null) {
       setState(() {
-        _error = 'Try saying something like: "20 at Starbucks".';
+        _error = 'Try saying something like: "20 for groceries".';
       });
       return;
     }
@@ -174,25 +169,24 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
 
     try {
       final item = ReceiptItem(
-        name: _capitalize(parsed.merchant),
+        name: parsed.description,
         quantity: 1.0,
-        price: parsed.amount!,
-        total: parsed.amount!,
-        category: parsed.category,
+        price: parsed.amount,
+        total: parsed.amount,
       );
 
       final receipt = ReceiptModel(
         id: '',
-        name: _capitalize(parsed.merchant),
-        date: parsed.date ?? DateTime.now(),
-        store: _capitalize(parsed.merchant),
+        name: parsed.description,
+        date: DateTime.now(),
+        store: 'Quick Add',
         items: [item],
-        total: parsed.amount!,
+        total: parsed.amount,
       );
 
       final notifier = ref.read(receiptEntryProvider.notifier);
       final ok = await notifier.saveReceipt(
-        _capitalize(parsed.merchant),
+        'Quick: ${parsed.description}',
         receipt,
       );
 
@@ -204,10 +198,10 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
         });
       } else {
         final formattedAmount =
-            NumberFormat.currency(symbol: 'AED').format(parsed.amount); // Updated to AED as per current project usage
+            NumberFormat.currency(symbol: 'USD').format(parsed.amount);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added $formattedAmount for ${_capitalize(parsed.merchant)}'),
+            content: Text('Added $formattedAmount for ${parsed.description}'),
           ),
         );
         if (context.mounted) {
@@ -505,11 +499,8 @@ class _VoiceQuickAddScreenState extends ConsumerState<VoiceQuickAddScreen>
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          Theme.of(context)
-                                              .colorScheme
-                                              .onPrimary,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Theme.of(context).colorScheme.onPrimary,
                                         ),
                                       ),
                                     )
@@ -767,7 +758,7 @@ class _MicrophoneButton extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(
+                  child: Icon(
                   isListening ? Icons.mic : Icons.mic_none,
                   color: isListening
                       ? Theme.of(context).colorScheme.onPrimary

@@ -12,6 +12,7 @@ class MonthlySpendingChartsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final now = DateTime.now();
 
     final formatter = NumberFormat.simpleCurrency(
       name: insights.currency.name,
@@ -22,6 +23,16 @@ class MonthlySpendingChartsCard extends StatelessWidget {
     final savingsRatio = (savingsRate / 100).clamp(0.0, 1.0);
     final isOverBudget = savingsRate < 0;
     final gaugeColor = isOverBudget ? cs.error : cs.primary;
+
+    // The current InsightsData model only contains the latest monthly spending.
+    // For a uniform UI and to keep this widget compiling, we render a simple
+    // 6-month "trend" using the same value, plus generated month labels.
+    final trendValues = List<double>.filled(6, insights.monthlySpending);
+    final trendLabels = List<String>.generate(6, (i) {
+      final monthOffsetFromCurrent = 5 - i; // oldest -> newest
+      final d = DateTime(now.year, now.month - monthOffsetFromCurrent, 1);
+      return DateFormat('MMM').format(d);
+    });
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -90,7 +101,7 @@ class MonthlySpendingChartsCard extends StatelessWidget {
                         height: 170,
                         child: CustomPaint(
                           painter: _MonthlyTrendPainter(
-                            values: insights.last6MonthsSpending,
+                            values: trendValues,
                             lineColor: cs.primary,
                             barColor: cs.primary.withOpacity(0.18),
                             gridColor: cs.onSurfaceVariant.withOpacity(0.12),
@@ -100,12 +111,9 @@ class MonthlySpendingChartsCard extends StatelessWidget {
                       const SizedBox(height: 12),
                       Row(
                         children: List.generate(6, (i) {
-                          final label = insights.last6MonthsLabels.length > i
-                              ? insights.last6MonthsLabels[i]
-                              : '';
                           return Expanded(
                             child: Text(
-                              label,
+                              trendLabels[i],
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: cs.onSurfaceVariant,

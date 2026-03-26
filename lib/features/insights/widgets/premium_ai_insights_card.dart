@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/features/insights/models/insights_models.dart';
 
 class PremiumAIInsightsCard extends StatelessWidget {
@@ -17,7 +16,6 @@ class PremiumAIInsightsCard extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -143,7 +141,6 @@ class PremiumAIInsightsCard extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: cs.surface,

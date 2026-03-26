@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hisabi/features/insights/providers/insights_provider.dart';
@@ -60,7 +58,7 @@ class InsightsScreen extends ConsumerWidget {
 
           // Main Content
           SliverPadding(
-            padding: const EdgeInsets.only(top: 8, bottom: 32),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             sliver: insightsAsync.when(
               data: (insights) => SliverList(
                 delegate: SliverChildListDelegate([
@@ -179,47 +177,44 @@ class InsightsScreen extends ConsumerWidget {
               error: (err, stack) => SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: cs.errorContainer.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.cloud_off_rounded,
-                            size: 40,
-                            color: cs.error,
-                          ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: cs.errorContainer.withOpacity(0.5),
+                          shape: BoxShape.circle,
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Couldn\'t load insights',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: cs.onSurface,
-                          ),
+                        child: Icon(
+                          Icons.cloud_off_rounded,
+                          size: 40,
+                          color: cs.error,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Check your connection and try again.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Couldn\'t load insights',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
                         ),
-                        const SizedBox(height: 24),
-                        FilledButton.icon(
-                          onPressed: () => ref.invalidate(insightsProvider),
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('Try Again'),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Check your connection and try again.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: () => ref.invalidate(insightsProvider),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Try Again'),
+                      ),
+                    ],
                   ),
                 ),
               ),

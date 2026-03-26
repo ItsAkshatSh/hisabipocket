@@ -12,6 +12,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import java.util.Locale
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "hisabi/voice_input"
@@ -58,22 +59,40 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun startVoiceRecognitionInternal() {
+        val languageTag = Locale.getDefault().toLanguageTag()
+
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
-            // Offline-first: rely on on-device speech packs when available.
-            // If the user hasn't downloaded an offline language pack, Android may still fail.
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
+            // Prefer online recognition when possible; forcing offline can yield empty results.
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             // Avoid streaming partial hypotheses; we only need the final transcript.
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Say something like \"20 for groceries\"")
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
         }
 
         try {
+            // If there is no speech recognizer activity, the Google popup can say
+            // "Voice search is not available". We pre-detect and return a clear error.
+            if (intent.resolveActivity(packageManager) == null) {
+                pendingResult?.error(
+                    "VOICE_SEARCH_UNAVAILABLE",
+                    "Voice search is not available on this device. Install/enable Google speech services and try again.",
+                    null
+                )
+                pendingResult = null
+                return
+            }
+
             startActivityForResult(intent, REQUEST_CODE_SPEECH)
         } catch (e: ActivityNotFoundException) {
-            pendingResult?.error("NO_SPEECH_APP", "Speech recognition not available", null)
+            pendingResult?.error(
+                "VOICE_SEARCH_UNAVAILABLE",
+                "Voice search is not available on this device. Install/enable Google speech services and try again.",
+                null
+            )
             pendingResult = null
         }
     }
@@ -90,7 +109,13 @@ class MainActivity : FlutterActivity() {
                 val text = matches?.firstOrNull() ?: ""
                 result.success(text)
             } else {
-                result.error("CANCELLED", "User cancelled voice input", null)
+                // Many devices show a Google dialog like "Voice search is not available"
+                // and return RESULT_CANCELED. Surface that to the UI.
+                result.error(
+                    "VOICE_SEARCH_UNAVAILABLE",
+                    "Voice search is not available on this device. Install/enable Google speech services and try again.",
+                    null
+                )
             }
         }
     }

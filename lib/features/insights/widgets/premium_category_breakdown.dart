@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hisabi/core/utils/theme_extensions.dart';
 import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/insights/models/insights_models.dart';
 import 'package:intl/intl.dart';
@@ -32,7 +31,6 @@ class PremiumCategoryBreakdown extends StatelessWidget {
     final maxValue = topCategories.first.value;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
@@ -193,7 +191,6 @@ class PremiumCategoryBreakdown extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: cs.surface,
