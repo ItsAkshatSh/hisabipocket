@@ -1,4 +1,4 @@
-# Hisabi
+# Hisabipocket
 
 This is your own personal budgeting companion, built for you, by us. Plan your expenses, 
 
