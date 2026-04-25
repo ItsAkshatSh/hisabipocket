@@ -38,8 +38,6 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   // Check if we have cached insights and if receipt count matches
   final cachedInsights = ref.read(_insightsCacheProvider);
-  final hasNewReceipts = cachedInsights == null || 
-      currentReceiptCount > cachedInsights.receiptCount;
   
   // Check if financial profile changed (income or recurring payments update)
   final currentIncome = profile?.totalMonthlyIncome ?? 0.0;
@@ -50,66 +48,18 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
       cachedInsights.receiptCount == currentReceiptCount &&
       cachedInsights.data.currency == currency &&
       !incomeChanged) {
-    // Return cached insights if receipt count hasn't changed and income hasn't changed
     return cachedInsights.data;
   }
   
-  // Calculate spending by category
-  final categorySpending = <ExpenseCategory, double>{};
-  
-  // 1. Add spending from receipts
-  for (final receipt in receipts) {
-    // Map existing receipt category to the new simplified system
-    final mappedCategory = CategoryInfo.mapStringToCategory(
-      receipt.primaryCategory?.name ?? receipt.store
-    );
-
-    if (receipt.items.isEmpty) {
-      categorySpending[mappedCategory] = (categorySpending[mappedCategory] ?? 0.0) + receipt.total;
-    } else {
-      double itemsTotal = 0.0;
-      for (final item in receipt.items) {
-        final itemCategory = CategoryInfo.mapStringToCategory(item.category?.name ?? item.name);
-        categorySpending[itemCategory] = (categorySpending[itemCategory] ?? 0.0) + item.total;
-        itemsTotal += item.total;
-      }
-      if ((receipt.total - itemsTotal).abs() > 0.01) {
-        final diff = receipt.total - itemsTotal;
-        categorySpending[mappedCategory] = (categorySpending[mappedCategory] ?? 0.0) + diff;
-      }
-    }
-  }
-
-  // 2. Add spending from recurring payments (normalized to monthly)
-  if (profile != null) {
-    for (final payment in profile.recurringPayments) {
-      double monthlyAmount = 0.0;
-      switch (payment.frequency) {
-        case PaymentFrequency.weekly:
-          monthlyAmount = payment.amount * 4.33;
-          break;
-        case PaymentFrequency.biWeekly:
-          monthlyAmount = payment.amount * 2.17;
-          break;
-        case PaymentFrequency.monthly:
-          monthlyAmount = payment.amount;
-          break;
-        case PaymentFrequency.quarterly:
-          monthlyAmount = payment.amount / 3;
-          break;
-        case PaymentFrequency.yearly:
-          monthlyAmount = payment.amount / 12;
-          break;
-      }
-
-      final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
-      categorySpending[category] = (categorySpending[category] ?? 0.0) + monthlyAmount;
-    }
-  }
-  
   final now = DateTime.now();
+  final monthStart = DateTime(now.year, now.month, 1);
+  final monthEnd = DateTime(now.year, now.month + 1, 1).subtract(const Duration(days: 1));
+  final effectiveEnd = now.isBefore(monthEnd) ? now : monthEnd;
+
+  // 1. Calculate current month spending from receipts
   final currentMonthReceipts = receipts.where((r) =>
-    r.date.year == now.year && r.date.month == now.month
+    r.date.isAfter(monthStart.subtract(const Duration(days: 1))) &&
+    r.date.isBefore(monthEnd.add(const Duration(days: 1)))
   ).toList();
   
   final receiptsSpending = currentMonthReceipts.fold<double>(
@@ -117,12 +67,50 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
     (sum, r) => sum + r.total,
   );
 
-  final recurringSpending = profile?.totalMonthlyRecurringPayments ?? 0.0;
+  // 2. Calculate current month spending from recurring payments (Pay-As-You-Go logic)
+  double recurringSpending = 0.0;
+  final categorySpending = <ExpenseCategory, double>{};
+
+  // Pre-fill categories from current month receipts
+  for (final receipt in currentMonthReceipts) {
+    final mappedCategory = CategoryInfo.mapStringToCategory(
+      receipt.primaryCategory?.name ?? receipt.store
+    );
+    
+    if (receipt.items.isEmpty) {
+      categorySpending[mappedCategory] = (categorySpending[mappedCategory] ?? 0.0) + receipt.total;
+    } else {
+      for (final item in receipt.items) {
+        final itemCategory = CategoryInfo.mapStringToCategory(item.category?.name ?? item.name);
+        categorySpending[itemCategory] = (categorySpending[itemCategory] ?? 0.0) + item.total;
+      }
+    }
+  }
+
+  // Add recurring payments that have occurred so far this month
+  if (profile != null) {
+    for (final payment in profile.recurringPayments) {
+      final amountPaidThisMonth = _calculateOccurrencesInWindow(payment, monthStart, effectiveEnd);
+      if (amountPaidThisMonth > 0) {
+        recurringSpending += amountPaidThisMonth;
+        final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
+        categorySpending[category] = (categorySpending[category] ?? 0.0) + amountPaidThisMonth;
+      }
+    }
+  }
+
   final totalMonthlySpending = receiptsSpending + recurringSpending;
   
   final estimatedIncome = profile?.totalMonthlyIncome ??
       (totalMonthlySpending > 0 ? totalMonthlySpending * 1.5 : 0.0);
   
+  // Prepare full spending history for AI budget planning
+  final fullCategoryHistory = <ExpenseCategory, double>{};
+  for (final receipt in receipts) {
+    final cat = CategoryInfo.mapStringToCategory(receipt.primaryCategory?.name ?? receipt.store);
+    fullCategoryHistory[cat] = (fullCategoryHistory[cat] ?? 0.0) + receipt.total;
+  }
+
   // Prepare recurring expenses for AI
   final List<Map<String, dynamic>> recurringExpensesJson = profile?.recurringPayments.map((p) => {
     'name': p.name,
@@ -131,19 +119,14 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
     'category': p.category ?? 'Other',
   }).toList() ?? [];
 
-  Map<String, dynamic> budgetPlan;
-  if (hasNewReceipts || incomeChanged) {
-    final aiService = AIService();
-    budgetPlan = await aiService.generateBudgetPlan(
-      spendingHistory: categorySpending,
-      monthlyIncome: estimatedIncome,
-      monthsOfData: 1,
-      currencyCode: currency.name,
-      recurringExpenses: recurringExpensesJson,
-    );
-  } else {
-    budgetPlan = cachedInsights.data.budgetPlan;
-  }
+  final aiService = AIService();
+  final budgetPlan = await aiService.generateBudgetPlan(
+    spendingHistory: fullCategoryHistory,
+    monthlyIncome: estimatedIncome,
+    monthsOfData: 1,
+    currencyCode: currency.name,
+    recurringExpenses: recurringExpensesJson,
+  );
   
   final insights = _generateInsights(
     categorySpending,
@@ -169,6 +152,34 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   return insightsData;
 });
+
+double _calculateOccurrencesInWindow(RecurringPayment payment, DateTime start, DateTime end) {
+  int count = 0;
+  DateTime current = payment.startDate;
+
+  DateTime nextDate(DateTime d, PaymentFrequency freq) {
+    switch (freq) {
+      case PaymentFrequency.weekly: return d.add(const Duration(days: 7));
+      case PaymentFrequency.biWeekly: return d.add(const Duration(days: 14));
+      case PaymentFrequency.monthly: return DateTime(d.year, d.month + 1, d.day);
+      case PaymentFrequency.quarterly: return DateTime(d.year, d.month + 3, d.day);
+      case PaymentFrequency.yearly: return DateTime(d.year + 1, d.month, d.day);
+    }
+  }
+
+  while (current.isBefore(start)) {
+    current = nextDate(current, payment.frequency);
+  }
+
+  while (!current.isAfter(end)) {
+    if (!current.isBefore(start)) {
+      count++;
+    }
+    current = nextDate(current, payment.frequency);
+  }
+
+  return count * payment.amount;
+}
 
 List<String> _generateInsights(
   Map<ExpenseCategory, double> categorySpending,

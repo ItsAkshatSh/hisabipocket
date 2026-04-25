@@ -16,20 +16,23 @@ import 'package:hisabi/core/services/quick_start_service.dart';
 import 'package:hisabi/core/widgets/app_bottom_sheet.dart';
 import 'package:hisabi/features/onboarding/presentation/quick_start_sheet.dart';
 import 'package:hisabi/features/auth/providers/auth_provider.dart';
+import 'package:hisabi/core/services/notification_read_state_service.dart';
 
 class DashboardNotification {
+  final String id;
   final String title;
   final String message;
   final DateTime date;
   final bool isImportant;
-  final VoidCallback? onTap;
+  final String? routePath;
 
   DashboardNotification({
+    required this.id,
     required this.title,
     required this.message,
     required this.date,
     this.isImportant = false,
-    this.onTap,
+    this.routePath,
   });
 }
 
@@ -42,6 +45,92 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _quickStartPromptedThisSession = false;
+  Set<String> _readNotificationIds = <String>{};
+
+  int get _unreadCount => _notifications
+      .where((notification) => !_readNotificationIds.contains(notification.id))
+      .length;
+
+  List<DashboardNotification> get _notifications {
+    final period = ref.read(periodProvider);
+    final statsAsync = ref.read(dashboardStatsProvider);
+    final stats = statsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => null,
+    );
+
+    final shouldShowWrapped = ref.read(shouldShowWrappedPromptProvider).maybeWhen(
+          data: (value) => value,
+          orElse: () => false,
+        );
+
+    final alertsAsync = ref.read(spendingAlertsProvider);
+    final alerts = alertsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => <SpendingAlert>[],
+    );
+
+    final settingsAsync = ref.read(settingsProvider);
+    final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
+    final formatter =
+        NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
+
+    final List<DashboardNotification> notifications = [];
+
+    if (shouldShowWrapped && stats != null) {
+      final now = DateTime.now();
+      notifications.add(
+        DashboardNotification(
+          id: 'wrapped_${now.year}_${now.month}_${now.day}',
+          title: 'Weekly Wrapped is ready',
+          message:
+              'You spent ${formatter.format(stats.totalSpent)} this week. Tap to see your Wrapped.',
+          date: now,
+          isImportant: true,
+          routePath: '/wrapped',
+        ),
+      );
+    }
+
+    for (final alert in alerts) {
+      notifications.add(
+        DashboardNotification(
+          id:
+              'alert_${alert.type.name}_${alert.category?.name ?? 'none'}_${alert.detectedAt.millisecondsSinceEpoch}',
+          title: alert.title,
+          message: alert.message,
+          date: alert.detectedAt,
+          isImportant: alert.severity == AlertSeverity.critical,
+          routePath: '/stats',
+        ),
+      );
+    }
+
+    if (stats != null) {
+      final now = DateTime.now();
+      notifications.add(
+        DashboardNotification(
+          id:
+              'snapshot_${period.name}_${stats.receiptsCount}_${stats.totalSpent.toStringAsFixed(2)}',
+          title: 'Spending snapshot',
+          message:
+              'You have ${stats.receiptsCount} receipts this ${period.name.toLowerCase()} with an average of ${formatter.format(stats.averagePerReceipt)} per receipt.',
+          date: now,
+          isImportant: false,
+          routePath: '/saved-receipts',
+        ),
+      );
+    }
+
+    notifications.sort((a, b) => b.date.compareTo(a.date));
+    return notifications;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReadNotificationIds();
+  }
 
   @override
   void didChangeDependencies() {
@@ -66,9 +155,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  Future<void> _loadReadNotificationIds() async {
+    final readIds = await NotificationReadStateService.loadReadIds();
+    if (!mounted) return;
+    setState(() {
+      _readNotificationIds = readIds;
+    });
+  }
+
+  Future<void> _markNotificationsAsRead(
+      List<DashboardNotification> notifications) async {
+    if (notifications.isEmpty) return;
+    final nextReadIds = {..._readNotificationIds};
+    for (final notification in notifications) {
+      nextReadIds.add(notification.id);
+    }
+    setState(() {
+      _readNotificationIds = nextReadIds;
+    });
+    await NotificationReadStateService.saveReadIds(nextReadIds);
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(widgetUpdateProvider);
+    ref.watch(spendingAlertsProvider);
     final period = ref.watch(periodProvider);
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
@@ -90,67 +201,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               title: const Text('Dashboard'),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {
-                    final statsAsync = ref.read(dashboardStatsProvider);
-                    final stats = statsAsync.maybeWhen(
-                      data: (value) => value,
-                      orElse: () => null,
-                    );
-
-                    final shouldShowWrapped =
-                        ref.read(shouldShowWrappedPromptProvider).maybeWhen(
-                              data: (value) => value,
-                              orElse: () => false,
-                            );
-
-                    final alertsAsync = ref.read(spendingAlertsProvider);
-                    final alerts = alertsAsync.maybeWhen(
-                      data: (value) => value,
-                      orElse: () => <SpendingAlert>[],
-                    );
-
-                    final List<DashboardNotification> notifications = [];
-
-                    if (shouldShowWrapped && stats != null) {
-                      notifications.add(
-                        DashboardNotification(
-                          title: 'Weekly Wrapped is ready',
-                          message:
-                              'You spent ${formatter.format(stats.totalSpent)} this week. Tap to see your Wrapped.',
-                          date: DateTime.now(),
-                          isImportant: true,
-                          onTap: () => context.go('/wrapped'),
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.notifications_outlined),
+                      if (_unreadCount > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.error,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16),
+                            child: Text(
+                              _unreadCount > 9 ? '9+' : '$_unreadCount',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: theme.colorScheme.onError,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ),
-                      );
-                    }
-
-                    for (final alert in alerts) {
-                      notifications.add(
-                        DashboardNotification(
-                          title: alert.title,
-                          message: alert.message,
-                          date: alert.detectedAt,
-                          isImportant: alert.severity == AlertSeverity.critical,
-                          onTap: () => context.go('/stats'),
-                        ),
-                      );
-                    }
-
-                    if (stats != null) {
-                      notifications.add(
-                        DashboardNotification(
-                          title: 'Spending snapshot',
-                          message:
-                              'You have ${stats.receiptsCount} receipts this ${period.name.toLowerCase()} with an average of ${formatter.format(stats.averagePerReceipt)} per receipt.',
-                          date: DateTime.now(),
-                          isImportant: false,
-                          onTap: () => context.go('/saved-receipts'),
-                        ),
-                      );
-                    }
-
-                    _showNotificationsSheet(context, notifications);
+                    ],
+                  ),
+                  onPressed: () async {
+                    final notifications = _notifications;
+                    await _showNotificationsSheet(context, notifications);
+                    await _markNotificationsAsRead(notifications);
                   },
                 ),
                 const SizedBox(width: 8),
@@ -513,11 +596,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-void _showNotificationsSheet(
+Future<void> _showNotificationsSheet(
   BuildContext context,
   List<DashboardNotification> notifications,
 ) {
-  showModalBottomSheet(
+  return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -679,11 +762,11 @@ void _showNotificationsSheet(
                         ),
                       );
 
-                      if (n.onTap != null) {
+                      if (n.routePath != null) {
                         tile = InkWell(
                           onTap: () {
                             Navigator.of(context).pop();
-                            n.onTap!();
+                            context.go(n.routePath!);
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: tile,

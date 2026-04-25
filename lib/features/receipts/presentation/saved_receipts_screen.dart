@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/receipts/providers/receipt_filter_provider.dart';
 import 'package:hisabi/features/receipts/presentation/widgets/receipt_details_modal.dart';
@@ -19,7 +20,6 @@ class SavedReceiptsScreen extends ConsumerStatefulWidget {
 
 class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
   final _searchController = TextEditingController();
-  bool _showSearch = false;
 
   @override
   void dispose() {
@@ -31,9 +31,20 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
   Widget build(BuildContext context) {
     final filteredReceiptsAsync = ref.watch(filteredReceiptsProvider);
     final filters = ref.watch(receiptFiltersProvider);
+    final allReceiptsAsync = ref.watch(receiptsStoreProvider);
     final settingsAsync = ref.watch(settingsProvider);
     final currency = settingsAsync.valueOrNull?.currency ?? Currency.USD;
-    final formatter = NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
+    final formatter =
+        NumberFormat.currency(symbol: currency.name, decimalDigits: 2);
+
+    if (_searchController.text != (filters.searchQuery ?? '')) {
+      _searchController.value = TextEditingValue(
+        text: filters.searchQuery ?? '',
+        selection: TextSelection.collapsed(
+          offset: (filters.searchQuery ?? '').length,
+        ),
+      );
+    }
 
     return Scaffold(
       body: RefreshIndicator(
@@ -45,23 +56,8 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverAppBar.large(
-              title: _showSearch
-                  ? TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Search receipts...',
-                        border: InputBorder.none,
-                      ),
-                      onChanged: (value) {
-                        ref.read(receiptFiltersProvider.notifier).state = 
-                          filters.copyWith(
-                            searchQuery: value.isEmpty ? null : value,
-                            clearSearchQuery: value.isEmpty,
-                          );
-                      },
-                    )
-                  : const Text('Saved Receipts'),
+              title: const Text('Saved Receipts'),
+              centerTitle: false,
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded),
@@ -77,160 +73,342 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                   },
                 ),
                 IconButton(
-                  icon: Icon(_showSearch ? Icons.close : Icons.search_rounded),
-                  onPressed: () {
-                    setState(() {
-                      _showSearch = !_showSearch;
-                      if (!_showSearch) {
-                        _searchController.clear();
-                        ref.read(receiptFiltersProvider.notifier).state = 
-                          filters.copyWith(clearSearchQuery: true);
-                      }
-                    });
-                  },
-                ),
-                IconButton(
                   icon: Icon(
                     Icons.filter_list_rounded,
-                    color: filters.hasFilters ? Theme.of(context).colorScheme.primary : null,
+                    color: filters.hasFilters
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
                   onPressed: () => _showFilterModal(context, ref, filters),
                 ),
                 const SizedBox(width: 8),
               ],
             ),
-          if (filters.hasFilters)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Column(
                   children: [
-                    if (filters.searchQuery != null && filters.searchQuery!.isNotEmpty)
-                      Chip(
-                        label: Text('Search: ${filters.searchQuery}'),
-                        onDeleted: () {
-                          ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(clearSearchQuery: true);
-                          _searchController.clear();
-                        },
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outlineVariant
+                              .withOpacity(0.25),
+                        ),
                       ),
-                    if (filters.categoryFilter != null)
-                      Chip(
-                        label: Text('Category: ${CategoryInfo.getInfo(filters.categoryFilter!).name}'),
-                        onDeleted: () {
-                          ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(clearCategoryFilter: true);
-                        },
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            textInputAction: TextInputAction.search,
+                            decoration: InputDecoration(
+                              hintText: 'Search by store, name, or item',
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              suffixIcon: (filters.searchQuery?.isNotEmpty ?? false)
+                                  ? IconButton(
+                                      icon: const Icon(Icons.close_rounded),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        ref
+                                            .read(receiptFiltersProvider.notifier)
+                                            .state = filters.copyWith(
+                                          clearSearchQuery: true,
+                                        );
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withOpacity(0.35),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                            onChanged: (value) {
+                              ref.read(receiptFiltersProvider.notifier).state =
+                                  filters.copyWith(
+                                searchQuery: value.isEmpty ? null : value,
+                                clearSearchQuery: value.isEmpty,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          filteredReceiptsAsync.when(
+                            data: (receipts) {
+                              final allCount =
+                                  allReceiptsAsync.valueOrNull?.length ?? 0;
+                              final visibleTotal = receipts.fold<double>(
+                                0,
+                                (sum, r) => sum + r.total,
+                              );
+                              return _buildSummaryRow(
+                                context,
+                                formatter: formatter,
+                                visibleCount: receipts.length,
+                                allCount: allCount,
+                                visibleTotal: visibleTotal,
+                              );
+                            },
+                            loading: () => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
-                    if (filters.startDate != null || filters.endDate != null)
-                      Chip(
-                        label: const Text('Date Range'),
-                        onDeleted: () {
-                          ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(clearStartDate: true, clearEndDate: true);
-                        },
-                      ),
-                    if (filters.minAmount != null || filters.maxAmount != null)
-                      Chip(
-                        label: const Text('Amount Range'),
-                        onDeleted: () {
-                          ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(clearMinAmount: true, clearMaxAmount: true);
-                        },
-                      ),
-                    if (filters.storeFilter != null && filters.storeFilter!.isNotEmpty)
-                      Chip(
-                        label: Text('Store: ${filters.storeFilter}'),
-                        onDeleted: () {
-                          ref.read(receiptFiltersProvider.notifier).state = 
-                            filters.copyWith(clearStoreFilter: true);
-                        },
-                      ),
+                    ),
+                    if (filters.hasFilters) ...[
+                      const SizedBox(height: 12),
+                      _buildActiveFilters(context, ref, filters),
+                    ],
                   ],
                 ),
               ),
             ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-            sliver: filteredReceiptsAsync.when(
-              data: (receipts) => receipts.isEmpty
-                  ? const SliverFillRemaining(child: _EmptyState())
-                  : SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final r = receipts[receipts.length - 1 - index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Card(
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                leading: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(Icons.shopping_bag_outlined, color: Theme.of(context).colorScheme.primary),
-                                ),
-                                title: Text(
-                                  r.store, 
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                subtitle: Text(
-                                  DateFormat.yMMMd().format(r.date),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (r.isSplit)
-                                      const Padding(
-                                        padding: EdgeInsets.only(right: 8),
-                                        child: Icon(
-                                          Icons.call_split,
-                                          size: 16,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    Text(
-                                      formatter.format(r.total),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 16,
-                                        color: Theme.of(context).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                onTap: () => showAppBottomSheet(
-                                  context: context,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (_) =>
-                                      ReceiptDetailsModal(receiptId: r.id),
-                                ),
-                              ),
-                            ).animate().fadeIn(delay: Duration(milliseconds: 50 * index)).slideX(begin: 0.1),
-                          );
-                        },
-                        childCount: receipts.length,
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              sliver: filteredReceiptsAsync.when(
+                data: (receipts) => receipts.isEmpty
+                    ? SliverFillRemaining(
+                        child: _EmptyState(hasFilters: filters.hasFilters),
+                      )
+                    : SliverList(
+                        delegate: SliverChildListDelegate(
+                          _buildGroupedReceiptWidgets(
+                            context,
+                            receipts: receipts,
+                            formatter: formatter,
+                          ),
+                        ),
                       ),
-                    ),
-              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (error, stack) => const SliverFillRemaining(child: Center(child: Text('Error loading receipts'))),
+                loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (error, stack) => const SliverFillRemaining(
+                  child: Center(child: Text('Error loading receipts')),
+                ),
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+            const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
         ),
+      ),
+    );
+  }
+
+  List<Widget> _buildGroupedReceiptWidgets(
+    BuildContext context, {
+    required List<ReceiptModel> receipts,
+    required NumberFormat formatter,
+  }) {
+    final sorted = [...receipts]..sort((a, b) => b.date.compareTo(a.date));
+    final sections = <_ReceiptMonthSection>[];
+    for (final receipt in sorted) {
+      final monthKey = DateTime(receipt.date.year, receipt.date.month);
+      if (sections.isEmpty || sections.last.month != monthKey) {
+        sections.add(_ReceiptMonthSection(month: monthKey, receipts: [receipt]));
+      } else {
+        sections.last.receipts.add(receipt);
+      }
+    }
+
+    final widgets = <Widget>[];
+    var animationIndex = 0;
+    for (final section in sections) {
+      widgets.add(
+        Padding(
+          padding: EdgeInsets.only(
+            top: widgets.isEmpty ? 0 : 8,
+            bottom: 10,
+          ),
+          child: _MonthHeader(month: section.month),
+        ),
+      );
+      for (final receipt in section.receipts) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ReceiptCard(
+              receipt: receipt,
+              formatter: formatter,
+              onTap: () => showAppBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => ReceiptDetailsModal(receiptId: receipt.id),
+              ),
+            )
+                .animate()
+                .fadeIn(delay: Duration(milliseconds: 28 * animationIndex))
+                .slideX(begin: 0.05),
+          ),
+        );
+        animationIndex++;
+      }
+    }
+    return widgets;
+  }
+
+  Widget _buildSummaryRow(
+    BuildContext context, {
+    required NumberFormat formatter,
+    required int visibleCount,
+    required int allCount,
+    required double visibleTotal,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final subtitle = visibleCount == allCount
+        ? 'All receipts'
+        : 'Filtered from $allCount receipts';
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.shadow.withOpacity(0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$visibleCount receipts',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.shadow.withOpacity(0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  formatter.format(visibleTotal),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: cs.onPrimaryContainer,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Visible spend',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: cs.onPrimaryContainer.withOpacity(0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveFilters(
+      BuildContext context, WidgetRef ref, ReceiptFilters filters) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          if (filters.searchQuery != null && filters.searchQuery!.isNotEmpty)
+            InputChip(
+              label: Text('Search: ${filters.searchQuery}'),
+              onDeleted: () {
+                _searchController.clear();
+                ref.read(receiptFiltersProvider.notifier).state =
+                    filters.copyWith(clearSearchQuery: true);
+              },
+            ),
+          if (filters.categoryFilter != null)
+            InputChip(
+              label:
+                  Text('Category: ${CategoryInfo.getInfo(filters.categoryFilter!).name}'),
+              onDeleted: () {
+                ref.read(receiptFiltersProvider.notifier).state =
+                    filters.copyWith(clearCategoryFilter: true);
+              },
+            ),
+          if (filters.startDate != null || filters.endDate != null)
+            InputChip(
+              label: const Text('Date range'),
+              onDeleted: () {
+                ref.read(receiptFiltersProvider.notifier).state = filters
+                    .copyWith(clearStartDate: true, clearEndDate: true);
+              },
+            ),
+          if (filters.minAmount != null || filters.maxAmount != null)
+            InputChip(
+              label: const Text('Amount range'),
+              onDeleted: () {
+                ref.read(receiptFiltersProvider.notifier).state =
+                    filters.copyWith(clearMinAmount: true, clearMaxAmount: true);
+              },
+            ),
+          if (filters.storeFilter != null && filters.storeFilter!.isNotEmpty)
+            InputChip(
+              label: Text('Store: ${filters.storeFilter}'),
+              onDeleted: () {
+                ref.read(receiptFiltersProvider.notifier).state =
+                    filters.copyWith(clearStoreFilter: true);
+              },
+            ),
+          ActionChip(
+            avatar: const Icon(Icons.clear_all_rounded, size: 18),
+            label: const Text('Clear all'),
+            onPressed: () {
+              _searchController.clear();
+              ref.read(receiptFiltersProvider.notifier).state = ReceiptFilters();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -392,7 +570,8 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  final bool hasFilters;
+  const _EmptyState({required this.hasFilters});
 
   @override
   Widget build(BuildContext context) {
@@ -412,12 +591,14 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'No receipts saved yet',
+              hasFilters ? 'No matching receipts' : 'No receipts saved yet',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 15),
             Text(
-              'Start tracking your expenses by adding your first receipt',
+              hasFilters
+                  ? 'Try changing search or filters to find what you need.'
+                  : 'Start tracking your expenses by adding your first receipt.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -430,4 +611,217 @@ class _EmptyState extends StatelessWidget {
       ).animate().fadeIn().scale(begin: const Offset(0.9, 0.9)),
     );
   }
+}
+
+class _ReceiptCard extends StatelessWidget {
+  final ReceiptModel receipt;
+  final NumberFormat formatter;
+  final VoidCallback onTap;
+
+  const _ReceiptCard({
+    required this.receipt,
+    required this.formatter,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final categoryInfo = receipt.primaryCategory != null
+        ? CategoryInfo.getInfo(receipt.primaryCategory!)
+        : CategoryInfo.getInfo(ExpenseCategory.other);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.25)),
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withOpacity(0.035),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      categoryInfo.emoji,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          receipt.store,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 3),
+                        if (receipt.name.trim().isNotEmpty &&
+                            receipt.name.trim().toLowerCase() !=
+                                receipt.store.trim().toLowerCase())
+                          Text(
+                            receipt.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: cs.onSurfaceVariant.withOpacity(0.9),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        const SizedBox(height: 3),
+                        Text(
+                          DateFormat.yMMMd().format(receipt.date),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        formatter.format(receipt.total),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${receipt.items.length} ${receipt.items.length == 1 ? 'item' : 'items'}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: cs.onSurfaceVariant.withOpacity(0.8),
+                    size: 20,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: cs.secondaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      categoryInfo.name,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSecondaryContainer,
+                          ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (receipt.isSplit)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: cs.tertiaryContainer.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.call_split_rounded,
+                            size: 14,
+                            color: cs.onTertiaryContainer,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Split bill',
+                            style:
+                                Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: cs.onTertiaryContainer,
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MonthHeader extends StatelessWidget {
+  final DateTime month;
+  const _MonthHeader({required this.month});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Text(
+          DateFormat.yMMMM().format(month),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: cs.outlineVariant.withOpacity(0.45),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReceiptMonthSection {
+  final DateTime month;
+  final List<ReceiptModel> receipts;
+
+  _ReceiptMonthSection({
+    required this.month,
+    required this.receipts,
+  });
 }

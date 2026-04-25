@@ -27,30 +27,15 @@ class InsightsScreen extends ConsumerWidget {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // Modern App Bar
-          SliverAppBar(
-            expandedHeight: 120,
-            floating: true,
+          SliverAppBar.large(
+            floating: false,
             pinned: true,
-            elevation: 0,
-            backgroundColor: cs.background,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Text(
-                'Insights',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: cs.onBackground,
-                ),
-              ),
-            ),
+            title: const Text('Insights'),
+            centerTitle: false,
             actions: [
               IconButton(
                 onPressed: () => ref.invalidate(insightsProvider),
-                icon: Icon(
-                  Icons.refresh_rounded,
-                  color: cs.onBackground,
-                ),
+                icon: const Icon(Icons.refresh_rounded),
               ),
               const SizedBox(width: 8),
             ],

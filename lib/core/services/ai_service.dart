@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hisabi/core/models/category_model.dart';
-import 'package:intl/intl.dart';
 
 class AIService {
   static String get _apiKey => dotenv.get('AI_API_KEY', fallback: '');

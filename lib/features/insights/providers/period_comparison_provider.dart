@@ -5,6 +5,7 @@ import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/insights/models/period_comparison.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
 import 'package:hisabi/features/financial_profile/models/recurring_payment_model.dart';
+import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
 
 final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((ref) async {
   final receiptsAsync = ref.watch(receiptsStoreProvider);
@@ -18,20 +19,15 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
   }
   
   final now = DateTime.now();
+  final monthStart = DateTime(now.year, now.month, 1);
+  final effectiveEnd = now;
+
+  final lastMonthDate = DateTime(now.year, now.month - 1, 1);
+  final lastMonthStart = lastMonthDate;
+  final lastMonthEnd = DateTime(now.year, now.month, 1).subtract(const Duration(days: 1));
   
-  // 1. Get current month data
-  final currentMonthReceipts = receipts.where((r) =>
-    r.date.year == now.year && r.date.month == now.month
-  ).toList();
-  
-  // 2. Get last month data
-  final lastMonthDate = DateTime(now.year, now.month - 1);
-  final lastMonthReceipts = receipts.where((r) =>
-    r.date.year == lastMonthDate.year && r.date.month == lastMonthDate.month
-  ).toList();
-  
-  // Helper to calculate category totals
-  Map<ExpenseCategory, double> calculateTotals(List<ReceiptModel> monthReceipts) {
+  // Helper to calculate category totals for a specific window
+  Map<ExpenseCategory, double> calculateTotals(DateTime start, DateTime end, List<ReceiptModel> allReceipts, FinancialProfile? profile) {
     final totals = <ExpenseCategory, double>{};
     
     // Initialize all with 0
@@ -39,8 +35,13 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
       totals[cat] = 0.0;
     }
 
-    // Add Receipts
-    for (final receipt in monthReceipts) {
+    // 1. Add Receipts in window
+    final windowReceipts = allReceipts.where((r) => 
+      r.date.isAfter(start.subtract(const Duration(days: 1))) &&
+      r.date.isBefore(end.add(const Duration(days: 1)))
+    ).toList();
+
+    for (final receipt in windowReceipts) {
       final mappedCategory = CategoryInfo.mapStringToCategory(
         receipt.primaryCategory?.name ?? receipt.store
       );
@@ -48,39 +49,29 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
       if (receipt.items.isEmpty) {
         totals[mappedCategory] = (totals[mappedCategory] ?? 0.0) + receipt.total;
       } else {
-        double itemsTotal = 0.0;
         for (final item in receipt.items) {
           final itemCategory = CategoryInfo.mapStringToCategory(item.category?.name ?? item.name);
           totals[itemCategory] = (totals[itemCategory] ?? 0.0) + item.total;
-          itemsTotal += item.total;
-        }
-        if ((receipt.total - itemsTotal).abs() > 0.01) {
-          totals[mappedCategory] = (totals[mappedCategory] ?? 0.0) + (receipt.total - itemsTotal);
         }
       }
     }
 
-    // Add Normalized Recurring Payments (always assume they apply to every month)
+    // 2. Add Recurring Payments that occurred in window (Pay-As-You-Go)
     if (profile != null) {
       for (final payment in profile.recurringPayments) {
-        double monthlyAmount = 0.0;
-        switch (payment.frequency) {
-          case PaymentFrequency.weekly: monthlyAmount = payment.amount * 4.33; break;
-          case PaymentFrequency.biWeekly: monthlyAmount = payment.amount * 2.17; break;
-          case PaymentFrequency.monthly: monthlyAmount = payment.amount; break;
-          case PaymentFrequency.quarterly: monthlyAmount = payment.amount / 3; break;
-          case PaymentFrequency.yearly: monthlyAmount = payment.amount / 12; break;
+        final amountInWindow = _calculateOccurrencesInWindow(payment, start, end);
+        if (amountInWindow > 0) {
+          final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
+          totals[category] = (totals[category] ?? 0.0) + amountInWindow;
         }
-        final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
-        totals[category] = (totals[category] ?? 0.0) + monthlyAmount;
       }
     }
     
     return totals;
   }
 
-  final currentCategorySpending = calculateTotals(currentMonthReceipts);
-  final previousCategorySpending = calculateTotals(lastMonthReceipts);
+  final currentCategorySpending = calculateTotals(monthStart, effectiveEnd, receipts, profile);
+  final previousCategorySpending = calculateTotals(lastMonthStart, lastMonthEnd, receipts, profile);
   
   final currentAmount = currentCategorySpending.values.fold(0.0, (a, b) => a + b);
   final previousAmount = previousCategorySpending.values.fold(0.0, (a, b) => a + b);
@@ -97,7 +88,6 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
     final current = currentCategorySpending[category] ?? 0.0;
     final previous = previousCategorySpending[category] ?? 0.0;
     
-    // Skip categories with no activity in either month to keep UI clean
     if (current == 0 && previous == 0) continue;
 
     final change = current - previous;
@@ -138,3 +128,33 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
     insights: insights,
   );
 });
+
+double _calculateOccurrencesInWindow(RecurringPayment payment, DateTime start, DateTime end) {
+  int count = 0;
+  DateTime current = payment.startDate;
+
+  DateTime nextDate(DateTime d, PaymentFrequency freq) {
+    switch (freq) {
+      case PaymentFrequency.weekly: return d.add(const Duration(days: 7));
+      case PaymentFrequency.biWeekly: return d.add(const Duration(days: 14));
+      case PaymentFrequency.monthly: return DateTime(d.year, d.month + 1, d.day);
+      case PaymentFrequency.quarterly: return DateTime(d.year, d.month + 3, d.day);
+      case PaymentFrequency.yearly: return DateTime(d.year + 1, d.month, d.day);
+    }
+  }
+
+  // Move forward to the first occurrence after or on 'start'
+  while (current.isBefore(start)) {
+    current = nextDate(current, payment.frequency);
+  }
+
+  // Count how many times it hits within the [start, end] window
+  while (!current.isAfter(end)) {
+    if (!current.isBefore(start)) {
+      count++;
+    }
+    current = nextDate(current, payment.frequency);
+  }
+
+  return count * payment.amount;
+}
