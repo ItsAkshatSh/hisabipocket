@@ -60,9 +60,9 @@ class CategorizationRulesScreen extends ConsumerWidget {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: CategoryInfo.themedColor(context, rule.category).withOpacity(0.2),
-                    child: Text(
-                      CategoryInfo.getInfo(rule.category).emoji,
-                      style: const TextStyle(fontSize: 20),
+                    child: Icon(
+                      CategoryInfo.getInfo(rule.category).icon,
+                      color: CategoryInfo.themedColor(context, rule.category),
                     ),
                   ),
                   title: Text(
@@ -155,7 +155,11 @@ class CategorizationRulesScreen extends ConsumerWidget {
                       value: category,
                       child: Row(
                         children: [
-                          Text(info.emoji),
+                          Icon(
+                            info.icon,
+                            size: 18,
+                            color: CategoryInfo.themedColor(context, category),
+                          ),
                           const SizedBox(width: 8),
                           Text(info.name),
                         ],

@@ -3,6 +3,7 @@ import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/insights/models/spending_alert.dart';
 import 'package:hisabi/features/insights/providers/insights_provider.dart';
+import 'package:hisabi/features/insights/utils/receipt_category_aggregator.dart';
 
 final spendingAlertsProvider = FutureProvider.autoDispose<List<SpendingAlert>>((ref) async {
   final receiptsAsync = ref.watch(receiptsStoreProvider);
@@ -74,10 +75,7 @@ final spendingAlertsProvider = FutureProvider.autoDispose<List<SpendingAlert>>((
   if (lastMonthReceipts.isNotEmpty) {
     final lastMonthSpending = <ExpenseCategory, double>{};
     for (final receipt in lastMonthReceipts) {
-      for (final item in receipt.items) {
-        final category = item.category ?? ExpenseCategory.other;
-        lastMonthSpending[category] = (lastMonthSpending[category] ?? 0.0) + item.total;
-      }
+      accumulateReceiptIntoCategoryTotals(receipt, lastMonthSpending);
     }
     
     for (final entry in insights.categorySpending.entries) {
@@ -108,7 +106,11 @@ final spendingAlertsProvider = FutureProvider.autoDispose<List<SpendingAlert>>((
   
   // Check for unusually large purchases
   if (currentMonthReceipts.isNotEmpty) {
-    final averageReceipt = insights.monthlySpending / currentMonthReceipts.length;
+    final monthReceiptTotal = currentMonthReceipts.fold<double>(
+      0.0,
+      (sum, receipt) => sum + receipt.total,
+    );
+    final averageReceipt = monthReceiptTotal / currentMonthReceipts.length;
     for (final receipt in currentMonthReceipts) {
       if (receipt.total > averageReceipt * 3 && receipt.total > 100) {
         alerts.add(SpendingAlert(

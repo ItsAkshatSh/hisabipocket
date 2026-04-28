@@ -73,11 +73,39 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                   },
                 ),
                 IconButton(
-                  icon: Icon(
-                    Icons.filter_list_rounded,
-                    color: filters.hasFilters
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        Icons.filter_list_rounded,
+                        color: filters.hasFilters
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      if (_activeFiltersCount(filters) > 0)
+                        Positioned(
+                          right: -6,
+                          top: -6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${_activeFiltersCount(filters)}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   onPressed: () => _showFilterModal(context, ref, filters),
                 ),
@@ -352,6 +380,10 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
 
   Widget _buildActiveFilters(
       BuildContext context, WidgetRef ref, ReceiptFilters filters) {
+    final formatter = NumberFormat.compactCurrency(
+      symbol: '',
+      decimalDigits: 0,
+    );
     return Align(
       alignment: Alignment.centerLeft,
       child: Wrap(
@@ -378,7 +410,13 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
             ),
           if (filters.startDate != null || filters.endDate != null)
             InputChip(
-              label: const Text('Date range'),
+              label: Text(
+                filters.startDate != null && filters.endDate != null
+                    ? '${DateFormat.yMMMd().format(filters.startDate!)} - ${DateFormat.yMMMd().format(filters.endDate!)}'
+                    : filters.startDate != null
+                        ? 'From ${DateFormat.yMMMd().format(filters.startDate!)}'
+                        : 'Until ${DateFormat.yMMMd().format(filters.endDate!)}',
+              ),
               onDeleted: () {
                 ref.read(receiptFiltersProvider.notifier).state = filters
                     .copyWith(clearStartDate: true, clearEndDate: true);
@@ -386,7 +424,13 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
             ),
           if (filters.minAmount != null || filters.maxAmount != null)
             InputChip(
-              label: const Text('Amount range'),
+              label: Text(
+                filters.minAmount != null && filters.maxAmount != null
+                    ? 'Amount: ${formatter.format(filters.minAmount)} - ${formatter.format(filters.maxAmount)}'
+                    : filters.minAmount != null
+                        ? 'Amount >= ${formatter.format(filters.minAmount)}'
+                        : 'Amount <= ${formatter.format(filters.maxAmount)}',
+              ),
               onDeleted: () {
                 ref.read(receiptFiltersProvider.notifier).state =
                     filters.copyWith(clearMinAmount: true, clearMaxAmount: true);
@@ -411,6 +455,16 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
         ],
       ),
     );
+  }
+
+  int _activeFiltersCount(ReceiptFilters filters) {
+    var count = 0;
+    if (filters.searchQuery != null && filters.searchQuery!.isNotEmpty) count++;
+    if (filters.categoryFilter != null) count++;
+    if (filters.startDate != null || filters.endDate != null) count++;
+    if (filters.minAmount != null || filters.maxAmount != null) count++;
+    if (filters.storeFilter != null && filters.storeFilter!.isNotEmpty) count++;
+    return count;
   }
 
   void _showFilterModal(BuildContext context, WidgetRef ref, ReceiptFilters currentFilters) {
@@ -462,7 +516,11 @@ class _SavedReceiptsScreenState extends ConsumerState<SavedReceiptsScreen> {
                       value: category,
                       child: Row(
                         children: [
-                          Text(info.emoji),
+                          Icon(
+                            info.icon,
+                            size: 18,
+                            color: CategoryInfo.themedColor(context, category),
+                          ),
                           const SizedBox(width: 8),
                           Text(info.name),
                         ],
@@ -662,9 +720,13 @@ class _ReceiptCard extends StatelessWidget {
                       color: cs.primaryContainer.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      categoryInfo.emoji,
-                      style: const TextStyle(fontSize: 20),
+                    child: Icon(
+                      categoryInfo.icon,
+                      size: 22,
+                      color: CategoryInfo.themedColor(
+                        context,
+                        categoryInfo.category,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -679,7 +741,7 @@ class _ReceiptCard extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 3),
                         if (receipt.name.trim().isNotEmpty &&
@@ -691,7 +753,7 @@ class _ReceiptCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: cs.onSurfaceVariant.withOpacity(0.9),
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                           ),
                         const SizedBox(height: 3),
@@ -699,7 +761,7 @@ class _ReceiptCard extends StatelessWidget {
                           DateFormat.yMMMd().format(receipt.date),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: cs.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                         ),
                       ],
@@ -720,7 +782,7 @@ class _ReceiptCard extends StatelessWidget {
                         '${receipt.items.length} ${receipt.items.length == 1 ? 'item' : 'items'}',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
                             ),
                       ),
                     ],

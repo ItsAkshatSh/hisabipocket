@@ -249,9 +249,10 @@ class _BudgetPlannerCardState extends State<BudgetPlannerCard> {
             children: [
               Row(
                 children: [
-                  Text(
-                    categoryInfo.emoji,
-                    style: const TextStyle(fontSize: 20),
+                  Icon(
+                    categoryInfo.icon,
+                    size: 20,
+                    color: CategoryInfo.themedColor(context, category),
                   ),
                   const SizedBox(width: 8),
                   Text(

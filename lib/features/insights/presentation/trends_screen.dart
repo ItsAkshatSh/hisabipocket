@@ -104,9 +104,13 @@ class TrendsScreen extends ConsumerWidget {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Text(
-                                CategoryInfo.getInfo(analysis.topCategory!).emoji,
-                                style: const TextStyle(fontSize: 32),
+                              Icon(
+                                CategoryInfo.getInfo(analysis.topCategory!).icon,
+                                size: 30,
+                                color: CategoryInfo.themedColor(
+                                  context,
+                                  analysis.topCategory!,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -145,9 +149,13 @@ class TrendsScreen extends ConsumerWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: trend.category != null
-                        ? Text(
-                            CategoryInfo.getInfo(trend.category!).emoji,
-                            style: const TextStyle(fontSize: 24),
+                        ? Icon(
+                            CategoryInfo.getInfo(trend.category!).icon,
+                            size: 24,
+                            color: CategoryInfo.themedColor(
+                              context,
+                              trend.category!,
+                            ),
                           )
                         : const Icon(Icons.receipt),
                     title: Text(DateFormat.yMMMd().format(trend.date)),

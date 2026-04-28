@@ -269,7 +269,14 @@ class _ReceiptSplitModalState extends ConsumerState<ReceiptSplitModal> {
                                     value: category,
                                     child: Row(
                                       children: [
-                                        Text(info.emoji),
+                                        Icon(
+                                          info.icon,
+                                          size: 18,
+                                          color: CategoryInfo.themedColor(
+                                            context,
+                                            category,
+                                          ),
+                                        ),
                                         const SizedBox(width: 8),
                                         Text(info.name),
                                       ],

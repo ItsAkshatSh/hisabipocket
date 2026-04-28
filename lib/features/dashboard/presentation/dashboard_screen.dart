@@ -454,8 +454,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Text('Error: $e'),
+      loading: () => _buildInlineLoadingState('Loading summary...'),
+      error: (e, s) => _buildInlineErrorState(
+        context: ref.context,
+        message: 'Could not load summary',
+        onRetry: () => ref.invalidate(dashboardStatsProvider),
+      ),
     );
   }
 
@@ -487,8 +491,58 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 return _ReceiptListItem(receipt: receipt, formatter: formatter);
               },
             ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Text('Error: $e'),
+      loading: () => _buildInlineLoadingState('Loading recent activity...'),
+      error: (e, s) => _buildInlineErrorState(
+        context: context,
+        message: 'Could not load recent activity',
+        onRetry: () => ref.invalidate(recentReceiptsProvider),
+      ),
+    );
+  }
+
+  Widget _buildInlineLoadingState(String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2.6),
+          ),
+          const SizedBox(height: 10),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInlineErrorState({
+    required BuildContext context,
+    required String message,
+    required VoidCallback onRetry,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.error.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.cloud_off_rounded,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(message)),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 
@@ -588,7 +642,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ),
-                ).animate().shake(delay: 800.ms).shimmer(duration: 3.seconds)
+                ).animate().fadeIn(duration: 280.ms)
               : const SizedBox.shrink(),
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
@@ -758,6 +812,17 @@ Future<void> _showNotificationsSheet(
                                 ],
                               ),
                             ),
+                            if (n.routePath != null) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant
+                                    .withOpacity(0.7),
+                              ),
+                            ],
                           ],
                         ),
                       );
@@ -848,7 +913,7 @@ class _ReceiptListItem extends StatelessWidget {
           builder: (_) => ReceiptDetailsModal(receiptId: receipt.id),
         ),
       ),
-    ).animate().fadeIn().slideX(begin: 0.1);
+    ).animate().fadeIn(duration: 220.ms);
   }
 }
 
@@ -910,9 +975,6 @@ class _SummaryCard extends StatelessWidget {
           ],
         ),
       ),
-    )
-        .animate()
-        .fadeIn(delay: Duration(milliseconds: delay))
-        .scale(begin: const Offset(0.95, 0.95));
+    ).animate().fadeIn(delay: Duration(milliseconds: delay));
   }
 }

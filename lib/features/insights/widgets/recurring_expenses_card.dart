@@ -163,9 +163,10 @@ class RecurringExpensesCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text(
-                categoryInfo.emoji,
-                style: const TextStyle(fontSize: 24),
+              Icon(
+                categoryInfo.icon,
+                size: 22,
+                color: CategoryInfo.themedColor(context, expense.category),
               ),
               const SizedBox(width: 12),
               Expanded(

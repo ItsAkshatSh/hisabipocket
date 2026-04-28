@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hisabi/core/models/category_model.dart';
 
 class AIService {
@@ -8,6 +9,7 @@ class AIService {
   static String get _baseUrl =>
       dotenv.get('AI_BASE_URL', fallback: 'https://ai.hackclub.com/proxy/v1');
   static const String _defaultModel = 'google/gemini-3-flash-preview';
+  static const String _itemCategoryCachePrefix = 'item_category_v1_';
 
   /// Categorize receipt items using AI
   Future<Map<String, ExpenseCategory>> categorizeItems({
@@ -15,9 +17,23 @@ class AIService {
     required String storeName,
     double? totalAmount,
   }) async {
+    if (itemNames.isEmpty) return {};
+
+    final prefilled = await _getCachedCategorization(itemNames, storeName);
+    final uncachedItems =
+        itemNames.where((item) => !prefilled.containsKey(item)).toList();
+    if (uncachedItems.isEmpty) return prefilled;
+
+    // Use deterministic local fallback only when API credentials are unavailable.
+    if (_apiKey.isEmpty) {
+      final fallback = _fallbackCategorization(uncachedItems, storeName);
+      await _saveCategorizationCache(storeName, fallback);
+      return {...prefilled, ...fallback};
+    }
+
     try {
       final prompt =
-          _buildCategorizationPrompt(itemNames, storeName, totalAmount);
+          _buildCategorizationPrompt(uncachedItems, storeName, totalAmount);
 
       final response = await http.post(
         Uri.parse('$_baseUrl/chat/completions'),
@@ -46,14 +62,22 @@ class AIService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final content = data['choices'][0]['message']['content'];
-        return _parseCategorizationResponse(content, itemNames, storeName);
+        final parsed = _parseCategorizationResponse(
+          content,
+          uncachedItems,
+          storeName,
+        );
+        await _saveCategorizationCache(storeName, parsed);
+        return {...prefilled, ...parsed};
       }
     } catch (e) {
       print('AI categorization error: $e');
     }
 
     // Fallback to rule-based categorization
-    return _fallbackCategorization(itemNames, storeName);
+    final fallback = _fallbackCategorization(uncachedItems, storeName);
+    await _saveCategorizationCache(storeName, fallback);
+    return {...prefilled, ...fallback};
   }
 
   String _buildCategorizationPrompt(
@@ -62,21 +86,16 @@ class AIService {
     double? total,
   ) {
     return '''
-Categorize these receipt items into expense categories. Return JSON format:
+Categorize receipt items. Return compact JSON:
 {
-  "items": {
-    "item_name": "category_name",
-    ...
-  }
+  "items":{"item_name":"category_name"}
 }
 
-Available categories: housing, food, transport, health, lifestyle, subscriptions, education, travel, other
-
-Items: ${items.join(', ')}
+Allowed categories: housing, food, transport, health, lifestyle, subscriptions, education, travel, other.
+Use store context + item names only.
 Store: $store
-Total: ${total?.toStringAsFixed(2) ?? 'N/A'}
-
-Return only the JSON object, no other text.
+Items: ${items.join(' | ')}
+Total: ${total?.toStringAsFixed(2) ?? 'n/a'}
 ''';
   }
 
@@ -135,6 +154,48 @@ Return only the JSON object, no other text.
       result[item] = _categorizeSingleItemFallback(item, store);
     }
     return result;
+  }
+
+  Future<Map<String, ExpenseCategory>> _getCachedCategorization(
+    List<String> items,
+    String storeName,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = <String, ExpenseCategory>{};
+    for (final item in items) {
+      final exactKey = _cacheKey(storeName, item);
+      final itemOnlyKey = _cacheKey('', item);
+      final value = prefs.getString(exactKey) ?? prefs.getString(itemOnlyKey);
+      if (value == null) continue;
+      cached[item] = CategoryInfo.mapStringToCategory(value);
+    }
+    return cached;
+  }
+
+  Future<void> _saveCategorizationCache(
+    String storeName,
+    Map<String, ExpenseCategory> categorizations,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final entry in categorizations.entries) {
+      // Store both store-specific and store-agnostic cache keys.
+      await prefs.setString(_cacheKey(storeName, entry.key), entry.value.name);
+      await prefs.setString(_cacheKey('', entry.key), entry.value.name);
+    }
+  }
+
+  String _cacheKey(String storeName, String itemName) {
+    final store = _normalizeCacheText(storeName);
+    final item = _normalizeCacheText(itemName);
+    return '$_itemCategoryCachePrefix$store::$item';
+  }
+
+  String _normalizeCacheText(String input) {
+    return input
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
   }
 
   /// Generate budget recommendations

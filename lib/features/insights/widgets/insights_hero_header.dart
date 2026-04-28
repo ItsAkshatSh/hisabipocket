@@ -176,9 +176,10 @@ class InsightsHeroHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    CategoryInfo.getInfo(topCategory.key).emoji,
-                    style: const TextStyle(fontSize: 18),
+                  Icon(
+                    CategoryInfo.getInfo(topCategory.key).icon,
+                    size: 18,
+                    color: CategoryInfo.themedColor(context, topCategory.key),
                   ),
                   const SizedBox(height: 4),
                   Text(

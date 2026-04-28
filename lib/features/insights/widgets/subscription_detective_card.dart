@@ -125,10 +125,15 @@ class _SubscriptionItem extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: categoryInfo.color.withOpacity(0.1),
+              color: CategoryInfo.themedColor(context, expense.category)
+                  .withOpacity(0.14),
               shape: BoxShape.circle,
             ),
-            child: Text(categoryInfo.emoji, style: const TextStyle(fontSize: 20)),
+            child: Icon(
+              categoryInfo.icon,
+              size: 20,
+              color: CategoryInfo.themedColor(context, expense.category),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(

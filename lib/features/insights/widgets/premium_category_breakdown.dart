@@ -64,7 +64,8 @@ class PremiumCategoryBreakdown extends StatelessWidget {
                     padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
                     child: _buildCategoryRow(
                       context,
-                      categoryInfo.emoji,
+                      categoryInfo.icon,
+                      category,
                       categoryInfo.name,
                       amount,
                       percentage,
@@ -113,7 +114,8 @@ class PremiumCategoryBreakdown extends StatelessWidget {
 
   Widget _buildCategoryRow(
     BuildContext context,
-    String emoji,
+    IconData icon,
+    ExpenseCategory category,
     String name,
     double amount,
     double percentage,
@@ -133,9 +135,10 @@ class PremiumCategoryBreakdown extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
-            child: Text(
-              emoji,
-              style: const TextStyle(fontSize: 20),
+            child: Icon(
+              icon,
+              size: 20,
+              color: CategoryInfo.themedColor(context, category),
             ),
           ),
         ),

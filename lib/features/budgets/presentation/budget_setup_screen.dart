@@ -293,7 +293,10 @@ class _BudgetSetupScreenState extends ConsumerState<BudgetSetupScreen> {
                     labelText: categoryInfo.name,
                     prefixIcon: Padding(
                       padding: const EdgeInsets.all(12),
-                      child: Text(categoryInfo.emoji, style: const TextStyle(fontSize: 20)),
+                      child: Icon(
+                        categoryInfo.icon,
+                        color: CategoryInfo.themedColor(context, category),
+                      ),
                     ),
                     prefixText: '${currency.name} ',
                     border: OutlineInputBorder(

@@ -274,9 +274,10 @@ class PeriodComparisonCard extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Text(
-            categoryInfo.emoji,
-            style: const TextStyle(fontSize: 20),
+          Icon(
+            categoryInfo.icon,
+            size: 20,
+            color: CategoryInfo.themedColor(context, comp.category),
           ),
           const SizedBox(width: 8),
           Expanded(

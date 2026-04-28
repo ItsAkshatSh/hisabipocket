@@ -3,9 +3,10 @@ import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/core/services/ai_service.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/insights/models/insights_models.dart';
+import 'package:hisabi/features/insights/utils/recurring_payment_window_calculator.dart';
+import 'package:hisabi/features/insights/utils/receipt_category_aggregator.dart';
 import 'package:hisabi/features/settings/providers/settings_provider.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
-import 'package:hisabi/features/financial_profile/models/recurring_payment_model.dart';
 
 // Cache for insights data and the receipt count when it was generated
 class InsightsCache {
@@ -43,11 +44,16 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   final currentIncome = profile?.totalMonthlyIncome ?? 0.0;
   final cachedIncome = cachedInsights?.data.estimatedIncome ?? 0.0;
   final incomeChanged = (currentIncome > 0 && currentIncome != cachedIncome);
+  final recurringCountChanged = profile != null &&
+      cachedInsights != null &&
+      profile.recurringPayments.length !=
+          cachedInsights.data.budgetPlan['recurringCount'];
   
   if (cachedInsights != null && 
       cachedInsights.receiptCount == currentReceiptCount &&
       cachedInsights.data.currency == currency &&
-      !incomeChanged) {
+      !incomeChanged &&
+      !recurringCountChanged) {
     return cachedInsights.data;
   }
   
@@ -73,24 +79,17 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
 
   // Pre-fill categories from current month receipts
   for (final receipt in currentMonthReceipts) {
-    final mappedCategory = CategoryInfo.mapStringToCategory(
-      receipt.primaryCategory?.name ?? receipt.store
-    );
-    
-    if (receipt.items.isEmpty) {
-      categorySpending[mappedCategory] = (categorySpending[mappedCategory] ?? 0.0) + receipt.total;
-    } else {
-      for (final item in receipt.items) {
-        final itemCategory = CategoryInfo.mapStringToCategory(item.category?.name ?? item.name);
-        categorySpending[itemCategory] = (categorySpending[itemCategory] ?? 0.0) + item.total;
-      }
-    }
+    accumulateReceiptIntoCategoryTotals(receipt, categorySpending);
   }
 
   // Add recurring payments that have occurred so far this month
   if (profile != null) {
     for (final payment in profile.recurringPayments) {
-      final amountPaidThisMonth = _calculateOccurrencesInWindow(payment, monthStart, effectiveEnd);
+      final amountPaidThisMonth = calculateRecurringAmountInWindow(
+        payment,
+        monthStart,
+        effectiveEnd,
+      );
       if (amountPaidThisMonth > 0) {
         recurringSpending += amountPaidThisMonth;
         final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
@@ -105,11 +104,7 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
       (totalMonthlySpending > 0 ? totalMonthlySpending * 1.5 : 0.0);
   
   // Prepare full spending history for AI budget planning
-  final fullCategoryHistory = <ExpenseCategory, double>{};
-  for (final receipt in receipts) {
-    final cat = CategoryInfo.mapStringToCategory(receipt.primaryCategory?.name ?? receipt.store);
-    fullCategoryHistory[cat] = (fullCategoryHistory[cat] ?? 0.0) + receipt.total;
-  }
+  final fullCategoryHistory = aggregateReceiptsByCategory(receipts);
 
   // Prepare recurring expenses for AI
   final List<Map<String, dynamic>> recurringExpensesJson = profile?.recurringPayments.map((p) => {
@@ -134,12 +129,14 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
     estimatedIncome,
     currentMonthReceipts.length,
   );
+  final budgetPlanWithMeta = Map<String, dynamic>.from(budgetPlan)
+    ..['recurringCount'] = profile?.recurringPayments.length ?? 0;
   
   final insightsData = InsightsData(
     categorySpending: categorySpending,
     monthlySpending: totalMonthlySpending,
     estimatedIncome: estimatedIncome,
-    budgetPlan: budgetPlan,
+    budgetPlan: budgetPlanWithMeta,
     insights: insights,
     currency: currency,
   );
@@ -152,34 +149,6 @@ final insightsProvider = FutureProvider.autoDispose<InsightsData>((ref) async {
   
   return insightsData;
 });
-
-double _calculateOccurrencesInWindow(RecurringPayment payment, DateTime start, DateTime end) {
-  int count = 0;
-  DateTime current = payment.startDate;
-
-  DateTime nextDate(DateTime d, PaymentFrequency freq) {
-    switch (freq) {
-      case PaymentFrequency.weekly: return d.add(const Duration(days: 7));
-      case PaymentFrequency.biWeekly: return d.add(const Duration(days: 14));
-      case PaymentFrequency.monthly: return DateTime(d.year, d.month + 1, d.day);
-      case PaymentFrequency.quarterly: return DateTime(d.year, d.month + 3, d.day);
-      case PaymentFrequency.yearly: return DateTime(d.year + 1, d.month, d.day);
-    }
-  }
-
-  while (current.isBefore(start)) {
-    current = nextDate(current, payment.frequency);
-  }
-
-  while (!current.isAfter(end)) {
-    if (!current.isBefore(start)) {
-      count++;
-    }
-    current = nextDate(current, payment.frequency);
-  }
-
-  return count * payment.amount;
-}
 
 List<String> _generateInsights(
   Map<ExpenseCategory, double> categorySpending,
@@ -195,7 +164,7 @@ List<String> _generateInsights(
     );
     final categoryInfo = CategoryInfo.getInfo(topCategory.key);
     insights.add(
-      'Your top spending category is ${categoryInfo.name} (${categoryInfo.emoji}) - '
+      'Your top spending category is ${categoryInfo.name} - '
       'consider setting a budget limit for this category.',
     );
   }

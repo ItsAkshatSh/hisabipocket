@@ -3,8 +3,9 @@ import 'package:hisabi/core/models/category_model.dart';
 import 'package:hisabi/core/models/receipt_model.dart';
 import 'package:hisabi/features/receipts/providers/receipts_store.dart';
 import 'package:hisabi/features/insights/models/period_comparison.dart';
+import 'package:hisabi/features/insights/utils/recurring_payment_window_calculator.dart';
+import 'package:hisabi/features/insights/utils/receipt_category_aggregator.dart';
 import 'package:hisabi/features/financial_profile/providers/financial_profile_provider.dart';
-import 'package:hisabi/features/financial_profile/models/recurring_payment_model.dart';
 import 'package:hisabi/features/financial_profile/models/financial_profile_model.dart';
 
 final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((ref) async {
@@ -42,24 +43,14 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
     ).toList();
 
     for (final receipt in windowReceipts) {
-      final mappedCategory = CategoryInfo.mapStringToCategory(
-        receipt.primaryCategory?.name ?? receipt.store
-      );
-      
-      if (receipt.items.isEmpty) {
-        totals[mappedCategory] = (totals[mappedCategory] ?? 0.0) + receipt.total;
-      } else {
-        for (final item in receipt.items) {
-          final itemCategory = CategoryInfo.mapStringToCategory(item.category?.name ?? item.name);
-          totals[itemCategory] = (totals[itemCategory] ?? 0.0) + item.total;
-        }
-      }
+      accumulateReceiptIntoCategoryTotals(receipt, totals);
     }
 
     // 2. Add Recurring Payments that occurred in window (Pay-As-You-Go)
     if (profile != null) {
       for (final payment in profile.recurringPayments) {
-        final amountInWindow = _calculateOccurrencesInWindow(payment, start, end);
+        final amountInWindow =
+            calculateRecurringAmountInWindow(payment, start, end);
         if (amountInWindow > 0) {
           final category = CategoryInfo.mapStringToCategory(payment.category ?? payment.name);
           totals[category] = (totals[category] ?? 0.0) + amountInWindow;
@@ -129,32 +120,3 @@ final periodComparisonProvider = FutureProvider.autoDispose<PeriodComparison?>((
   );
 });
 
-double _calculateOccurrencesInWindow(RecurringPayment payment, DateTime start, DateTime end) {
-  int count = 0;
-  DateTime current = payment.startDate;
-
-  DateTime nextDate(DateTime d, PaymentFrequency freq) {
-    switch (freq) {
-      case PaymentFrequency.weekly: return d.add(const Duration(days: 7));
-      case PaymentFrequency.biWeekly: return d.add(const Duration(days: 14));
-      case PaymentFrequency.monthly: return DateTime(d.year, d.month + 1, d.day);
-      case PaymentFrequency.quarterly: return DateTime(d.year, d.month + 3, d.day);
-      case PaymentFrequency.yearly: return DateTime(d.year + 1, d.month, d.day);
-    }
-  }
-
-  // Move forward to the first occurrence after or on 'start'
-  while (current.isBefore(start)) {
-    current = nextDate(current, payment.frequency);
-  }
-
-  // Count how many times it hits within the [start, end] window
-  while (!current.isAfter(end)) {
-    if (!current.isBefore(start)) {
-      count++;
-    }
-    current = nextDate(current, payment.frequency);
-  }
-
-  return count * payment.amount;
-}

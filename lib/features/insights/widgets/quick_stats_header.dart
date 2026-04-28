@@ -58,8 +58,9 @@ class QuickStatsHeader extends ConsumerWidget {
               _buildFlexibleStat(
                 context,
                 'Top',
-                CategoryInfo.getInfo(topCategory.key).emoji,
-                Icons.star_outline,
+              CategoryInfo.getInfo(topCategory.key).name,
+              CategoryInfo.getInfo(topCategory.key).icon,
+              valueColor: CategoryInfo.themedColor(context, topCategory.key),
               ),
             ],
           ],
@@ -68,7 +69,13 @@ class QuickStatsHeader extends ConsumerWidget {
     );
   }
 
-  Widget _buildFlexibleStat(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildFlexibleStat(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon, {
+    Color? valueColor,
+  }) {
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -82,7 +89,7 @@ class QuickStatsHeader extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: context.onSurfaceColor,
+                color: valueColor ?? context.onSurfaceColor,
               ),
             ),
           ),

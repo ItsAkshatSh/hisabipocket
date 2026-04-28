@@ -24,9 +24,17 @@ class InsightsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: cs.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(insightsProvider);
+          ref.invalidate(spendingAlertsProvider);
+          ref.invalidate(periodComparisonProvider);
+        },
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
           SliverAppBar.large(
             floating: false,
             pinned: true,
@@ -205,7 +213,8 @@ class InsightsScreen extends ConsumerWidget {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

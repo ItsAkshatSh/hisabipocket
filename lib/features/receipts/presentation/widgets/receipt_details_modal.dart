@@ -178,9 +178,8 @@ class ReceiptDetailsModal extends ConsumerWidget {
                         children: [
                           _buildInfoChip(
                             context, 
-                            null, 
+                            categoryInfo.icon, 
                             categoryInfo.name, 
-                            emoji: categoryInfo.emoji,
                             backgroundColor: categoryAccent.withOpacity(0.16),
                             labelColor: cs.onSurfaceVariant,
                           ),
@@ -307,7 +306,13 @@ class ReceiptDetailsModal extends ConsumerWidget {
     );
   }
 
-  Widget _buildInfoChip(BuildContext context, IconData? icon, String label, {String? emoji, Color? backgroundColor, Color? labelColor}) {
+  Widget _buildInfoChip(
+    BuildContext context,
+    IconData? icon,
+    String label, {
+    Color? backgroundColor,
+    Color? labelColor,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -317,9 +322,7 @@ class ReceiptDetailsModal extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (emoji != null)
-            Text(emoji, style: const TextStyle(fontSize: 16))
-          else if (icon != null)
+          if (icon != null)
             Icon(icon, size: 16, color: labelColor ?? Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Text(

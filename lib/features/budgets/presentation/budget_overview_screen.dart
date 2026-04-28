@@ -234,7 +234,11 @@ class BudgetOverviewScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Text(categoryInfo.emoji, style: const TextStyle(fontSize: 24)),
+                Icon(
+                  categoryInfo.icon,
+                  size: 24,
+                  color: CategoryInfo.themedColor(context, category),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
